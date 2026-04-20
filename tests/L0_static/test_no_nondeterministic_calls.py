@@ -60,6 +60,7 @@ DETERMINISTIC_CORE = {
     "render_artifact.py",
     "calibrate.py",
     "family_profile.py",
+    "rare_phase_detector.py",  # v9 PR-5 特殊格 detector,纯静态判定
 }
 
 
