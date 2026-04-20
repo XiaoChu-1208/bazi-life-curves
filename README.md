@@ -9,7 +9,9 @@
 [![Cursor Skill](https://img.shields.io/badge/Cursor-Skill-000000.svg)](https://cursor.sh/)
 [![MCP Server](https://img.shields.io/badge/MCP-11_tools-9146FF.svg)](#当-mcp-server-用v80--11-个-tools)
 [![Deterministic](https://img.shields.io/badge/output-bit--for--bit_deterministic-success.svg)](#工程绝对优势)
-[![v7 Modernized](https://img.shields.io/badge/v7-LGBTQ%2B_inclusive-ff69b4.svg)](#v7-现代化命理学--600-年第一次的语言重构)
+[![v7 Modernized](https://img.shields.io/badge/v7-LGBTQ%2B_inclusive-ff69b4.svg)](#5-v7-现代化--命理学-600-年第一次的语言重构)
+[![v9 Precision](https://img.shields.io/badge/v9-precision_over_recall-orange.svg)](#v9-范式转换--命理伦理学的工程化2026-04--six-pr-paradigm-shift)
+[![v9 OpenPhase](https://img.shields.io/badge/v9-open__phase_escape-red.svg)](#为什么open_phase-逃逸阀是工具的伦理底线)
 [![CI](https://github.com/XiaoChu-1208/bazi-life-curves/actions/workflows/ci.yml/badge.svg)](https://github.com/XiaoChu-1208/bazi-life-curves/actions/workflows/ci.yml)
 
 <!--
@@ -194,6 +196,197 @@ v7 现代化做了**结构保留 + 语言重构**：
 | 关系密度（高 / 中 / 低）| 关系的伦理形态（一夫一妻 / 多元 / 不婚）|
 
 > 这是开源命理工具里**第一次**把现代性别 / 取向 / 关系观系统性写进协议层。
+
+---
+
+## v9 范式转换 · 命理伦理学的工程化（2026-04 · Six-PR Paradigm Shift）
+
+> **这一章是这个项目最重要的一章**。
+> 之前 v1-v8 解决的是「算得准不准」；v9 解决的是「算得准之后，**该不该独断**」。
+>
+> 这是命理工具的伦理学问题——一旦算法（哪怕 95% 置信度）说错一个 phase，
+> 用户可能会按这个错的命运叙事调整自己未来的行为，造成**不可逆的心理与人生伤害**。
+> v9 把这个问题作为**头等约束**重写整套架构。
+
+### 触发动因 · 一个真实案例（1996/12/08 男命）
+
+v9 的全部 7 个 PR 都源于一次失败：
+
+```
+四柱：丙子 庚子 己卯 己巳   日主：己土
+```
+
+旧 v8 的算法逻辑：
+
+1. `compute_dayuan_root_strength` 没有「本气/中气/余气」三档分级 → 把"巳中本气丙=正印"漏算
+2. 日主被算法判为「无根」→ 触发「弃命从财格」候选
+3. 单流派（滴天髓系）独断, 后验 0.83 → adopt
+4. 输出："你是真从财格, 印比岁运反成阻力, 财官岁运为大利"
+
+但用户的真实人生事件**全部反例**：
+
+| 年份 | 用户事件 | 旧 v8 解释 | 实际属性 |
+|---|---|---|---|
+| 2015 | 高考省状元 | "印星岁运被算法标为阻力" | 印星贵人型大事件 |
+| 2026 | 贵人提携、上大平台 | "比劫岁运被算法标为忌神" | 比劫帮身型大事件 |
+| 2024 | 安徽六安 → 上海迁徙 | 算法完全没提 | 驿马 + 印星双触发 |
+
+**问题不在某条规则错, 而在架构底层的 4 个深层缺陷**：
+
+1. **粒度缺陷**：通根度算法把藏干当二元 (有/无), 不分本气/中气/余气
+2. **独断缺陷**：单一流派 (滴天髓) 给了候选就 adopt, 不让其他流派 (子平真诠/穷通宝鉴/盲派) 投票
+3. **叙事缺陷**：算法一旦 adopt 高置信 phase, 后续解读都"按这个 phase 圆故事", 把反例事件强行解读成"应验"
+4. **逃逸缺陷**：算法没有「我不知道」的合法出口, 任何输入都会被强行落到某个 phase 上
+
+用户的原话是：
+
+> *"所谓的『弃命格』, 你会不会陷入了你的一个叙事的深度逻辑里边, 你出不来了？"*
+
+这一句话直接定义了 v9 的全部工作。
+
+### 核心伦理观 · "Precision over Recall, 多解共存, 不允许独断"
+
+v9 把过去 v1-v8 的隐含哲学从「**让算法给一个最像的答案**」改成「**只在多流派达成共识时才独断, 否则诚实展示分歧**」。
+
+| 维度 | v1-v8 (旧) | v9 (新) |
+|---|---|---|
+| **目标** | recall 优先, 让每盘都有 phase | precision 优先, 不能独断时落 `open_phase` |
+| **决策** | 单流派 detector 跑出最高分就 adopt | 6 大流派加权投票, top1<0.55 OR gap<0.10 → `open_phase` |
+| **多解** | 默认单一 phase (alternative 字段是装饰) | 默认输出 `phase_composition` (top3 with role) + `alternative_readings` (top5 with `if_this_is_right_then`) |
+| **叙事** | adopt 之后按 phase 圆故事 | 反身性 disclaimer 强制注入, "这是一种解释模式而非剧本" |
+| **裁定权** | 算法独断, 用户被动接受 | HS-R7.3 明示"用户终极裁定权高于算法", 与直觉冲突时**优先相信直觉** |
+
+### 6 个 PR 的修复链 · 每个独立位点都防一次"1996 错误"重演
+
+| PR | 修复深层缺陷 | 关键文件 | 学理理由 |
+|---|---|---|---|
+| **PR-1** 通根度严判 | 粒度缺陷 | `_bazi_core.py::compute_dayuan_root_strength` (本气1.0 / 中气0.5 / 余气0.2) + `score_curves.py::apply_phase_override` 守卫 | 《滴天髓》"通根透干, 全在生扶"——通根有强弱之分, 不是 0/1。1996 case 巳中本气丙=正印贡献 1.0, 全盘 yin_root=1.2, 不应被标为"无根" |
+| **PR-2** pillars 弃用 + 合盘守卫 | 输入污染 | `solve_bazi.py` (`--pillars` DeprecationWarning) + `he_pan.py` (拒绝 provisional/低置信八字) + `he_pan_orchestrator.py` (新, 多人 v8 编排) | 起运岁不能精算 → 大运起算偏 ±2 岁 → 流年事件全错位。合盘必须每方都过 v8 校验, 否则一方错就拖整副盘 |
+| **PR-3** 大运层 fanyin/fuyin | 时间维度遗漏 | `mangpai_events.py::detect_dayun_*` 4 个新 detector + `dayun_only` 首年触发机制 (避 10x 重复) | 盲派"反吟伏吟"不只看流年与命局, 还要看大运与命局、流年与大运。1996 case 的大运起伏全在大运层, 旧 detector 只看流年层完全捞不到 |
+| **PR-4** 心智模型 + HS-R7 | 独断缺陷 + 叙事缺陷 | `references/mind_model_protocol.md` (新, 10 项戒律) + `score_curves.py::hsr7_audit` 守卫 | 算法越精密越容易把「能用 X 解释」误认作「X 被这条证据支持」。HS-R7 把"算法局限/反身性/用户终极裁定权"刻进每一份输出, 不允许沉默 |
+| **PR-5** 罕见格全集 + LLM 兜底 | 候选不全缺陷 | `references/rare_phases_catalog.md` (新, 110 条三层) + `references/llm_fallback_protocol.md` (新) + `rare_phase_detector.py` (新, 30 个 detector) | 子平 ~60 + 盲派 ~30 + 紫微/铁板 ~20 = 110 条特殊格全列出。算法可判定的直接出, 不可判定的走 LLM inline fallback (协议化 inline prompt, 当前对话 AI 自查目录), 防止"算法 catalog 里没有 → 强行落到 day_master_dominant" |
+| **PR-6** 多流派加权投票 + open_phase 逃逸阀 | 独断缺陷 + 逃逸缺陷 | `_school_registry.py` (新, 6 大流派) + `multi_school_vote.py` (新) | 子平真诠 (1.0) / 滴天髓 (1.0) / 穷通宝鉴 (0.9) / 盲派 (0.9) / 紫微 (0.3 ratify) / 铁板 (0.3 ratify) 加权投票 → top1<0.55 OR gap<0.10 → `decision="open_phase"`. 1996 case 在 v9 投票后: top1=0.34, 杀印相生/伤官生财/调候反向干燥 三足鼎立 → 必落 open_phase |
+| **PR-7** v9 集成 | 接口对齐 | `score_curves.score()` 自动注入 `multi_school_vote` + 此 README + `CHANGELOG.md` | 让多流派投票自动成为所有产物的标准字段, 不依赖人记得调 |
+
+### 为什么"open_phase 逃逸阀"是工具的伦理底线
+
+> 命理工具的最大错误**不是判错**, 而是**判错之后还自信**。
+> 当算法只有 34% 把握的时候, 它说"你是 X 相位"和它说"我在这盘上不下结论"——
+> 二者对用户人生的影响差距是巨大的。前者会让用户按错叙事调整人生, 后者只是诚实。
+
+**触发条件 (任一满足即落 `open_phase`)**：
+- top1 后验 < 0.55 (没有任何流派达到多数派支持)
+- top1 与 top2 后验差 < 0.10 (前两个候选势均力敌, 不应独断)
+- ≥ 2 条 anchor 事件被 top1 反例 (用户提供的真实事件与该 phase 直接冲突)
+
+**落 `open_phase` 时 Agent 必须做的 4 件事**：
+1. **不许独断**输出"你是 X 相位"
+2. **把 `multi_school_vote.alternative_readings` 全部列出**, 每条带 `if_this_is_right_then` 实证含义
+3. **请用户补充 ≥ 2 条具体事件年份** (高考 / 工作 / 婚配 / 大病 / 迁徙等), 重新跑投票
+4. **必带 HS-R7.3 disclaimer**: "本工具是辅助, 不构成确定预测; 任何与你强烈直觉冲突的判定, 你保留最终裁定权"
+
+### HS-R7 最高红线 · 三声明强制注入
+
+任何 v9 输出 (CLI / HTML / Markdown 报告) **缺这三件之一就拒绝出图** (raise `MissingHSR7Disclosure`):
+
+#### HS-R7.1 算法局限范围声明
+
+明示算法**能**判什么、**不能**判什么:
+- 能：基于公历 + 真太阳时 + 110 个特殊格 + 4 流派 + 用户 K 个事件锚点的贝叶斯后验
+- **不能**：未询问的人际细节、catalog 之外的"格中之格"、灵魂层 / 因果层 / 自由意志等元层议题
+
+#### HS-R7.2 反身性免责声明
+
+> *任何"未来某年会发生 X"的预测都具有反身性——你听完它会调整行为, 调整之后的人生不再是这个 phase 的纯粹运行。把预测当作"决策时的参考维度之一", 不当作"必然发生的剧本"。*
+
+#### HS-R7.3 用户终极裁定权声明
+
+> *算法可以在 95% 置信度下输出某个 phase。但你和你身边的人对自己人生的认识, 永远比 8 题问卷 + 110 个格能覆盖的更深。任何与你强烈直觉冲突的判定, **优先相信你的直觉**, 回头让算法补 anchor 重算。*
+
+### 心智模型协议 · 10 项戒律 (`references/mind_model_protocol.md`)
+
+操作层 5 项 (强制写进算法):
+- **5.1 事件锚点优先**：先收集事件再选 phase, 不许先选 phase 再找证据
+- **5.2 phase-必然预测**：adopt 任何 phase 必须给 ≥3 条 must_be_true / must_be_false 钩子
+- **5.3 复合相位常态化**：默认输出 1 主格 + 1 副格 + 1 调候修正, 不强行单 phase
+- **5.4 证据归属严格性**：只有显著优于 default phase 的证据才计入后验更新
+- **5.5 叙事审慎前置声明**：result.json 顶层 `narrative_caution` 字段, 缺则 raise
+
+认识论层 5 项 (强制行为约束):
+- **5.6 open_phase 逃逸阀**：算法允许说"我不知道", 这是工具诚实的底线
+- **5.7 phase 时间动态性**：人生不同段可能落不同 phase, 不能一个标签覆盖一生
+- **5.8 事件类型平衡**：R1/R2 题型必须涵盖 7 大类 (学业/事业/婚姻/健康/财富/家庭/迁徙), 单类型 ≤2 题, 反例题 ≥30%
+- **5.9 反身性话术**：每条高强度断语后强制追加"这是解释模式而非剧本"
+- **5.10 多流派备解**：每个 adopt phase 必带 alternative_readings 字段
+
+### 为什么这套设计"更合理"——三个学理理由
+
+#### 理由一：命理学本身是"流派多元"的
+
+子平命理本身就不是单一系统。子平真诠重「月令格局」、滴天髓重「日主气化」、穷通宝鉴重「调候季节」、盲派重「象法应事」、紫微斗数和铁板神数与子平在不同维度——600 年来从来没有哪个流派宣称自己能独自覆盖所有人盘。**任何工具如果只用一派打分, 已经在学理上输了一半**。v9 把 4 大子平流派 + 2 大星命系统全部纳入加权投票, 是**回归命理学本来的多元性**, 而不是任何一个流派的独断。
+
+#### 理由二：心理学上, 错误叙事的伤害是不对称的
+
+行为心理学有一个基本结论：**人对未来的预期会塑造行为**。当算法说"你是弃命从财格, 印比岁运是阻力", 用户听完后:
+- 真的是这个格 → 提前规划符合命局 → 收益
+- 不是这个格 (像 1996 case) → 提前回避了实际是贵人的印比岁运 → **直接伤害**
+
+伤害是不对称的——算法对的时候用户得到边际收益, 算法错的时候用户损失的是关键人生节点。这种**不对称性**要求算法的默认动作是"诚实展示分歧 + 让用户保留裁定权", 而不是"赌一个最高后验"。
+
+#### 理由三：贝叶斯后验本身要求"先验诚实"
+
+后验 = 先验 × 似然 / 证据。如果先验 (各 phase 候选的初始权重) 来自单流派 detector, 后验再高也只是"在这一派内最像"。多流派加权投票本质是**让先验更诚实**——4 个流派达成共识的, 才是命局的"客观可见性"; 4 个流派各执一词的, 应该诚实承认"算法面对此盘的可见性低"。
+
+### 1996/12/08 case 的端到端 v9 验证
+
+```bash
+$ python3 scripts/multi_school_vote.py --bazi /tmp/case_1996.json
+{
+  "version": "v9-PR6",
+  "decision": "open_phase",            ← 不再独断"弃命从财"
+  "consensus_level": "low",
+  "top1_posterior": 0.34,              ← 远低于 0.55 阈值
+  "top1_top2_gap": 0.0,                ← 前两个候选完全平局
+  "phase_composition": [
+    {"id": "qi_yin_xiang_sheng",   "weight": 0.34, "role": "primary"},
+    {"id": "shang_guan_sheng_cai", "weight": 0.34, "role": "secondary"},
+    {"id": "climate_inversion_dry_top", "weight": 0.32, "role": "modifier"}
+  ],
+  "alternative_readings": [
+    {"phase_id": "qi_yin_xiang_sheng",
+     "if_this_is_right_then": "印星贵人型大事件 (升学 / 体制提拔 / 学术贵人) 应集中在 印星岁运"},
+    {"phase_id": "shang_guan_sheng_cai",
+     "if_this_is_right_then": "才华变现型大事件 (作品 / 商业突破) 应集中在 食伤生财岁运"},
+    ...
+  ]
+}
+```
+
+第一句"杀印相生 → 印星贵人型大事件应集中在印星岁运" **直接命中 2015 高考省状元 + 2026 贵人提携 + 安徽-上海迁徙**。但 v9 不允许独断, 它把 3 个 phase 都列出, 让用户用更多事件锚点决定方向——这才是"工具该做的事"。
+
+### v9 测试覆盖
+
+每个 PR 都有专属测试模块 + 1996 case 回归断言:
+
+| 测试模块 | 用例数 | 1996 case 断言 |
+|---|---:|---|
+| `tests/test_root_strength.py` | 13 | yin_root ≥ 1.0, label != "无根"/"微根" |
+| `tests/test_hepan_v8_gate.py` | 7 | provisional/低置信八字必拒 |
+| `tests/test_mangpai_dayun.py` | 9 | dayun_only 仅首年触发, 防 10x 重复 |
+| `tests/test_hsr7_audit.py` | 9 | strict 模式缺字段 raise MissingHSR7Disclosure |
+| `tests/test_rare_phase_catalog.py` | 14 | 必触发杀印相生, 必不触发 cong_cai_zhen |
+| `tests/test_multi_school_vote.py` | 8 | decision == "open_phase", consensus == "low" |
+| **基线** | **155 passed, 6 skipped, 2 xfailed** | 全绿, PR-1~PR-7 全部 commit, 推 GitHub branch `v9/precision-first-multi-school` |
+
+### v9 的不变量 · 任何后续 PR 不允许破坏
+
+1. **6 个独立拦截位点**必须**每个都有自动化测试覆盖** —— 不容许"靠 reviewer 记得"作为防线
+2. **`open_phase` 阈值必须保守** —— top1<0.55 OR gap<0.10 是经验门槛, 后续若放宽必须有数据集 ablation 证明
+3. **多流派权重必须公开可调** —— 不允许任何一派 weight > 1.0, 不允许 ratify_only 的派 weight ≥ phase_candidate 的派
+4. **HS-R7 三声明不允许任何输出绕过** —— 包括开发模式 / 调试模式 / strict=False 都必须在 result.json 留 audit 字段
+5. **rare_phases_catalog.md 是"公开 catalog"** —— 任何新加的格必须带古书出处 + 算法可判定与否的标记 + 典型应验
+
+> 这五条不变量是 v9 的"宪法层"。如果任何 PR 触碰这五条, **即使测试全绿也必须先讨论再合**。详见 `references/mind_model_protocol.md` §5 与 `CHANGELOG.md`.
 
 ---
 
@@ -798,7 +991,34 @@ MIT —— 命理工具应该是公共财产，不该藏起来。
 
 ---
 
-## v7 现代化版本（2026-04）· 主要更新
+## 版本时间线
+
+完整 release notes 详见 [`CHANGELOG.md`](CHANGELOG.md).
+
+### v9.0.0（2026-04）· Precision-Over-Recall · 多流派交叉投票 · open_phase 逃逸阀
+
+> 触发动因: 1996/12/08 男命被旧 v8 误判为「弃命从财」的反思 (详见 §"v9 范式转换" + `references/diagnosis_pitfalls.md` §13-14 + `references/mind_model_protocol.md`).
+
+7 个 PR 一览:
+
+- **PR-1** 通根度严判 (`本气/中气/余气` 1.0/0.5/0.2) → 修假从误判 (`_bazi_core.py::compute_dayuan_root_strength` + `score_curves.py::apply_phase_override` 守卫)
+- **PR-2** `--pillars` 模式弃用 + `he_pan` v8 入口守卫 + 多人编排器 (`solve_bazi.py` + `he_pan.py` + 新 `he_pan_orchestrator.py`)
+- **PR-3** 盲派 `dayun` 层 fanyin/fuyin 4 个 detector + 大运首年触发机制 (`mangpai_events.py::detect_dayun_*`)
+- **PR-4** 心智模型协议 (10 项戒律) + HS-R7 最高红线 (新 `references/mind_model_protocol.md` + `score_curves.py::hsr7_audit`)
+- **PR-5** 罕见格全集 ~110 条 (子平 60 + 盲派 30 + 紫微/铁板 20) + 30 个算法可判定 detector + LLM inline fallback (新 `references/rare_phases_catalog.md` + `references/llm_fallback_protocol.md` + `rare_phase_detector.py`)
+- **PR-6** 多流派加权投票 + `open_phase` 逃逸阀 (新 `_school_registry.py` + `multi_school_vote.py` · top1<0.55 OR gap<0.10 → `decision="open_phase"`)
+- **PR-7** v9 集成: `score_curves.score()` 自动注入 `multi_school_vote` + 此 README v9 章节 + `CHANGELOG.md`
+
+测试基线: **155 passed, 6 skipped, 2 xfailed** (其中 60 个新增测试覆盖 v9 模块).
+
+### v8.0.0（2026-04）· 双引擎 + MCP server + EOT 真太阳时
+
+- v8.0 双引擎交叉验证 (`--engine cross-check` 同时跑 lunar-python + tyme4py)
+- v8.0 NOAA 均时差 EOT 公式 (精度 ±15 秒, 零额外依赖)
+- v8.0 MCP server (`scripts/mcp_server.py` 11 个 tools, 含 cantian-ai/bazi-mcp 兼容别名)
+- v8 校验回路重写 (废弃 R0/R1/R2/R3 自然语言转述 → discriminative question bank + AskQuestion + 贝叶斯后验 + phase_posterior 落地)
+
+### v7 现代化版本（2026-04）· LGBTQ+ 包容 + 600 年语言重构
 
 - 加 `--orientation` 参数支持 hetero/homo/bi/none/poly 取向
 - 删除全部带性别歧视的古法规则（克夫旺夫 / 女命印多减分 / 配偶星弱减分等 6 条）
@@ -808,4 +1028,5 @@ MIT —— 命理工具应该是公共财产，不该藏起来。
 - handshake R0 文案重写：去颜值 / 去性别默认 / 去价值判断
 - 烟测覆盖：5 种 orientation × spirit/wealth/fame 完全独立 × 性别对称性 × 旧版回归一致
 
-> "把 600 年的命理学，搬进 2026 年的语言。"
+> "把 600 年的命理学, 搬进 2026 年的语言, 然后再装一道 v9 的诚实闸门——
+>  让算法在没把握的时候敢说『我不知道』, 把终极裁定权还给用户。"
