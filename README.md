@@ -393,14 +393,15 @@ bazi-life-curves/
 ├── INSTALL.md                     # 安装指南
 ├── README.md                      # 本文件
 ├── requirements.txt
-├── scripts/                       # 11 个核心脚本（v7.2）
-│   ├── _bazi_core.py              # 干支 / 五行 / 十神 / 互动检测底层 + P1-P5 phase detect
+├── scripts/                       # 12 个核心脚本（v7.4）
+│   ├── _bazi_core.py              # 干支 / 五行 / 十神 / 互动检测底层 + P1-P5 phase detect + v7.4 化气格 / 神煞 detect
 │   ├── solve_bazi.py              # 八字解析（v7 --orientation · v7.2 --longitude 真太阳时）
-│   ├── score_curves.py            # 4 维曲线打分（v7.2 --confirmed-facts 闭环）
+│   ├── score_curves.py            # 4 维曲线打分（v7.2 --confirmed-facts · v7.4 化气格 phase override + 神煞 ±调味）
 │   ├── mangpai_events.py          # 盲派应事 + 反向规则 + 护身减压
-│   ├── handshake.py               # R0+R1+R2 三阶段校验（v7.1 --dump-phase-candidates · v7.2 --phase-id 二轮校验）
+│   ├── handshake.py               # R0+R0'反迎合+R1+R2+R3 多阶段校验（v7.4 --user-responses 机械化判定）
 │   ├── phase_inversion_loop.py    # v7.2 / v8 Auto-Loop · 相位反演 4 步编排（dump→pick→score→handshake）
 │   ├── save_confirmed_facts.py    # v7.2 · 用户校验反馈固化（含 phase_override）
+│   ├── family_profile.py          # v7.3 · 原生家庭 R3 反询问（父星/母星模式 + 5 档结构分类）
 │   ├── render_chart.py            # 静态 PNG（matplotlib）
 │   ├── render_artifact.py         # 交互 HTML（Recharts + marked.js）
 │   ├── he_pan.py                  # 合盘 4 层评分
@@ -434,10 +435,13 @@ bazi-life-curves/
 诚实摆出来：
 
 - **数据集偏小**：当前 `calibration/dataset.yaml` 只 5 人 / 15 事件，统计意义有限。希望社区贡献匿名八字 + 真实事件
-- **从格 / 化气格 / 神煞**：基础"从格"已通过 v7.1 P5 (三气成象 detect) + 假从/真从 detect 覆盖；**化气格 / 神煞**仍未实现，遇到会按普通格局走（已有 `geju.label` 标记）
+- **从格 / 化气格 / 神煞**：✅ 全部已实现
+  - 从格：v7.1 P5 (三气成象 detect) + 假从/真从 detect 覆盖
+  - 化气格：✅ v7.4 已实现 · `_bazi_core.detect_huaqi_pattern`（甲己 / 乙庚 / 丙辛 / 丁壬 / 戊癸 五合 + 月令化神 + 化神有根 + 无破格 + 一票否决日干强根）→ `apply_geju_override` 自动走 `huaqi_to_<化神>` phase override
+  - 神煞：✅ v7.4 已实现 · `_bazi_core.detect_shensha` 8 类（天乙贵人 / 文昌 / 驿马 / 桃花 / 华盖 / 孤辰 / 寡宿 / 空亡）；原局命中 → baseline ±0.3~0.4；大运/流年逢 → 当年 ±0.5~1.0；驿马 → sigma × 1.3 波动加大。影响刻意小，只调味，不参与主格局判定
 - **真太阳时校正**：✅ v7.2 已实现 · `solve_bazi.py --longitude <度>` 支持东经/西经，按 120° 中心 ±4 分/度自动校正出生时间
 - **三派权重 25/40/30** 是经验值，需更大数据集做网格搜索（v9 deferred）
-- **R0 反询问的 R0 命中率**：当前依赖用户诚实回答；v7.2 phase 反演二轮校验已经间接缓解（反演后用户要重新答 6 题二轮校验，难骗）
+- **R0 反询问的 R0 命中率**：✅ v7.4 已加反迎合·反向探针 · 给每条 R0 推论生成完全相反的 claim，两个相反命题都答「对」→ 自动判定 sycophantic 并 R0 命中率 × 0.5 打折；原命题答「不对」+ 反向命题答「对」→ 判定 mirror，建议触发相位反演重跑。详见 `references/handshake_protocol.md §5.5`
 
 详见 `references/phase_inversion_protocol.md §9` 的版本时间表。
 
