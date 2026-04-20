@@ -1552,6 +1552,18 @@ def score(
         "structural_corrections_applied": sc_applied,
     }
 
+    # v9 PR-6 · 多流派加权投票 + open_phase 逃逸阀注入
+    # 在 score 产物里挂 multi_school_vote 结果, 供下游报告 / he_pan / babysitter 使用.
+    # 失败不阻塞 (warning 即可), 因 multi_school_vote 是辅助层.
+    try:
+        from multi_school_vote import vote as _ms_vote  # noqa: WPS433
+        result["multi_school_vote"] = _ms_vote(bazi)
+    except Exception as _msv_err:  # pragma: no cover
+        result["multi_school_vote"] = {
+            "decision": "error",
+            "error": f"multi_school_vote skipped: {type(_msv_err).__name__}: {_msv_err}",
+        }
+
     # v9 PR-4 · HS-R7 守卫 + 反身性话术注入
     # 默认 warning 模式; BAZI_STRICT_HSR7=1 时缺失字段会 raise.
     result["hsr7_audit"] = hsr7_audit(bazi, result, strict=None)

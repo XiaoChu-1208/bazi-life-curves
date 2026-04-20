@@ -781,9 +781,44 @@ python3 scripts/save_confirmed_facts.py --bazi output/bazi.json --add-structural
   - **D1 题库校验已并入 v8 主回路**（不再走 v7.3 R3 单独条件触发）：D1 6 题（家境 / 父在场 / 母在场 / 兄弟姐妹 / 出生地 × 时代 / 祖辈影响）随每次 handshake 一起抛，phase_posterior 把答案直接吸收进相位决策；family 段写不写、写多细，由 D1 相关 hard_evidence 题的后验信号 + 用户是否主动问家庭 共同决定
   - **修古法 survivorship bias**：古典命书只收录显赫人物的命例，所以"年柱财官印聚合"在古籍里反复对应"显赫家世"——但在现代普通人的同样结构上，真实概率远低于古法暗示。D1 校验通过的"显赫"才能说，没校验过 / 校验不通过 → family 段降级或省略
 
+## v9 范式转换（2026-04 重写 · precision-over-recall · 多流派交叉投票 · open_phase 逃逸阀）
+
+> **触发动因**：用户对 1996/12/08 男命的"弃命从财"误判。详见 `references/diagnosis_pitfalls.md` §14 + `references/mind_model_protocol.md`。
+> **v9 不是 v8 的小修，是结构性的范式转换**：之前是"算法独断 → 让用户答题校验" → 现在是"多流派加权投票 + open_phase 逃逸阀 + 必出多解备选 + LLM 兜底特殊格"。
+
+### v9 核心改动一览
+
+| 改动 | 文件 | 触发 |
+|---|---|---|
+| **PR-1** 通根度严判 (`本气/中气/余气` 1.0/0.5/0.2) → 修假从误判 | `scripts/_bazi_core.py::compute_dayuan_root_strength` + `scripts/score_curves.py::apply_phase_override` 守卫 | 任何 `cong_*` / `huaqi_to_*` phase override |
+| **PR-2** `--pillars` 模式弃用 (`qiyun_age` 不可精算) + `he_pan` v8 入口守卫 | `scripts/solve_bazi.py` + `scripts/he_pan.py` + `scripts/he_pan_orchestrator.py` | `phase.is_provisional=true` 或 `confidence<0.60` 直接拒合盘 |
+| **PR-3** 盲派 `dayun` 层 fanyin/fuyin detector | `scripts/mangpai_events.py::detect_dayun_*` | 大运首年 + 流年伏吟/反吟大运 |
+| **PR-4** 心智模型协议 + HS-R7 最高红线 | `references/mind_model_protocol.md` + `scripts/score_curves.py::hsr7_audit` | 任何对外报告必带反身性 disclaimer |
+| **PR-5** 罕见格全集 (~110 ZiPing/Mangpai/紫微/铁板) + LLM inline fallback | `references/rare_phases_catalog.md` + `references/llm_fallback_protocol.md` + `scripts/rare_phase_detector.py::scan_all` | 算法判定 Yes 的格直接出, No 的走 LLM 兜底 |
+| **PR-6** 多流派加权投票 + open_phase 逃逸阀 | `scripts/_school_registry.py` + `scripts/multi_school_vote.py` | top1<0.55 OR top1_top2_gap<0.10 → `decision="open_phase"` |
+
+### v9 何时落 `open_phase`
+
+- 子平 / 滴天髓 / 穷通 / 盲派 各自出候选 → 加权投票
+- 若 top1 后验 < 0.55 → 不许独断
+- 输出 `phase_composition` (top3 with role) + `alternative_readings` (top5 with `if_this_is_right_then`)
+- 落 open_phase 时主报告必须显式陈述"算法在此盘上不下结论, 请补充更多事件锚点"
+
+### v9 报告必带字段（HS-R7 守卫）
+
+任何 score 产物必须有：
+- `multi_school_vote.decision` ∈ {phase_id, "open_phase"}
+- `multi_school_vote.consensus_level` ∈ {high, medium, low}
+- `multi_school_vote.alternative_readings`（多流派备解 with `if_this_is_right_then`）
+- `hsr7_audit`（缺字段会 warning，BAZI_STRICT_HSR7=1 时 raise）
+
+落 open_phase 时, Agent **必须**在对话里把 alternative_readings 全部列出, 并要求用户补 ≥ 2 个具体事件年份再重判。
+
 ## 何时阅读 USAGE.md / references/
 
 - **用户问"怎么用 / 怎么触发 / 不会用"** → `USAGE.md`（直接复述给用户）
+- **v9 范式入门 + 1996/12/08 教训** → `references/mind_model_protocol.md`（v9 强制） + `references/diagnosis_pitfalls.md` §13-14
+- **算法可判定的特殊格 (~30) + LLM 兜底协议 (~80 罕见格)** → `references/rare_phases_catalog.md` + `references/llm_fallback_protocol.md`（v9 强制）
 - **每次接到八字 / 生日，进入 Step 2.5 之前** → `references/phase_decision_protocol.md`（v8 强制）+ `references/handshake_protocol.md`（v8 强制）+ `references/discriminative_question_bank.md`（v8 题库源文件）
 - **任何后验落地 / 阈值 / phase 决策疑问** → `references/phase_decision_protocol.md` §5 + `references/diagnosis_pitfalls.md` §14（命名 case：1996/12/08）
 - **[deprecated v8] 旧 R0+R1+R2 命中率 / 相位反演兜底** → `references/phase_inversion_protocol.md` 仅作历史参考，新流程不读
