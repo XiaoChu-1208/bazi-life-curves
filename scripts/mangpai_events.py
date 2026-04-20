@@ -326,6 +326,58 @@ def detect_fuyin_yingqi(natal: List[Pillar], ln: Pillar) -> Optional[Tuple[str, 
     return None
 
 
+def detect_dayun_fuyin_natal(natal: List[Pillar], dy: Pillar) -> Optional[Tuple[str, int]]:
+    """v9 PR-3 · 大运伏吟原局某柱。返回 (evidence, 柱位) 或 None。
+
+    盲派：大运伏吟某柱 → 该柱所主十年情境被'十年级'地放大 / 凝固。
+    比 流年伏吟 影响时长 × 10。
+    """
+    for i, p in enumerate(natal):
+        if is_fuyin(p, dy):
+            return (
+                f"大运{dy.gan}{dy.zhi} 与 {['年','月','日','时'][i]}柱"
+                f"({p.gan}{p.zhi}) 伏吟",
+                i,
+            )
+    return None
+
+
+def detect_dayun_fanyin_rizhu(natal: List[Pillar], dy: Pillar) -> Optional[str]:
+    """v9 PR-3 · 大运反吟日柱（天克地冲）。
+
+    盲派：大运天克地冲日主 → 该 10 年身体 / 居所 / 婚姻 / 立身根基级别震荡。
+    比单流年反吟 严重得多，常对应大事件群（搬迁、婚变、重病、转行）。
+    """
+    if is_fanyin(natal[2], dy):
+        return (
+            f"大运{dy.gan}{dy.zhi} 与 日柱{natal[2].gan}{natal[2].zhi} 天克地冲；"
+            f"十年级根基震荡"
+        )
+    return None
+
+
+def detect_liunian_fuyin_dayun(dy: Pillar, ln: Pillar) -> Optional[str]:
+    """v9 PR-3 · 流年伏吟当下大运。
+
+    盲派：流年与大运同柱 → 该年的大运主题被'当年放大'，常对应大运
+    标志性事件的高发年。
+    """
+    if is_fuyin(dy, ln):
+        return f"流年{ln.gan}{ln.zhi} 与 大运{dy.gan}{dy.zhi} 伏吟；大运主题年内集中爆发"
+    return None
+
+
+def detect_liunian_fanyin_dayun(dy: Pillar, ln: Pillar) -> Optional[str]:
+    """v9 PR-3 · 流年反吟当下大运（天克地冲）。
+
+    盲派：流年天克地冲大运 → 该年与大运主题对撞，常应'大运主题被打断'
+    或'大运转折点提前'。
+    """
+    if is_fanyin(dy, ln):
+        return f"流年{ln.gan}{ln.zhi} 与 大运{dy.gan}{dy.zhi} 天克地冲；大运主题对撞"
+    return None
+
+
 def detect_cai_ku_chong_kai(
     day_gan: str, natal: List[Pillar], dy: Pillar, ln: Pillar
 ) -> Optional[str]:
@@ -506,17 +558,83 @@ DETECTOR_REGISTRY = [
         "intensity": "重",
         "falsifiability": "如果该年财务结构毫无波动（既无大笔进出也无资产形态变化），这条就是错的",
     },
+    # v9 PR-3 · 大运层 反吟伏吟（每个大运段触发一次,而非按年）
+    {
+        "key": "dayun_fuyin_natal",
+        "name": "大运伏吟原局",
+        "school": "盲派应期模型 v9",
+        "fn": detect_dayun_fuyin_natal,
+        "uses_dy_ln": False,
+        "dayun_only": True,  # 新签名: fn(natal, dy)
+        "canonical_event": (
+            "十年级凝固/放大: 该柱所主的人生面向(年=祖业童年/月=父母事业/"
+            "日=婚姻自身/时=子女晚景)被'重复刻进十年',常应反复同一类大事件"
+        ),
+        "dims": [("spirit", -1)],
+        "intensity": "重",
+        "falsifiability": "如果该大运十年中,所伏吟柱位主管的人生面向毫无重复性大事,这条就错了",
+    },
+    {
+        "key": "dayun_fanyin_rizhu",
+        "name": "大运反吟日柱",
+        "school": "盲派应期模型 v9",
+        "fn": detect_dayun_fanyin_rizhu,
+        "uses_dy_ln": False,
+        "dayun_only": True,
+        "canonical_event": (
+            "十年级根基震荡: 身体/居所/婚姻/立身根基级别的大事群(搬迁/婚变/重病/转行/移民)"
+        ),
+        "dims": [("spirit", -1), ("wealth", -1)],
+        "intensity": "重",
+        "falsifiability": "如果该大运十年中并无根基级别大事(身体/婚姻/居所/职业有重大转折),这条就错了",
+    },
+    {
+        "key": "liunian_fuyin_dayun",
+        "name": "流年伏吟大运",
+        "school": "盲派应期模型 v9",
+        "fn": detect_liunian_fuyin_dayun,
+        "uses_dy_ln": False,
+        "dayun_ln_only": True,  # 新签名: fn(dy, ln)
+        "canonical_event": "大运主题在该年集中爆发,标志性事件高发年",
+        "dims": [("fame", 1)],
+        "intensity": "中",
+        "falsifiability": "如果该年并未发生与大运主题强相关的标志性事件,这条就错了",
+    },
+    {
+        "key": "liunian_fanyin_dayun",
+        "name": "流年反吟大运",
+        "school": "盲派应期模型 v9",
+        "fn": detect_liunian_fanyin_dayun,
+        "uses_dy_ln": False,
+        "dayun_ln_only": True,
+        "canonical_event": "大运主题对撞: 该年常应'大运主题被打断'或'大运转折点提前'",
+        "dims": [("spirit", -1)],
+        "intensity": "中",
+        "falsifiability": "如果该年与所在大运的主题轨迹完全平稳无对撞,这条就错了",
+    },
 ]
 
 
 def detect_year_events(
     day_gan: str, natal: List[Pillar], dy: Pillar, ln: Pillar,
     year: int, age: int, dayun_label: str,
+    is_dayun_first_year: bool = False,
 ) -> List[Dict]:
+    """v9 PR-3: 新增 is_dayun_first_year 参数.
+
+    当 is_dayun_first_year=True 时, dayun_only detector (fn(natal, dy))
+    才会触发并仅在该大运首年记录一次, 避免大运 detector 被流年级触发 10 次.
+    """
     out = []
     for d in DETECTOR_REGISTRY:
         fn = d["fn"]
-        if d.get("natal_only"):
+        if d.get("dayun_only"):
+            if not is_dayun_first_year:
+                continue
+            evidence = fn(natal, dy)
+        elif d.get("dayun_ln_only"):
+            evidence = fn(dy, ln)
+        elif d.get("natal_only"):
             evidence = fn(natal, ln)
         elif d["uses_dy_ln"]:
             evidence = fn(day_gan, natal, dy, ln)
@@ -557,11 +675,16 @@ def detect_all(bazi: dict, age_start: int = 0, age_end: int = 80) -> Dict:
         if dy is None:
             dy_p = Pillar(natal[1].gan, natal[1].zhi)
             dy_label = "起运前"
+            is_dy_first = False
         else:
             dy_p = Pillar(dy["gan"], dy["zhi"])
             dy_label = dy["gan"] + dy["zhi"]
+            is_dy_first = (age == dy["start_age"])
         ln_p = Pillar(ln["gan"], ln["zhi"])
-        events.extend(detect_year_events(day_gan, natal, dy_p, ln_p, ln["year"], age, dy_label))
+        events.extend(detect_year_events(
+            day_gan, natal, dy_p, ln_p, ln["year"], age, dy_label,
+            is_dayun_first_year=is_dy_first,
+        ))
 
     static = detect_static_markers(day_gan, natal)
 
