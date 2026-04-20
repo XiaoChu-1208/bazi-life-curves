@@ -63,9 +63,18 @@ def update_posterior(
     """R1 核心 API：算后验 + 写回 bazi 的 phase / phase_decision 字段。
 
     返回**新的** bazi dict（不就地改）。
+    v9 L4：若 R1 置信度不足（reject 档）且存在强 rare zuogong hit，
+             pd.rare_phase_fallback_suggestion 会被填充（供上层决定是否走 R3）。
     """
     dynamic_questions = _extract_dynamic_questions(handshake)
     pd = decide_phase(bazi, user_answers=user_answers, dynamic_questions=dynamic_questions)
+
+    # v9 L4 · R3 降级建议
+    action = _check_threshold(pd)
+    if action in ("reject", "ask_more"):
+        suggestion = _suggest_round3(bazi, pd)
+        if suggestion is not None:
+            pd["rare_phase_fallback_suggestion"] = suggestion
 
     new_bazi = dict(bazi)
     new_bazi["phase"] = {
@@ -161,6 +170,84 @@ def _check_threshold(pd: Dict) -> Optional[str]:
     return "reject"
 
 
+def _suggest_round3(bazi: Dict, pd: Dict) -> Optional[Dict]:
+    """v9 L4 · R1 reject / low 时，若存在强 rare zuogong hit，建议 R3 targeted confirmation。
+
+    返回 None = 不建议 R3；否则返回 {suggested_phase, conf, rare_hits, targeted_questions}
+    """
+    try:
+        from rare_phase_detector import scan_from_bazi_enriched
+        hits = scan_from_bazi_enriched(bazi)
+    except Exception:
+        return None
+    zuogong_hits = [h for h in hits if h.get("dimension") == "zuogong"]
+    if not zuogong_hits:
+        return None
+    # 取 confidence 最高者
+    top = max(zuogong_hits, key=lambda h: float(h.get("confidence", 0.0)))
+    if float(top.get("confidence", 0.0)) < 0.70:
+        return None
+
+    # 构造 targeted questions：
+    #   - D6_Q1 / D6_Q2 / D6_Q3 是标准做功视角题，R1 若未问过则建议追加
+    try:
+        from _question_bank import D6_QUESTIONS  # type: ignore
+        targeted = [
+            {"id": q.id, "prompt": q.prompt,
+             "options": [{"id": o.id, "label": o.label} for o in q.options]}
+            for q in D6_QUESTIONS
+        ]
+    except Exception:
+        targeted = []
+
+    return {
+        "reason": f"R1 后验 {pd['decision_probability']:.3f} < 接受阈值，但检测到 zuogong rare hit（{top['id']}, conf={top.get('confidence')}）",
+        "suggested_phase": top["id"],
+        "suggested_phase_cn": top.get("name_cn", top["id"]),
+        "rare_hits_summary": [
+            {"id": h["id"], "confidence": h.get("confidence"),
+             "evidence": h.get("evidence", "")[:100]}
+            for h in zuogong_hits
+        ],
+        "targeted_questions": targeted,
+        "usage": ("如用户对做功视角有共鸣，将这 3 题答案合并进 R1 重算后验；"
+                  "若仍未通过 ≥ 0.40 阈值，降级到 llm_fallback（render_with_caveat）。"),
+    }
+
+
+def update_posterior_round3(
+    bazi: Dict,
+    r1_handshake: Optional[Dict],
+    r1_answers: Dict[str, str],
+    r3_answers: Dict[str, str],
+) -> Dict:
+    """v9 L4 · R3 = R1 答案 + R3 targeted D6 答案的合并后验。
+
+    不生成新 handshake（D6 题库已静态化在 _question_bank）；r3_answers 的 qid 必须是 D6_*。
+    返回的 new_bazi 带 phase_decision.round3_merged = True。
+    """
+    dynamic_questions = _extract_dynamic_questions(r1_handshake)
+    merged: Dict[str, str] = dict(r1_answers or {})
+    merged.update(r3_answers or {})
+    pd = decide_phase(bazi, user_answers=merged, dynamic_questions=dynamic_questions)
+    pd["round3_merged"] = True
+    pd["round3_n_extra_answers"] = len(r3_answers or {})
+
+    new_bazi = dict(bazi)
+    new_bazi["phase"] = {
+        "id": pd["decision"],
+        "label": pd["phase_label"],
+        "is_provisional": False,
+        "is_inverted": pd["decision"] != "day_master_dominant",
+        "default_phase_was": "day_master_dominant",
+        "confidence": pd["confidence"],
+        "decision_probability": pd["decision_probability"],
+        "round": "R3",
+    }
+    new_bazi["phase_decision"] = pd
+    return new_bazi
+
+
 def _load_json(path: Optional[str]) -> Optional[Dict]:
     if not path:
         return None
@@ -175,8 +262,8 @@ def main():
     ap.add_argument("--bazi", required=True, help="bazi.json 路径（输入 + 默认输出）")
     ap.add_argument("--out", required=False,
                     help="输出 bazi.json 路径（默认覆盖 --bazi）")
-    ap.add_argument("--round", type=int, default=1, choices=[1, 2],
-                    help="校验轮次：1=R1 算初版后验；2=合并 R1+R2 算最终后验 + confirmation")
+    ap.add_argument("--round", type=int, default=1, choices=[1, 2, 3],
+                    help="校验轮次：1=R1 算初版后验；2=合并 R1+R2；3=R1+D6 targeted（v9 L4 rare-phase fallback）")
 
     # round=1 args
     ap.add_argument("--questions", required=False,
@@ -193,11 +280,33 @@ def main():
                     help="（round=2 必填）R2 handshake.json")
     ap.add_argument("--r2-answers", required=False,
                     help="（round=2 必填）R2 user_answers.json")
+
+    # round=3 args （v9 L4 · rare-phase R3 targeted confirmation）
+    ap.add_argument("--r3-answers", required=False,
+                    help="（round=3 必填）D6_* 答案 JSON（{qid:opt}）")
     args = ap.parse_args()
 
     bazi_path = Path(args.bazi)
     out_path = Path(args.out) if args.out else bazi_path
     bazi = json.loads(bazi_path.read_text(encoding="utf-8"))
+
+    if args.round == 3:
+        for k in ("questions", "answers", "r3_answers"):
+            if not getattr(args, k):
+                ap.error(f"--{k.replace('_','-')} required when --round 3")
+        r1_handshake = _load_json(args.questions)
+        r1_answers = _load_json(args.answers) or {}
+        r3_answers = _load_json(args.r3_answers) or {}
+        if not isinstance(r1_answers, dict) or not isinstance(r3_answers, dict):
+            raise ValueError("answers JSON must be object {qid: opt}")
+        new_bazi = update_posterior_round3(bazi, r1_handshake, r1_answers, r3_answers)
+        out_path.write_text(json.dumps(new_bazi, ensure_ascii=False, indent=2), encoding="utf-8")
+        pd = new_bazi["phase_decision"]
+        print(f"[phase_posterior R3] decision={pd['decision']} "
+              f"confidence={pd['confidence']} prob={pd['decision_probability']:.4f} "
+              f"(merged {pd['round3_n_extra_answers']} D6 answers)")
+        print(f"[phase_posterior R3] wrote {out_path}")
+        return
 
     if args.round == 2:
         for k in ("r1_handshake", "r1_answers", "r2_handshake", "r2_answers"):

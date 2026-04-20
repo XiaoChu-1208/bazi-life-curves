@@ -19,7 +19,7 @@ import math
 import statistics
 import sys
 from pathlib import Path
-from typing import Dict, List, Tuple
+from typing import Dict, List, Optional, Tuple
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
@@ -852,7 +852,55 @@ def l2_liunian_adjust(
                 gj["fame"] -= 12
                 interactions.append({"type": "伤官见官", "magnitude": "高"})
 
+    # v9 L6 · zuogong_modifier：做功格在应期流年 geju 派上浮
+    #   bit-for-bit 保护：仅 phase.dimension=='zuogong' 触发；
+    #   examples 的 phase.id=day_master_dominant → dimension=power → 不触发
+    _gj_zuogong_bonus, _zuogong_meta = _apply_zuogong_modifier(bazi, ln_p)
+    if _gj_zuogong_bonus:
+        for dim, bonus in _gj_zuogong_bonus.items():
+            gj[dim] += bonus
+        interactions.append({"type": "做功应期·做功格兑现",
+                              "wuxing": _zuogong_meta["phase_id"],
+                              "magnitude": "高"})
+
     return {"fuyi": fy, "tiaohou": th, "geju": gj}, interactions
+
+
+# ============================================================================
+# v9 L6 · zuogong_modifier
+# ============================================================================
+
+_ZUOGONG_BONUS_PER_DIM = {"spirit": 10.0, "wealth": 8.0, "fame": 8.0}
+
+
+def _apply_zuogong_modifier(bazi: dict, ln_p: Pillar) -> Tuple[Optional[Dict[str, float]], Dict]:
+    """做功格在应期流年的 geju 派上浮。
+
+    触发条件：
+      1. bazi.phase.id 在 _phase_registry 注册
+      2. phase.dimension == 'zuogong'
+      3. phase.zuogong_trigger_branches 非空且 ln_p.zhi 命中
+    返回 (bonus_by_dim, meta) 或 (None, {}) 表示不触发。
+    """
+    try:
+        from _phase_registry import exists, get  # type: ignore
+    except Exception:
+        return None, {}
+    phase_id = (bazi.get("phase") or {}).get("id")
+    if not phase_id or not exists(phase_id):
+        return None, {}
+    meta = get(phase_id)
+    if meta.dimension != "zuogong":
+        return None, {}
+    if not meta.zuogong_trigger_branches:
+        return None, {}
+    if ln_p.zhi not in meta.zuogong_trigger_branches:
+        return None, {}
+    return dict(_ZUOGONG_BONUS_PER_DIM), {
+        "phase_id": phase_id,
+        "trigger_zhi": ln_p.zhi,
+        "bonus_per_dim": dict(_ZUOGONG_BONUS_PER_DIM),
+    }
 
 
 # ---------- 三派融合 ----------
@@ -998,6 +1046,22 @@ def apply_structural_corrections(bazi: dict, confirmed_facts: dict | None) -> Tu
             applied.append({"kind": "phase_override", "before": before or "day_master_dominant",
                             "after": after, "reason": reason})
 
+        elif kind == "phase_full_override":
+            # v9 L7 · 用户固化型 phase 级联覆盖（任何 registry 注册 id；含 zuogong 等新维度）
+            bazi = apply_phase_override(bazi, after)
+            # 锁死 phase_decision（供下游 render / 重跑跳过 posterior）
+            bazi["phase_decision"] = {
+                "decision": after,
+                "decision_probability": 1.0,
+                "confidence": "user_locked",
+                "is_provisional": False,
+                "lock_source": "confirmed_facts.phase_full_override",
+                "lock_reason": reason,
+            }
+            applied.append({"kind": "phase_full_override",
+                            "before": before or "day_master_dominant",
+                            "after": after, "reason": reason})
+
     return bazi, applied
 
 
@@ -1047,6 +1111,26 @@ def apply_phase_override(bazi: dict, phase_id: str) -> dict:
         "huaqi_to_火": "化火格（戊癸合化火）· 命局主导改为火",
     }
     if pid not in label_map:
+        # v9 L7 · 尝试从 _phase_registry 读（zuogong / 特殊 phase 不改五行用神，
+        #           只改 phase 字段供 L5/L6 读取）
+        try:
+            from _phase_registry import exists as _reg_exists, get as _reg_get  # type: ignore
+        except Exception:
+            _reg_exists = lambda x: False
+        if _reg_exists(pid):
+            meta = _reg_get(pid)
+            bazi["phase"] = {
+                "id": pid,
+                "label": meta.name_cn,
+                "is_inverted": True,
+                "default_phase_was": "day_master_dominant",
+                "dimension": meta.dimension,
+                "source": meta.source,
+                "confidence": "high",
+                "decision_probability": 1.0,
+                "override_kind": "phase_full_override",
+            }
+            return bazi
         raise ValueError(f"unknown --override-phase id: {pid!r}, valid: {list(label_map.keys()) + ['day_master_dominant']}")
 
     bazi["phase"] = {

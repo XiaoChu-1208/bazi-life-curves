@@ -354,6 +354,44 @@ def detect_mu_huo_tong_ming(pillars, day_gan):
                 "confidence": 0.85}
 
 
+def detect_yangren_chong_cai(pillars, day_gan):
+    """刃冲财做功格 (盲派做功体系):
+    - 阳干日主 + 命局有羊刃 (不限月支, 年/日/时支均可) + 命局有财星
+    - 羊刃支与财星支构成六冲 (子午冲 / 卯酉冲)
+    - 日主有根 (不是从格)
+    - 盲派师承传口诀: "用刃为体, 冲财做功" — 主动出击型取财结构
+
+    与 yangren_ge (严格子平正格, 必须刃在月支) 互补:
+    本 detector 覆盖 "刃不在月支但参与做功" 的盲派变格.
+    """
+    if day_gan not in YANGREN_MAP:
+        return None
+    yangren_zhi = YANGREN_MAP[day_gan]
+    branches = _all_branches(pillars)
+    if yangren_zhi not in branches:
+        return None
+    rs = compute_dayuan_root_strength(day_gan, branches)
+    if rs["total_root"] < 1.0:
+        return None
+    cnt = _shishen_count(day_gan, pillars)
+    cai = cnt.get("正财", 0) + cnt.get("偏财", 0)
+    if cai < 1:
+        return None
+    chong_zhi = ZHI_CHONG.get(yangren_zhi)
+    if not chong_zhi or chong_zhi not in branches:
+        return None
+    chong_pillar = next((p for p in pillars if p.zhi == chong_zhi), None)
+    if chong_pillar is None:
+        return None
+    chong_ss = calc_zhi_shishen(day_gan, chong_zhi)
+    if chong_ss not in {"正财", "偏财"}:
+        return None
+    return {"id": "yangren_chong_cai", "school": "mangpai_zuogong",
+            "evidence": f"日主{day_gan}强根 + 羊刃{yangren_zhi} + {yangren_zhi}{chong_zhi}冲, "
+                        f"以刃冲财({chong_ss}={chong_zhi})做功",
+            "confidence": 0.85}
+
+
 # ============================================================
 # 主入口: 批量扫描
 # ============================================================
@@ -378,11 +416,17 @@ DETECTOR_FUNCS = [
     detect_si_sheng_si_bai, detect_si_ku_ju,
     detect_ma_xing_yi_dong, detect_hua_gai_ru_ming,
     detect_jin_bai_shui_qing, detect_mu_huo_tong_ming,
+    detect_yangren_chong_cai,
 ]
 
 
 def scan_all(pillars: List[Pillar], day_gan: str) -> List[Dict]:
-    """批量扫描所有 detector, 返回触发的 phase 列表."""
+    """批量扫描所有 detector, 返回触发的 phase 列表.
+
+    返回 hit dict 字段严格保持 v8 格式：{id, school, evidence, confidence}
+    不追加其他字段（bit-for-bit 保护：multi_school_vote / curves.json 使用此结果）。
+    v9 的 dimension / metadata 由 enrich_with_registry() 按需单独调用。
+    """
     out = []
     for fn in DETECTOR_FUNCS:
         try:
@@ -394,7 +438,46 @@ def scan_all(pillars: List[Pillar], day_gan: str) -> List[Dict]:
     return out
 
 
+def enrich_with_registry(hits: List[Dict]) -> List[Dict]:
+    """v9 · 从 _phase_registry 取 dimension / zuogong_trigger_branches 等 metadata。
+
+    返回**新的 list of new dict**，不就地修改原 hit（避免污染缓存或并发访问）。
+    注册表未覆盖的 id 退化为 dimension='special'，不参与 zuogong 聚合。
+
+    调用点：_bazi_core.detect_all_phase_candidates 的 v9 扩展；
+            phase_posterior.py 启动 R3 时；
+            mangpai_events.py 读取 reversal_overrides 时。
+    """
+    try:
+        from _phase_registry import exists, get
+    except Exception:
+        return [dict(h, dimension=h.get("dimension", "special")) for h in hits]
+
+    out = []
+    for hit in hits:
+        nh = dict(hit)
+        pid = nh.get("id", "")
+        if exists(pid):
+            meta = get(pid)
+            nh["dimension"] = meta.dimension
+            nh["name_cn"] = meta.name_cn
+            if meta.zuogong_trigger_branches:
+                nh["zuogong_trigger_branches"] = list(meta.zuogong_trigger_branches)
+            if meta.reversal_overrides:
+                nh["reversal_overrides"] = dict(meta.reversal_overrides)
+        else:
+            nh["dimension"] = "special"
+        out.append(nh)
+    return out
+
+
 def scan_from_bazi(bazi: dict) -> List[Dict]:
+    """原 v8 接口，返回不带 dimension 的 hit 列表（bit-for-bit 兼容）。"""
     pillars = [Pillar(p["gan"], p["zhi"]) for p in bazi["pillars"]]
     day_gan = pillars[2].gan
     return scan_all(pillars, day_gan)
+
+
+def scan_from_bazi_enriched(bazi: dict) -> List[Dict]:
+    """v9 · 带 registry metadata 的 hit 列表（供 P7 聚合 / phase_posterior 使用）。"""
+    return enrich_with_registry(scan_from_bazi(bazi))

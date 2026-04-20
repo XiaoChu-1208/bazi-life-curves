@@ -133,9 +133,29 @@ def _fill_uniform_for_missing(
     table: Dict[str, Dict[str, float]],
     option_ids: List[str],
 ) -> Dict[str, Dict[str, float]]:
-    """对未在 table 中显式给出的 phase，填均匀分布。"""
+    """对未在 table 中显式给出的 phase，填均匀分布。
+    仅填 v8 18 phase（ALL_PHASE_IDS_FULL），D1-D5 用此函数保持 bit-for-bit。"""
     full = dict(table)
     for pid in ALL_PHASE_IDS_FULL:
+        if pid not in full:
+            full[pid] = _uniform(option_ids)
+    return full
+
+
+def _fill_uniform_for_missing_v9(
+    table: Dict[str, Dict[str, float]],
+    option_ids: List[str],
+) -> Dict[str, Dict[str, float]]:
+    """v9 · 对 _phase_registry.all_ids() 全量（54 phase）填 uniform。
+    仅 D6 做功视角题使用（其它题走 v8 18 phase 以保 handshake.json 兼容）。
+    """
+    full = dict(table)
+    try:
+        from _phase_registry import all_ids
+        pids = all_ids()
+    except Exception:
+        pids = ALL_PHASE_IDS_FULL
+    for pid in pids:
         if pid not in full:
             full[pid] = _uniform(option_ids)
     return full
@@ -757,11 +777,127 @@ def D3_dynamic_event_question(
 
 
 # ---------------------------------------------------------------------------
+# §9.5 D6 · 做功视角（v9 · 3 题，soft_self_report × 1.0）
+# ---------------------------------------------------------------------------
+# 设计目标：把 power 视角（日主强弱 / 扶抑）和 zuogong 视角（冲合刑做功）在
+#   自我体感层面区分开。所有题目必须避免事件化黑名单词汇（见 FAIRNESS_BLACKLIST）。
+# 古籍出处：盲派象法·刃冲做功 / 子平真诠·用神成败救应（两者对"做功 vs 扶抑"的
+#   原始区分）。
+# ---------------------------------------------------------------------------
+
+# D6 专用 phase 短别名（zuogong 维度代表）
+P_YRCC = "yangren_chong_cai"           # 刃冲财做功
+P_YRJS = "yang_ren_jia_sha"            # 阳刃驾杀
+P_SGSC = "shang_guan_sheng_cai"        # 伤官生财
+P_SYXS = "sha_yin_xiang_sheng_geju"    # 杀印相生（格局派）
+P_RIREN = "riren_ge"                    # 日刃格
+
+D6_QUESTIONS: List[Question] = [
+    Question(
+        id="D6_Q1_agency_style",
+        dimension="self_perception",
+        weight_class="soft_self_report",
+        prompt="在人生大方向上，你更接近哪一种推进模式？",
+        options=[
+            QuestionOption("A", "主动出击：找到目标就直接启动，靠强决断推进"),
+            QuestionOption("B", "有明确目标，但耐心经营、按部就班地攒资源"),
+            QuestionOption("C", "随机应变：外部机会来了就跟，不太预设路径"),
+            QuestionOption("D", "被推着走：多数关键节点是被环境 / 关系决定的"),
+        ],
+        likelihood_table=_fill_uniform_for_missing_v9({
+            # 做功视角（刃/杀/伤官做功）→ A 高
+            P_YRCC:    {"A": 0.55, "B": 0.15, "C": 0.20, "D": 0.10},
+            P_YRJS:    {"A": 0.55, "B": 0.15, "C": 0.20, "D": 0.10},
+            P_RIREN:   {"A": 0.50, "B": 0.20, "C": 0.20, "D": 0.10},
+            P_SGSC:    {"A": 0.35, "B": 0.35, "C": 0.20, "D": 0.10},
+            # 力量视角（DM / 旺神作主）→ B 高
+            P_DM:      {"A": 0.25, "B": 0.45, "C": 0.20, "D": 0.10},
+            P_DGCAI:   {"A": 0.20, "B": 0.50, "C": 0.20, "D": 0.10},
+            P_DGGUAN:  {"A": 0.20, "B": 0.45, "C": 0.25, "D": 0.10},
+            P_DGSS:    {"A": 0.30, "B": 0.35, "C": 0.25, "D": 0.10},
+            P_DGYIN:   {"A": 0.15, "B": 0.50, "C": 0.25, "D": 0.10},
+            # 从格视角 → C / D 高
+            P_FCAI:    {"A": 0.15, "B": 0.15, "C": 0.40, "D": 0.30},
+            P_FSHA:    {"A": 0.15, "B": 0.15, "C": 0.35, "D": 0.35},
+            P_FER:     {"A": 0.20, "B": 0.15, "C": 0.45, "D": 0.20},
+            P_FYIN:    {"A": 0.10, "B": 0.25, "C": 0.30, "D": 0.35},
+            P_TRUE:    {"A": 0.10, "B": 0.10, "C": 0.40, "D": 0.40},
+            P_PSEUDO:  {"A": 0.15, "B": 0.20, "C": 0.35, "D": 0.30},
+        }, _ABCD),
+        evidence_note="主动决断 vs 耐心累积 vs 被动 的三分；盲派象法·刃冲做功 / 子平真诠·用神成败",
+    ),
+    Question(
+        id="D6_Q2_life_rhythm",
+        dimension="self_perception",
+        weight_class="soft_self_report",
+        prompt="回顾你人生到目前为止的整体节奏，更像哪一种？",
+        options=[
+            QuestionOption("A", "几次剧烈转折决定全局，剩下是在消化这些转折"),
+            QuestionOption("B", "阶段性爆发 + 阶段性平稳交替，起伏明显"),
+            QuestionOption("C", "循序渐进累积，缓慢稳步上升"),
+            QuestionOption("D", "起伏不稳定，常被动应对外部变动"),
+        ],
+        likelihood_table=_fill_uniform_for_missing_v9({
+            # 做功视角 → A 高（剧烈转折 = 做功兑现）
+            P_YRCC:    {"A": 0.55, "B": 0.25, "C": 0.10, "D": 0.10},
+            P_YRJS:    {"A": 0.50, "B": 0.30, "C": 0.10, "D": 0.10},
+            P_RIREN:   {"A": 0.45, "B": 0.30, "C": 0.15, "D": 0.10},
+            P_SGSC:    {"A": 0.30, "B": 0.40, "C": 0.20, "D": 0.10},
+            # 力量视角 → C 高（累积型）
+            P_DM:      {"A": 0.15, "B": 0.25, "C": 0.50, "D": 0.10},
+            P_DGCAI:   {"A": 0.15, "B": 0.25, "C": 0.50, "D": 0.10},
+            P_DGGUAN:  {"A": 0.20, "B": 0.30, "C": 0.40, "D": 0.10},
+            P_DGSS:    {"A": 0.20, "B": 0.35, "C": 0.35, "D": 0.10},
+            P_DGYIN:   {"A": 0.15, "B": 0.25, "C": 0.50, "D": 0.10},
+            # 从格视角 → D 高（被动型）
+            P_FCAI:    {"A": 0.15, "B": 0.20, "C": 0.20, "D": 0.45},
+            P_FSHA:    {"A": 0.15, "B": 0.20, "C": 0.20, "D": 0.45},
+            P_FER:     {"A": 0.15, "B": 0.25, "C": 0.20, "D": 0.40},
+            P_FYIN:    {"A": 0.10, "B": 0.20, "C": 0.30, "D": 0.40},
+            P_TRUE:    {"A": 0.10, "B": 0.15, "C": 0.20, "D": 0.55},
+            P_PSEUDO:  {"A": 0.15, "B": 0.25, "C": 0.20, "D": 0.40},
+        }, _ABCD),
+        evidence_note="节奏形态：剧变（做功）vs 累积（扶抑）vs 被动（从格）；盲派象法·做功应期",
+    ),
+    Question(
+        id="D6_Q3_gains_source",
+        dimension="self_perception",
+        weight_class="soft_self_report",
+        prompt="到目前为止，你最重要的几次「得失变化」更多来自？",
+        options=[
+            QuestionOption("A", "少数几个关键决策 / 一次定型的选择"),
+            QuestionOption("B", "关键决策 + 日常经营并重，两者贡献相近"),
+            QuestionOption("C", "长期持续经营 + 复利积累，没有特别戏剧的节点"),
+            QuestionOption("D", "外部给定 / 周围人推动 / 时机到来就自然发生"),
+        ],
+        likelihood_table=_fill_uniform_for_missing_v9({
+            P_YRCC:    {"A": 0.60, "B": 0.20, "C": 0.10, "D": 0.10},
+            P_YRJS:    {"A": 0.55, "B": 0.25, "C": 0.10, "D": 0.10},
+            P_RIREN:   {"A": 0.50, "B": 0.30, "C": 0.10, "D": 0.10},
+            P_SGSC:    {"A": 0.30, "B": 0.40, "C": 0.20, "D": 0.10},
+            P_DM:      {"A": 0.15, "B": 0.30, "C": 0.45, "D": 0.10},
+            P_DGCAI:   {"A": 0.15, "B": 0.30, "C": 0.45, "D": 0.10},
+            P_DGGUAN:  {"A": 0.20, "B": 0.30, "C": 0.40, "D": 0.10},
+            P_DGSS:    {"A": 0.25, "B": 0.30, "C": 0.35, "D": 0.10},
+            P_DGYIN:   {"A": 0.15, "B": 0.30, "C": 0.45, "D": 0.10},
+            P_FCAI:    {"A": 0.15, "B": 0.20, "C": 0.20, "D": 0.45},
+            P_FSHA:    {"A": 0.15, "B": 0.20, "C": 0.20, "D": 0.45},
+            P_FER:     {"A": 0.20, "B": 0.25, "C": 0.20, "D": 0.35},
+            P_FYIN:    {"A": 0.10, "B": 0.25, "C": 0.25, "D": 0.40},
+            P_TRUE:    {"A": 0.10, "B": 0.15, "C": 0.20, "D": 0.55},
+            P_PSEUDO:  {"A": 0.15, "B": 0.20, "C": 0.25, "D": 0.40},
+        }, _ABCD),
+        evidence_note="得失来源：决策驱动（做功）vs 经营驱动（扶抑）vs 被给予（从格）",
+    ),
+]
+
+
+# ---------------------------------------------------------------------------
 # §10 全部静态题集合 + 模块加载时一致性检查
 # ---------------------------------------------------------------------------
 
 STATIC_QUESTIONS: List[Question] = (
-    D1_QUESTIONS + D2_QUESTIONS + D4_QUESTIONS + D5_QUESTIONS
+    D1_QUESTIONS + D2_QUESTIONS + D4_QUESTIONS + D5_QUESTIONS + D6_QUESTIONS
 )
 
 

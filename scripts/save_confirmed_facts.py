@@ -188,6 +188,13 @@ def main():
     ap.add_argument("--r2-answers", default=None,
                     help="v8.1 R2 · R2 用户答案 JSON")
 
+    # v9 L7 · phase_full_override
+    ap.add_argument("--phase-full-override", default=None, metavar="PHASE_ID",
+                    help="v9 L7 · 用户固化式 phase 级联覆盖。PHASE_ID 必须在 _phase_registry 注册，"
+                         "例如 yangren_chong_cai / shang_guan_sheng_cai_geju / floating_dms_to_cong_cai。"
+                         "写入 structural_corrections 并锁死 bazi.phase_decision。"
+                         "用 --reason 附原因说明。")
+
     args = ap.parse_args()
 
     bazi = json.loads(Path(args.bazi).read_text(encoding="utf-8"))
@@ -275,6 +282,31 @@ def main():
         kind, before, after = args.add_structural
         append_structural(rec, kind, before, after, args.reason)
         print(f"[save_confirmed_facts] +structural correction: {kind}: {before} → {after}")
+
+    if args.phase_full_override:
+        # v9 L7 · 验证 phase_id 在 _phase_registry 注册
+        sys.path.insert(0, str(Path(__file__).resolve().parent))
+        try:
+            from _phase_registry import exists, get  # type: ignore
+            if not exists(args.phase_full_override):
+                ap.error(f"--phase-full-override {args.phase_full_override!r} 未在 _phase_registry 注册，"
+                         f"请用 core_phase_ids() / all_ids() 查已注册 phase")
+            meta = get(args.phase_full_override)
+        except ImportError:
+            ap.error("未找到 _phase_registry（需要 v9 L1）")
+
+        before_phase = bazi.get("phase", {}).get("id", "day_master_dominant")
+        if not args.reason:
+            ap.error("--phase-full-override 必须带 --reason 说明（e.g. '用户 / 命理顾问确认'）")
+        append_structural(
+            rec, "phase_full_override",
+            before=before_phase,
+            after=args.phase_full_override,
+            reason=args.reason,
+        )
+        print(f"[save_confirmed_facts] +phase_full_override: "
+              f"{before_phase} → {args.phase_full_override} "
+              f"(dimension={meta.dimension}, school={meta.school})")
 
     if args.list:
         print(json.dumps(rec, ensure_ascii=False, indent=2))

@@ -63,3 +63,7 @@ logs/
 # ───── 校准过程产物 ─────
 calibration/runs/
 calibration/_cache/
+
+# ───── 回归基线 / 真实命例 baseline (含真实生辰, 仅本地保留) ─────
+.regression_baseline/
+curves.json

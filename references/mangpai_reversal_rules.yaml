@@ -1,0 +1,122 @@
+# Mangpai 事件反转规则 · v9 DSL
+#
+# 作用：当命局 phase 属于特定 dimension / family 时，某些 mangpai 事件的
+#       polarity（正负向）和含义应反转。
+#
+# 语义：每条规则对单个 event_key 定义 `reverse_when` 条件；条件命中则：
+#   - dims 的 sign 翻向（由 negative → positive 或反之）
+#   - canonical_event 改用 `reversed_meaning`
+#   - intensity 可选按 `intensity_after` 调整
+#
+# DSL 表达式：最小子集（禁止 exec / eval）
+#   - 字段路径: "phase.id" / "phase.dimension" / "phase.family" /
+#              "phase.reversal_overrides.<event_key>" /
+#              "strength.label" / "has_yin_hu_shen"
+#   - 比较: == / != / in / not_in
+#   - 布尔连接: and（默认多行 and）/ or（需 `any_of` 列表）
+#
+# 源头优先级（高到低）：
+#   1. phase.reversal_overrides.<event_key>  （registry 里 phase 的硬绑定）
+#   2. 本文件 reverse_when 匹配的规则
+#   3. 事件默认 polarity（DETECTOR_REGISTRY 里 dims 的 sign）
+#
+# 古籍出处：每条必须标注（AGENTS.md §4.2）
+
+version: v9.0
+
+rules:
+  # ============================================================
+  # 刃 / 羊刃相关事件反转
+  # ============================================================
+
+  - event_key: yangren_chong
+    default_polarity: negative
+    reverse_when:
+      - path: phase.reversal_overrides.yangren_chong
+        op: ==
+        value: positive
+    reversed_meaning: |
+      刃冲财兑现：关键节点主动决断、激烈出击、一次定型。
+      情绪强度高，但结构上是"做功成事"而非"意外破财"。
+    intensity_after: 中
+    source: 盲派口诀·刃做功变通（师承传）
+
+  - event_key: yangren_chong
+    default_polarity: negative
+    reverse_when:
+      - path: phase.reversal_overrides.yangren_chong
+        op: ==
+        value: neutral
+    reversed_meaning: 羊刃逢冲但做功格结构消化，不主凶亦不主吉，按激烈事件理解。
+    intensity_after: 中
+    source: 盲派口诀·刃做功变通（师承传）
+
+  # ============================================================
+  # 比劫夺财 反转（印护身 / 刃格内化）
+  # ============================================================
+
+  - event_key: bi_jie_duo_cai
+    default_polarity: negative
+    reverse_when:
+      - path: phase.reversal_overrides.bi_jie_duo_cai
+        op: in
+        value: [positive, neutral]
+    reversed_meaning: |
+      竞合推动财动（合作 / 同行 / 市场竞争带来出价与议价），
+      非单纯"被分走"。印护身 + 刃格结构下，比劫反为助力。
+    intensity_after: 轻
+    source: 盲派口诀·印护比劫不夺（师承传）
+
+  # ============================================================
+  # 伤官见官 反转（有印化伤 / 有财通关）
+  # ============================================================
+
+  - event_key: shang_guan_jian_guan
+    default_polarity: negative
+    reverse_when:
+      - path: phase.reversal_overrides.shang_guan_jian_guan
+        op: ==
+        value: positive
+    reversed_meaning: |
+      伤官佩印：才华通过规则化体系出口（学术 / 管理 / 公共身份），
+      不再是"冒犯权威"而是"以才入体制"。
+    intensity_after: 中
+    source: 子平真诠·伤官佩印
+
+  - event_key: shang_guan_jian_guan
+    default_polarity: negative
+    reverse_when:
+      - path: phase.reversal_overrides.shang_guan_jian_guan
+        op: ==
+        value: neutral
+    reversed_meaning: 有财通关，伤官见官转化为"用才生利"模式，非凶。
+    intensity_after: 中
+    source: 盲派象法·伤官生财
+
+  # ============================================================
+  # 反吟 / 伏吟 在做功格下的语义调整
+  # ============================================================
+
+  - event_key: fuyin_yingqi
+    default_polarity: negative
+    reverse_when:
+      - path: phase.reversal_overrides.fuyin_yingqi
+        op: ==
+        value: neutral
+    reversed_meaning: |
+      伏吟在做功格中是"结构再现" —— 命局核心配置的再次激活（应期年），
+      主"同类事件再演一遍"，不等于凶。方向看做功格指向。
+    intensity_after: 中
+    source: 盲派应期模型·做功格伏吟变通
+
+  - event_key: fanyin_yingqi
+    default_polarity: negative
+    reverse_when:
+      - path: phase.reversal_overrides.fanyin_yingqi
+        op: ==
+        value: neutral
+    reversed_meaning: |
+      反吟在做功格中 = 一翻一覆的做功窗口，主事件剧烈但方向由做功格定；
+      单纯"凶险"的解读不准确。
+    intensity_after: 重
+    source: 盲派应期模型·做功格反吟变通

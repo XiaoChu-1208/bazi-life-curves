@@ -63,6 +63,8 @@ DETERMINISTIC_CORE = {
     "rare_phase_detector.py",  # v9 PR-5 特殊格 detector,纯静态判定
     "_school_registry.py",     # v9 PR-6 多流派注册表,纯静态判定
     "multi_school_vote.py",    # v9 PR-6 加权投票,纯静态聚合
+    "_phase_registry.py",      # v9 L1 phase 注册表,纯静态 metadata
+    "_mangpai_reversal.py",    # v9 L5 反转规则引擎,纯 yaml + 模式匹配
 }
 
 

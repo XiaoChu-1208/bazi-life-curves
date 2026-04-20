@@ -1,5 +1,80 @@
 # Changelog
 
+## v9.1.0 — 2026-04 · 盲派做功视角接入 · 7 层架构改造
+
+> **Triggering pattern**: 一类壬日干 + 午刃 + 子财 + 阳刃驾结构的命局，盲派视角应识别为"刃冲财做功"。
+> v8.1 的 `phase_posterior` 候选池只有 14 个 power 视角的 core phase，导致 `yangren_chong_cai`
+> 即便被 `rare_phase_detector` 命中（confidence 0.85）也无法进入决策层 → R1 直接 reject。
+>
+> 这暴露了**整条流水线对"做功视角"零认知**的架构缺陷。本版本用 7 层独立改造接入做功体系，
+> 而不是给某个 phase 加特判。详见 `references/phase_architecture_v9_design.md`。
+
+### L1 · Phase Registry（统一抽象层）
+- 新增 `scripts/_phase_registry.py`：54 个 phase 的 metadata 中心
+  - `dimension`: power / bridge / **zuogong**
+  - `zuogong_trigger_branches`: 应期地支元组（如刃族四仲 子/午/卯/酉）
+  - `reversal_overrides`: phase 下事件 polarity 反转规则
+  - `source`: 古籍出处（铁律：缺出处不予注册）
+- 改造 `ALL_PHASE_IDS` 为动态拉取 `_phase_registry.all_ids()`
+
+### L2 · Rare-phase 接入贝叶斯先验
+- `scripts/rare_phase_detector.py`：scan/enrich 解耦，保 v8 raw hits 字段 bit-for-bit
+- `scripts/_bazi_core.py`：新增 `_p7_zuogong_aggregator` 把 zuogong-dim rare hits 聚合成
+  P7 evidence detector，进入 `_compute_prior_distribution_v9` 的先验分布
+- 候选池单调增：从 14 → 54，且 `decide_phase(use_rare_phase=False)` 可降级回 v8 行为
+
+### L3 · D6 做功视角判别题
+- `scripts/_question_bank.py` 新增 3 道题（`D6_Q1_agency_style` / `D6_Q2_life_rhythm` / `D6_Q3_gains_source`）
+- 每题 likelihood_table 对刃族 / 伤官族 / 力量族 / 从格族都有非均匀分布
+- 配套 `_fill_uniform_for_missing_v9` 自动补全 54 个 phase 的均匀先验
+
+### L4 · R3 降级路径
+- `scripts/phase_posterior.py`：R1 后验 < 0.55 + rare-phase 强命中（P ≥ 0.20）时
+  触发 `_suggest_round3`，专问 D6 三题
+- 新增 `update_posterior_round3` 合并 R1 + R3 答案重算后验
+
+### L5 · Mangpai 反转 DSL
+- 新增 `references/mangpai_reversal_rules.yaml`：YAML 化的反转规则（5 条规则覆盖 4 类事件）
+- 新增 `scripts/_mangpai_reversal.py`：纯静态 DSL 引擎（含无 pyyaml 时的最小 fallback parser）
+- `scripts/mangpai_events.py::_evt`：仅在 `phase.dimension == "zuogong"` 时
+  注入 `phase_context` 走反转路径（保证默认 phase bit-for-bit）
+
+### L6 · Score curves zuogong_modifier
+- `scripts/score_curves.py` 新增 `_apply_zuogong_modifier`：
+  trigger 地支流年 geju 派 spirit/wealth/fame 上浮
+  （内部 bonus = {spirit: 10, wealth: 8, fame: 8}，融合后实际抬升约 +3-4 分）
+- 集成到 `l2_liunian_adjust`
+
+### L7 · 用户拍板 phase_full_override
+- `scripts/save_confirmed_facts.py` 新增 `--phase-full-override <PHASE_ID> --reason "..."` CLI
+- `scripts/score_curves.py::apply_structural_corrections` 识别 `kind: phase_full_override`：
+  调 `apply_phase_override` + 锁死 `phase_decision`（`decision_probability=1.0`,
+  `confidence=user_locked`, `lock_source=confirmed_facts.phase_full_override`）
+
+### 验收 · 11 个 e2e 测试
+- 新增 `tests/test_yangren_chong_cai.py`（合成八字 + pillars 模式 + 早期 birth_year，无具体公历）
+- 覆盖 L1–L7 全链路 + 防过拟合 guard：
+  - L1: zuogong phase ≥ 5 + 必须包含 4 个经典做功格
+  - L3: D6 三题对 4+ 经典做功格都有非均匀 likelihood（族群化判别）
+  - 默认答案下不允许 yangren_chong_cai 强推（必须 R3 用户证据驱动）
+  - 默认 phase 下 mangpai 反转 0 条（bit-for-bit 保护）
+- 全套 176 tests pass + calibrate `--soft` 数字与改造前完全一致
+
+### 当前覆盖度（诚实声明）
+- **方法论层 100% 通用**：L1/L2/L5/L6/L7 骨架对所有 zuogong phase 生效
+- **配置层渐进**：11 个 zuogong phase 中
+  - 刃做功族 3 个完整配置（trigger + reversal + D6 likelihood）
+  - 伤官族 / 杀印族 reversal 已配，trigger / D6 部分配
+  - 通明 / 白清 / 食制杀仅 metadata
+- 后续 PR 按"古籍出处 + e2e fixture"流程渐进补全，不破坏方法论先行原则
+
+### 不变量（v9 宪法层延伸）
+6. zuogong-dim phase 的 mangpai 反转**仅**在 phase 锁定后触发（`detect_all` 默认路径不读 reversal DSL）
+7. D6 likelihood_table 对至少 4 个 zuogong phase 必须有非均匀分布（防过拟合 guard 自动测试）
+8. 任何新 zuogong phase 注册必须带 `source` 古籍出处 + 至少一个 e2e fixture
+
+---
+
 ## v9.0.0 — 2026-04 · Precision-Over-Recall · 多流派交叉投票 · open_phase 逃逸阀
 
 > **Triggering pattern**: 一类"印根足够却被旧算法误判为弃命从财"的边界 case 反思。详见

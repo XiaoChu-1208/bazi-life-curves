@@ -107,9 +107,36 @@ def _ku_with_what(zhi: str, day_gan: str) -> Optional[str]:
 def _evt(year: int, age: int, ganzhi: str, dayun: str, key: str, name: str,
          school: str, canonical: str, dims: List[Tuple[str, int]],
          intensity: str, evidence: str, reference: str,
-         falsifiability: str) -> Dict:
+         falsifiability: str,
+         phase_context: Optional[Dict] = None) -> Dict:
+    """构造事件。v9 · 如传入 phase_context 且 reversal DSL 命中，反转 dims / intensity / meaning。"""
+    # v9 反转处理（bit-for-bit 保护：phase_context=None 时行为严格等同 v8）
+    reversal_meta: Optional[Dict] = None
+    if phase_context is not None:
+        try:
+            from _mangpai_reversal import evaluate_reversal  # type: ignore
+            r = evaluate_reversal(key, phase_context)
+            if r.triggered:
+                # 翻 dims 的 sign
+                new_sign_map = {"positive": 1, "neutral": 0, "negative": -1}
+                target_sign = new_sign_map.get(r.polarity_after or "", None)
+                if target_sign is not None:
+                    dims = [(d, target_sign if s != 0 else 0) for d, s in dims]
+                if r.intensity_after:
+                    intensity = r.intensity_after
+                if r.reversed_meaning:
+                    canonical = r.reversed_meaning
+                reversal_meta = {
+                    "applied": True,
+                    "rule_source": r.source,
+                    "polarity_after": r.polarity_after,
+                    "rule_index": r.rule_index,
+                }
+        except Exception as _e:
+            reversal_meta = {"applied": False, "error": str(_e)}
+
     amplifier = {dim: INTENSITY_AMPLIFIER[intensity] * sign for dim, sign in dims}
-    return {
+    out = {
         "year": year,
         "age": age,
         "ganzhi": ganzhi,
@@ -125,6 +152,9 @@ def _evt(year: int, age: int, ganzhi: str, dayun: str, key: str, name: str,
         "reference": reference,
         "falsifiability": falsifiability,
     }
+    if reversal_meta is not None:
+        out["reversal"] = reversal_meta
+    return out
 
 
 def _natal_has(day_gan: str, natal: List[Pillar], shishen_set) -> bool:
@@ -619,8 +649,10 @@ def detect_year_events(
     day_gan: str, natal: List[Pillar], dy: Pillar, ln: Pillar,
     year: int, age: int, dayun_label: str,
     is_dayun_first_year: bool = False,
+    phase_context: Optional[Dict] = None,
 ) -> List[Dict]:
     """v9 PR-3: 新增 is_dayun_first_year 参数.
+    v9 L5:  新增 phase_context 参数（reversal DSL 触发）。phase_context=None 保持 v8 行为。
 
     当 is_dayun_first_year=True 时, dayun_only detector (fn(natal, dy))
     才会触发并仅在该大运首年记录一次, 避免大运 detector 被流年级触发 10 次.
@@ -650,15 +682,33 @@ def detect_year_events(
             canonical=d["canonical_event"], dims=d["dims"],
             intensity=d["intensity"], evidence=evidence,
             reference=d["school"], falsifiability=d["falsifiability"],
+            phase_context=phase_context,
         ))
     return out
 
 
-def detect_all(bazi: dict, age_start: int = 0, age_end: int = 80) -> Dict:
+def detect_all(bazi: dict, age_start: int = 0, age_end: int = 80,
+               use_reversal: bool = True) -> Dict:
+    """v9 L5 · 新增 use_reversal（默认 True，做功格下启用反转 DSL）。
+
+    bit-for-bit 保护：use_reversal=True 时仅对 phase.dimension=='zuogong' 的命局
+    才构造 phase_context；其它命局传 None → _evt 走 v8 路径。
+    """
     natal = [Pillar(p["gan"], p["zhi"]) for p in bazi["pillars"]]
     day_gan = natal[2].gan
     dayun = bazi["dayun"]
     liunian = bazi["liunian"]
+
+    # v9 · 仅做功格才启用反转（保老 phase 的 bit-for-bit）
+    phase_context: Optional[Dict] = None
+    if use_reversal:
+        try:
+            from _mangpai_reversal import build_phase_context  # type: ignore
+            ctx = build_phase_context(bazi)
+            if ctx.get("phase", {}).get("dimension") == "zuogong":
+                phase_context = ctx
+        except Exception:
+            phase_context = None
 
     def find_dayun(age: int):
         for d in dayun:
@@ -684,11 +734,12 @@ def detect_all(bazi: dict, age_start: int = 0, age_end: int = 80) -> Dict:
         events.extend(detect_year_events(
             day_gan, natal, dy_p, ln_p, ln["year"], age, dy_label,
             is_dayun_first_year=is_dy_first,
+            phase_context=phase_context,
         ))
 
     static = detect_static_markers(day_gan, natal)
 
-    return {
+    out = {
         "version": 1,
         "school_position": "mangpai (盲派) — 不进 25% 打分融合，仅做应事断 + 烈度修正",
         "intensity_amplifier_table": INTENSITY_AMPLIFIER,
@@ -699,6 +750,13 @@ def detect_all(bazi: dict, age_start: int = 0, age_end: int = 80) -> Dict:
             for d in DETECTOR_REGISTRY
         },
     }
+    if phase_context is not None:
+        out["phase_context_used"] = {
+            "phase_id": phase_context["phase"]["id"],
+            "dimension": phase_context["phase"]["dimension"],
+            "reversal_overrides_keys": list(phase_context["phase"]["reversal_overrides"].keys()),
+        }
+    return out
 
 
 def main():

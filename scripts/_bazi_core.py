@@ -1438,13 +1438,25 @@ def detect_all_phase_candidates(bazi_dict: Dict) -> List[Dict]:
             return (0.5, 0)
 
     triggered.sort(key=lambda r: (-_conf(r)[0], -_conf(r)[1], r["phase_id"]))
+
+    # v9 · 附加 rare phase 扫描结果（仅元数据，先验融合由 _compute_prior_distribution_v9 做）
+    rare_hits: List[Dict] = []
+    try:
+        from rare_phase_detector import scan_from_bazi_enriched as _rare_scan
+        rare_hits = _rare_scan(bazi_dict)
+    except Exception:
+        rare_hits = []
+
     return {
         "triggered_candidates": triggered,
         "all_detection_details": results,
         "not_triggered": not_triggered,
+        "rare_phase_hits": rare_hits,  # v9 · 供 phase_posterior 调用 _compute_prior_distribution_v9
         "summary": {
             "n_triggered": len(triggered),
             "phases_suggested": [r["suggested_phase"] for r in triggered if r["suggested_phase"] != "day_master_dominant"],
+            "n_rare_hits": len(rare_hits),
+            "rare_zuogong_hits": [h["id"] for h in rare_hits if h.get("dimension") == "zuogong"],
         },
     }
 
@@ -1610,6 +1622,9 @@ def _compute_prior_distribution(detection_details: List[Dict]) -> Dict[str, floa
       - 起始 prior：DM = 0.30（baseline 偏好默认相位但不绝对），其它 17 phase 平分剩余 0.70
       - 跳过未触发 detector：未触发 ≈ 无信息，不应把 DM 推到 99%
       - 末尾 floor：DM ≥ 0.03（防止极端 case 把 DM 压到 0；但允许显著降低）
+
+    v9 兼容：本函数保持 v8 语义和候选池（ALL_PHASE_IDS = 18 phase），供旧调用点使用。
+    新代码请用 _compute_prior_distribution_v9（带 rare phase 扩展）。
     """
     n = len(ALL_PHASE_IDS)
     triggered = [d for d in detection_details if d.get("triggered", False)]
@@ -1632,6 +1647,143 @@ def _compute_prior_distribution(detection_details: List[Dict]) -> Dict[str, floa
             prior[pid] *= max(likelihoods.get(pid, 1e-6), 1e-6)
         prior = _normalize_distribution(prior)
     # day_master_dominant baseline floor，避免数值下溢
+    prior["day_master_dominant"] = max(prior["day_master_dominant"], 0.03)
+    return _normalize_distribution(prior)
+
+
+# ============================================================================
+# v9 · rare phase 接入先验（做功维度）
+# ============================================================================
+
+def _p7_zuogong_aggregator(rare_hits: List[Dict], all_phase_ids: Tuple[str, ...]) -> Optional[Dict]:
+    """把 rare_phase_detector 的 zuogong-dimension hits 聚合成单个 P7 证据 detector dict。
+
+    设计要点：
+      - 仅 dimension='zuogong' 的 rare hit 参与（做功视角）
+      - 多个 zuogong hit 通过 softmax 合并（避免两三个小 hit 压垮 P1-P6）
+      - 输出 phase_likelihoods 在 all_phase_ids 全集上分布（大头给 suggested_phase）
+      - 若没有 zuogong hit → 返回 None（detect_all_phase_candidates 不追加）
+    """
+    import math
+
+    zuogong_hits = [h for h in rare_hits if h.get("dimension") == "zuogong"]
+    if not zuogong_hits:
+        return None
+
+    # 按 confidence 做 softmax 权重（温度 τ=0.5 让 top-1 更突出）
+    confs = [float(h.get("confidence", 0.5)) for h in zuogong_hits]
+    tau = 0.5
+    exps = [math.exp(c / tau) for c in confs]
+    total_exp = sum(exps) or 1.0
+    weights = [e / total_exp for e in exps]
+
+    # 加权 top phase = 最大权重的 hit
+    top_idx = max(range(len(zuogong_hits)), key=lambda i: weights[i])
+    top_hit = zuogong_hits[top_idx]
+    top_pid = top_hit.get("id", "day_master_dominant")
+    top_conf = float(top_hit.get("confidence", 0.7))
+
+    # 构造 likelihoods：
+    #   - top phase: 0.50 + 0.25 * top_conf（0.60~0.75，温和推高）
+    #   - 其他 zuogong phase: 小份额
+    #   - day_master_dominant: baseline 0.05（做功格往往身不弱，不压 DM）
+    #   - 其他 phase: 残余平分
+    n_all = len(all_phase_ids)
+    w_top = 0.50 + 0.25 * top_conf
+    w_other_zuogong = 0.04
+    w_dm = 0.05
+
+    zuogong_pids = set()
+    try:
+        from _phase_registry import ids as registry_ids
+        zuogong_pids = set(registry_ids(dimension="zuogong"))
+    except Exception:
+        pass
+
+    used = {top_pid, "day_master_dominant"} | zuogong_pids
+    n_other_zuogong = len([p for p in zuogong_pids if p != top_pid])
+    n_outside = n_all - len(used | {top_pid})
+    consumed = w_top + w_other_zuogong * n_other_zuogong + w_dm
+    w_outside = max((1.0 - consumed) / max(n_outside, 1), 0.005)
+
+    likelihoods = {}
+    for pid in all_phase_ids:
+        if pid == top_pid:
+            likelihoods[pid] = w_top
+        elif pid == "day_master_dominant":
+            likelihoods[pid] = w_dm
+        elif pid in zuogong_pids:
+            likelihoods[pid] = w_other_zuogong
+        else:
+            likelihoods[pid] = w_outside
+
+    # 归一化
+    total = sum(likelihoods.values())
+    likelihoods = {k: v / total for k, v in likelihoods.items()}
+
+    return {
+        "phase_id": "P7_zuogong_aggregator",
+        "triggered": True,
+        "score": f"{len(zuogong_hits)}/{len(zuogong_hits)}（{len(zuogong_hits)} 条 zuogong rare hit 聚合）",
+        "suggested_phase": top_pid,
+        "confidence_for_decide": round(top_conf, 4),
+        "phase_likelihoods": {k: round(v, 8) for k, v in sorted(likelihoods.items())},
+        "evidence": " + ".join(h.get("evidence", h.get("id", "")) for h in zuogong_hits),
+        "rare_hit_breakdown": [
+            {"id": h["id"], "school": h.get("school"), "conf": h.get("confidence")}
+            for h in zuogong_hits
+        ],
+    }
+
+
+def _compute_prior_distribution_v9(
+    detection_details: List[Dict],
+    rare_hits: Optional[List[Dict]] = None,
+) -> Dict[str, float]:
+    """v9 · 对 P1-P6 detector + rare_phase zuogong 聚合 做贝叶斯融合。
+
+    候选池扩展到 _phase_registry.all_ids()（~54 phase），允许 rare phase 成为 top-1。
+    rare_hits 为 None 时行为等同 v8 _compute_prior_distribution。
+
+    bit-for-bit 保护：
+      - 本函数是**新增**函数，不改写 v8 旧函数
+      - score_curves.py 不调用本函数（只读 bazi.json 固化字段）
+      - 仅 phase_posterior.py / handshake.py 在新增路径调用
+    """
+    try:
+        from _phase_registry import all_ids as reg_all_ids
+        phase_ids: Tuple[str, ...] = reg_all_ids()
+    except Exception:
+        phase_ids = tuple(ALL_PHASE_IDS)
+
+    n = len(phase_ids)
+    triggered = [d for d in detection_details if d.get("triggered", False)]
+
+    # P7: rare zuogong 聚合追加到 triggered
+    if rare_hits:
+        p7 = _p7_zuogong_aggregator(rare_hits, phase_ids)
+        if p7 is not None:
+            triggered = triggered + [p7]
+
+    if not triggered:
+        prior: Dict[str, float] = {pid: 0.10 / (n - 1) for pid in phase_ids}
+        prior["day_master_dominant"] = 0.90
+        return _normalize_distribution(prior)
+
+    prior = {pid: 0.70 / (n - 1) for pid in phase_ids}
+    prior["day_master_dominant"] = 0.30
+    prior = _normalize_distribution(prior)
+
+    for det in triggered:
+        likelihoods = det.get("phase_likelihoods") or _phase_likelihoods_from_detector(det)
+        # 扩展 likelihoods 到 phase_ids 全集（v8 detector 原本只覆盖 18 phase）
+        for pid in phase_ids:
+            if pid not in likelihoods:
+                likelihoods[pid] = 1.0 / n  # 无信息的 phase 给均匀分
+        for pid in prior:
+            prior[pid] *= max(likelihoods.get(pid, 1e-6), 1e-6)
+        prior = _normalize_distribution(prior)
+
     prior["day_master_dominant"] = max(prior["day_master_dominant"], 0.03)
     return _normalize_distribution(prior)
 
@@ -1785,22 +1937,29 @@ def decide_phase(
     bazi_dict: Dict,
     user_answers: Optional[Dict[str, str]] = None,
     dynamic_questions: Optional[List[Dict]] = None,
+    use_rare_phase: bool = True,
 ) -> Dict:
-    """v8 核心 · phase decision。
+    """v8 / v9 核心 · phase decision。
 
     Args:
         bazi_dict: bazi.json 解析后的 dict（含 pillars / strength / yongshen / climate）
         user_answers: Optional[Dict[question_id, option_id]]，None = 仅算先验
         dynamic_questions: Optional list of dynamic question dicts (id, options, likelihood_table)
                            — D3 流年题由 handshake 阶段动态生成，传给本函数算后验
+        use_rare_phase: v9 · True (默认) 启用 rare phase 扩展候选池（P7_zuogong_aggregator）；
+                       False 回退到 v8 行为（候选池仅 18 phase，rare hit 不参与）
 
     Returns:
         PhaseDecision dict（详见 references/phase_decision_protocol.md §6）
     """
     detection = detect_all_phase_candidates(bazi_dict)
     detail = detection["all_detection_details"]
+    rare_hits = detection.get("rare_phase_hits", []) if use_rare_phase else []
 
-    prior = _compute_prior_distribution(detail)
+    if use_rare_phase:
+        prior = _compute_prior_distribution_v9(detail, rare_hits=rare_hits)
+    else:
+        prior = _compute_prior_distribution(detail)
 
     posterior = dict(prior)
     answered_ids: List[str] = []
