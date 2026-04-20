@@ -234,6 +234,11 @@ R0 + R1（或 + R2）通过后**不要直接进 Step 3 渲染 HTML**。先按 `S
 
 ## 12. 当 R1 命中 < 4/6（合并 R2 后仍不达标）时怎么办
 
+⚠️ **v7 新增·重要**：在跳到"试不同时辰"之前，**必须先跑 §13 相位反演校验循环**。
+"算法读反"比"时辰错"更常见，且不需要重新问用户。
+
+只有在 §13 全部相位候选都 < 4/6 时，才进入下面的时辰扫描：
+
 ```bash
 for h in 12 13 14 15 16; do
   python scripts/solve_bazi.py --gregorian "1990-05-12 $h:30" --gender M --out /tmp/bazi_$h.json
@@ -244,7 +249,75 @@ done
 
 把 5 份 R0 + R1 并排呈现给用户，让用户挑哪个时辰的"偏好类型 + 健康问题"最对得上 → 反推真实时辰。
 
-## 13. 与其他保障的关系
+---
+
+## 13. 【v7 新增】R0+R1 命中率 ≤ 2/6 → 相位反演校验循环（P1-7）
+
+### 13.1 背景：为什么命中率低不一定是八字错
+
+某用户 1996 年八字 `丙子 庚子 己卯 己巳`：
+
+- **默认 Skill 推法**：壬水日主主导（实际是己土）+ 印星化杀 + 身弱用印 → R0/R1 命中率 ≈ 30%
+- **LLM 反向推法**：丙火财星主事 + 日主借力 + 上燥下寒 → R0/R1 命中率 ≈ 90%
+
+**幅度差** = 60 个百分点。这不是八字错，是**算法的相位选择反了**。本协议把这种"算法读反"的兜底纠错机械化、纳入闭环。
+
+### 13.2 强制流程（不允许跳过）
+
+```
+R0 + R1 + R2 命中率
+   ↓
+  ≥ 4/6 → 进入 Step 3 出图（happy path）
+  ≤ 2/6 → 【强制】进入相位反演校验循环 ↓
+       ↓
+       (1) python scripts/handshake.py --bazi <bazi.json> --dump-phase-candidates --default-hit-rate "X/6"
+       (2) 读 phase_dump.json 的 phase_candidates，按列表顺序跟用户讲：
+           「命中率 X/6 比较低，但这**不一定意味着**你八字错。
+            另一种常见可能是『**算法读法方向反了**』。
+            我跑了 4 类反向假设，最有希望的是 [候选 1]，
+            因为 [evidence]。要不要按 [候选 1] 重跑？」
+       (3) 用户同意 → 跑 rerun_command（已在 phase_dump.json 里给出）
+                    → 重新生成 R0/R1（用新 bazi + 新 curves 跑 handshake）
+                    → 用户重新回答（最少 R1 三问，R0 两问可选复用）
+                    → 重新计算命中率
+       (4) 命中率跳升 ≥ 4/6 → 写 confirmed_facts.structural_corrections
+                              → 进 Step 3 出图（带「相位已反演到 X」标记）
+       (5) 命中率仍 < 4/6 → 试候选 2 / 3 → 全部失败再去 §12 时辰扫描
+```
+
+### 13.3 LLM 必守 3 条话术铁律（详见 phase_inversion_protocol.md §5）
+
+1. **不允许第一句话就说"八字错"**：必须先说"另一种可能是算法读反"
+2. **不允许反演后默认跑**：必须用户同意才跑
+3. **重跑后必须明确告知"已反演"**：第一段输出必带「相位 = X，不是默认相位」
+
+### 13.4 何时**跳过**相位反演
+
+- 默认相位 R0+R1+R2 ≥ 4/6 → 跳过（happy path）
+- `dump_phase_candidates` 返回 `n_triggered = 0` → 跳过（4 类 detect 都没触发，命中率低更可能是八字错）
+- 用户明确说"我确定八字对，不需要试反向假设" → 跳过，按时辰扫描走
+
+### 13.5 相位反演的成功证据
+
+```json
+// confirmed_facts.json 写入示例
+{
+  "kind": "phase_override",
+  "value": "climate_inversion_dry_top",
+  "evidence": {
+    "default_phase_hit_rate": "2/6",
+    "inverted_phase_hit_rate": "5/6",
+    "swing": "+50%",
+    "from_detector": "P3_climate_inversion",
+    "detector_score": "3/3"
+  },
+  "reason": "上燥下寒：干头丙庚己己全燥（+8.5），地支双子湿（-5.5）→ 用神锁水"
+}
+```
+
+下次跑同一个 `bazi_key` → Step 0 自动加载 `phase_override` → 跳过相位反演，直接用 override 跑。
+
+## 14. 与其他保障的关系
 
 - **accuracy_protocol.md**：R0 + R1 双层命中率是 accuracy 的"实时自检指标" —— 综合 grade ≤ low 即 accuracy 保障被破
 - **fairness_protocol.md**：R0 + R1 都不接收身份信息（R0 只让用户在四选一里挑最贴近的画像）→ 满足盲化

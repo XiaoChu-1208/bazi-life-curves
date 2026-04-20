@@ -950,6 +950,128 @@ HTML 渲染（仅 B）放最后一步，此时用户已读完文字，不再有"
 """
 
 
+PHASE_RERUN_HINTS = {
+    "floating_dms_to_cong_cai": (
+        "弃命从财（日主虚浮 → 财星主事）。"
+        "你的命局可能不是「日主当家用印比帮身」，而是「日主无根 → 跟着旺财走」。"
+        "现实表现：早年/全程**靠他人/外部资源借力**，自我能量薄但善于借势；财运是命局主旋律，单打独斗反而吃力。"
+    ),
+    "floating_dms_to_cong_sha": (
+        "弃命从杀（日主虚浮 → 官杀主事）。"
+        "你不是「身弱被官杀压」，而是「日主无根 → 全力顺从权威/制度/规则」。"
+        "现实表现：在体系/职场/规则压力下反而出状态；自由职业反而焦虑；适合服务大平台或高强度系统。"
+    ),
+    "floating_dms_to_cong_er": (
+        "弃命从儿（日主虚浮 → 食伤主事）。"
+        "命局走「我生」方向 —— 不是日主自身在表达，而是用自己的输出/作品/孩子/造物来定义自己。"
+        "现实表现：表达欲/创作欲/生育欲是命局主旋律，压住表达 = 全身憋屈。"
+    ),
+    "floating_dms_to_cong_yin": (
+        "弃命从印（日主虚浮 → 印主事）。"
+        "命局走「生我」方向 —— 你不是自立型，而是被庇护型，靠学历/母系/老师/宗教/上司护身。"
+        "现实表现：脱离庇护就乏力，背靠组织反而强；越读书/越被重视越好。"
+    ),
+    "dominating_god_cai_zuo_zhu": (
+        "旺神得令·财星主事。日主有根但财星压主 —— **财星才是命局主角**，日主只是承接者。"
+        "现实表现：人生主线就是「跟钱/资源/物质打交道」，而非「修身立志」式的传统读法。"
+    ),
+    "dominating_god_guan_zuo_zhu": (
+        "旺神得令·官杀主事。**官杀是命局主角**，日主在其压制 / 调用之下运转。"
+        "现实表现：天然适合在权威/上下级/竞争系统里运转，自由职业易心慌。"
+    ),
+    "dominating_god_shishang_zuo_zhu": (
+        "旺神得令·食伤主事。**食伤是命局主角**，日主泄秀。"
+        "现实表现：表达/输出 = 主旋律，压住表达 = 命局错位。"
+    ),
+    "dominating_god_yin_zuo_zhu": (
+        "旺神得令·印星主事。**印是命局主角**，日主被庇护。"
+        "现实表现：依附型 / 学者型 / 学生型 / 母系或体系庇护型。"
+    ),
+    "climate_inversion_dry_top": (
+        "调候反向·上燥下寒。表面看是寒湿命（月令子水/亥水等），但天干一片燥火土 —— "
+        "**真正主导你体感和性格的是天干的燥**，不是地支的寒。"
+        "现实表现：自小怕热不怕冷 / 性格急躁 / 需要水来润降；用神锁水（不是按身弱用火）。"
+    ),
+    "climate_inversion_wet_top": (
+        "调候反向·上湿下燥。表面看是燥实命，但天干一片寒湿 —— "
+        "**真正主导是天干的寒**，不是地支的火。"
+        "现实表现：自小怕冷不怕热 / 内里有暗火急躁；用神锁火。"
+    ),
+    "true_following": (
+        "真从格。日主有微根但根被冲合破坏，整体气势从旺神而走。"
+        "现实表现：跟从势类相同，但置信度更高（已校验微根被破）。"
+    ),
+    "pseudo_following": (
+        "假从格。日主有微根，看起来像从但其实根稳。"
+        "现实表现：仍按弱身扶身读，但要加 caveat —— 大运若顺从神方向，按从势补充读。"
+    ),
+}
+
+
+def dump_phase_candidates(bazi: dict, hit_rate_default: Optional[str] = None) -> dict:
+    """v7 P1-7 · 当 R0+R1 命中率 ≤ 2/6 时，dump 4 类相位反演候选 + 重跑指令。
+
+    详见 references/phase_inversion_protocol.md §4.3
+
+    输入：
+        bazi: bazi.json 解析后的 dict
+        hit_rate_default: 当前默认相位的命中率（如 '2/6'），仅用于在输出里记录
+
+    输出：
+        {
+            "default_hit_rate": ...,
+            "phase_candidates": [
+                {phase_id, label, evidence, llm_explain, rerun_command}, ...
+            ],
+            "llm_instruction": "..."
+        }
+    """
+    import _bazi_core as bc
+
+    detection = bc.detect_all_phase_candidates(bazi)
+    bazi_path_hint = "<bazi.json>"
+
+    candidates_out: List[dict] = []
+    for det in detection["triggered_candidates"]:
+        sp = det["suggested_phase"]
+        if sp == "day_master_dominant":
+            continue
+        candidates_out.append({
+            "phase_id": sp,
+            "phase_label": det.get("suggested_label", ""),
+            "from_detector": det["phase_id"],
+            "detector_score": det.get("score", ""),
+            "evidence": det["evidence"],
+            "llm_explain_for_user": PHASE_RERUN_HINTS.get(
+                sp, f"反演为 {sp}，详见 phase_inversion_protocol.md"
+            ),
+            "rerun_command": (
+                f"python scripts/score_curves.py --bazi {bazi_path_hint} "
+                f"--out <out>/curves_phase_inverted.json --override-phase {sp}"
+            ),
+        })
+
+    return {
+        "version": 1,
+        "purpose": "P1-7 相位反演候选（R 命中率 ≤ 2/6 时供 LLM 选择重跑用）",
+        "default_hit_rate": hit_rate_default,
+        "default_phase": "day_master_dominant",
+        "default_phase_label": "默认 · 日主主导（用神 + 扶抑 + 调候）",
+        "n_triggered": detection["summary"]["n_triggered"],
+        "phase_candidates": candidates_out,
+        "all_detection_details": detection["all_detection_details"],
+        "llm_instruction": (
+            "【强制】R0+R1 命中率 ≤ 2/6 时，**不要**直接判定「八字错 / 时辰错」。"
+            "先按 phase_candidates 顺序，跟用户说：「命中率比较低，但这不一定意味着八字错。"
+            "另一种常见可能是『算法读法方向反了』。我有 N 个反向假设，最有希望的是 X，"
+            "因为 [evidence]。要不要按 X 重跑一次？」"
+            "用户同意 → 按 rerun_command 跑 → 重新生成 R0/R1 候选 → 重新匹配命中率。"
+            "若全部相位重跑后仍 < 4/6 → 此时才真正判定八字错。"
+            "详见 references/phase_inversion_protocol.md §5"
+        ),
+    }
+
+
 def build(bazi: dict, curves: dict, current_year: int) -> dict:
     traits = build_signature_traits(bazi)
     anchors = build_historical_anchors(curves, current_year, max_n=4)
@@ -1057,14 +1179,38 @@ def build(bazi: dict, curves: dict, current_year: int) -> dict:
 def main():
     ap = argparse.ArgumentParser(description="生成出图前的下马威候选 (handshake.json)")
     ap.add_argument("--bazi", required=True, help="bazi.json 路径")
-    ap.add_argument("--curves", required=True, help="curves.json 路径")
+    ap.add_argument("--curves", required=False, default=None,
+                    help="curves.json 路径（默认模式必须；--dump-phase-candidates 模式可不填）")
     ap.add_argument("--current-year", type=int, default=None,
                     help="当前公历年（用于挑选历史段锚点；默认 today.year）")
     ap.add_argument("--out", default="handshake.json", help="输出路径")
+    ap.add_argument("--dump-phase-candidates", action="store_true",
+                    help="v7 P1-7 模式 · 不生成 R0/R1/R2 候选，而是 dump 4 类相位反演候选 + LLM 重跑指令；"
+                         "用于 R0+R1 命中率 ≤ 2/6 时让 LLM 选反向假设重跑 score_curves。"
+                         "详见 references/phase_inversion_protocol.md")
+    ap.add_argument("--default-hit-rate", default=None,
+                    help="（仅 --dump-phase-candidates 模式）当前默认相位的命中率，如 '2/6'，仅用于记录在输出里")
     args = ap.parse_args()
 
-    cy = args.current_year or dt.date.today().year
     bazi = json.loads(Path(args.bazi).read_text(encoding="utf-8"))
+
+    if args.dump_phase_candidates:
+        result = dump_phase_candidates(bazi, hit_rate_default=args.default_hit_rate)
+        Path(args.out).write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")
+        n_cand = len(result["phase_candidates"])
+        print(f"[handshake] phase-dump → {args.out}: {n_cand} 个相位反演候选 ↓")
+        for c in result["phase_candidates"]:
+            print(f"  · {c['phase_id']}  ({c['from_detector']}, score={c['detector_score']})")
+            print(f"      → {c['phase_label']}")
+        if n_cand == 0:
+            print("  （无候选触发：默认相位算法没识别出明显的反向可能性。"
+                  "命中率低更可能是八字本身错 / 时辰错，建议核对原始输入。）")
+        return
+
+    if not args.curves:
+        ap.error("--curves is required unless --dump-phase-candidates is set")
+
+    cy = args.current_year or dt.date.today().year
     curves = json.loads(Path(args.curves).read_text(encoding="utf-8"))
     result = build(bazi, curves, cy)
     Path(args.out).write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")

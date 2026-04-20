@@ -492,6 +492,337 @@ def select_yongshen(pillars: List[Pillar], strength: Dict) -> Dict[str, str]:
     }
 
 
+# ============================================================================
+# Phase Inversion Detection (P1-7, v7 新增)
+# ----------------------------------------------------------------------------
+# 当默认算法对一份命局的"相位"判定方向反了，R0/R1 命中率会很低。
+# 当前 Skill 只会归因为"八字错"，漏掉"算法读反"这种可能。
+# 这一组 detect 函数枚举 4 类常见相位反向假设：
+#   P1 · 日主虚浮（弃命从势：从财 / 从杀 / 从儿 / 从印）
+#   P2 · 旺神得令反主事
+#   P3 · 调候反向（外燥内湿 / 上燥下寒）
+#   P4 · 假从 / 真从边界
+# 每个 detect 输出 {triggered, score, suggested_phase, evidence}。
+# 详见 references/phase_inversion_protocol.md
+# ============================================================================
+
+
+def _shishen_to_phase(shishen: str) -> str:
+    """十神 → 反演相位 ID（用于 from_god 类）。"""
+    if shishen in ("正财", "偏财"):
+        return "floating_dms_to_cong_cai"
+    if shishen in ("正官", "七杀"):
+        return "floating_dms_to_cong_sha"
+    if shishen in ("食神", "伤官"):
+        return "floating_dms_to_cong_er"
+    if shishen in ("正印", "偏印"):
+        return "floating_dms_to_cong_yin"
+    return "day_master_dominant"
+
+
+def _dominating_wuxing(pillars: List[Pillar], day_wx: str) -> Tuple[Optional[str], float]:
+    """找全局最强的"非日主同党"五行 + 其总分。"""
+    cnt = _wuxing_count(pillars)
+    candidates = [(wx, score) for wx, score in cnt.items() if wx != day_wx]
+    candidates.sort(key=lambda x: -x[1])
+    if not candidates:
+        return None, 0.0
+    return candidates[0][0], candidates[0][1]
+
+
+def detect_floating_day_master(pillars: List[Pillar], strength: Dict) -> Dict:
+    """P1 · 日主虚浮反演检测。
+
+    满足 4 / 5 → 触发，建议 phase = floating_dms_to_cong_<旺神所属十神>
+    """
+    day_gan = pillars[2].gan
+    day_wx = GAN_WUXING[day_gan]
+    same = strength.get("same", 0)
+    sheng = strength.get("sheng", 0)
+    support = same + sheng
+
+    month_zhi = pillars[1].zhi
+    month_main_wx = GAN_WUXING[ZHI_HIDDEN_GAN[month_zhi][0]]
+    month_supports = (month_main_wx == day_wx) or (WUXING_SHENG[month_main_wx] == day_wx)
+
+    day_zhi = pillars[2].zhi
+    day_zhi_main_wx = GAN_WUXING[ZHI_HIDDEN_GAN[day_zhi][0]]
+    day_zhi_supports = (day_zhi_main_wx == day_wx) or (WUXING_SHENG[day_zhi_main_wx] == day_wx)
+
+    has_yin_in_gan = any(
+        WUXING_SHENG[GAN_WUXING[p.gan]] == day_wx
+        for i, p in enumerate(pillars) if i != 2
+    )
+
+    dominating_wx, dominating_score = _dominating_wuxing(pillars, day_wx)
+
+    cond_1_no_root = support <= 2.0
+    cond_2_month_against = not month_supports
+    cond_3_day_zhi_against = not day_zhi_supports
+    cond_4_no_yin = not has_yin_in_gan
+    cond_5_dominating = dominating_score >= 12
+
+    score = sum([cond_1_no_root, cond_2_month_against, cond_3_day_zhi_against, cond_4_no_yin, cond_5_dominating])
+    triggered = score >= 4
+
+    suggested_phase = "day_master_dominant"
+    suggested_label = ""
+    if triggered and dominating_wx:
+        if WUXING_KE[day_wx] == dominating_wx:
+            shishen_class = "正财"  # 我克者为财
+        elif WUXING_KE[dominating_wx] == day_wx:
+            shishen_class = "七杀"  # 克我者为官杀
+        elif WUXING_SHENG[day_wx] == dominating_wx:
+            shishen_class = "食神"  # 我生者为食伤
+        elif WUXING_SHENG[dominating_wx] == day_wx:
+            shishen_class = "正印"  # 生我者为印
+        else:
+            shishen_class = "比肩"
+        suggested_phase = _shishen_to_phase(shishen_class)
+        suggested_label = {
+            "floating_dms_to_cong_cai": "弃命从财",
+            "floating_dms_to_cong_sha": "弃命从杀",
+            "floating_dms_to_cong_er": "弃命从儿（食伤）",
+            "floating_dms_to_cong_yin": "弃命从印",
+        }.get(suggested_phase, "弃命从势")
+
+    return {
+        "phase_id": "P1_floating_day_master",
+        "triggered": triggered,
+        "score": f"{score}/5",
+        "suggested_phase": suggested_phase,
+        "suggested_label": suggested_label,
+        "evidence": {
+            "day_master_root（same+sheng）": round(support, 2),
+            "month_supports_dms": month_supports,
+            "day_zhi_supports_dms": day_zhi_supports,
+            "has_yin_in_gan": has_yin_in_gan,
+            "dominating_wuxing": dominating_wx,
+            "dominating_score": round(dominating_score, 2),
+            "conditions_met": {
+                "1_无根 (support≤2)": cond_1_no_root,
+                "2_月令克泄": cond_2_month_against,
+                "3_日支非同党": cond_3_day_zhi_against,
+                "4_天干无印": cond_4_no_yin,
+                "5_旺神成势 (≥12)": cond_5_dominating,
+            },
+        },
+    }
+
+
+def detect_dominating_god(pillars: List[Pillar], strength: Dict) -> Dict:
+    """P2 · 旺神得令反主事检测。
+
+    旺神 ≠ 日主同党，月令权重 ≥ 65% + 透干 + 比日主同党 2 倍以上 → 触发
+    """
+    day_gan = pillars[2].gan
+    day_wx = GAN_WUXING[day_gan]
+
+    month_zhi = pillars[1].zhi
+    month_hidden = ZHI_HIDDEN_GAN[month_zhi]
+    month_total = sum(1.0 if i == 0 else 0.3 for i in range(len(month_hidden)))
+    non_dms_in_month = sum(
+        (1.0 if i == 0 else 0.3)
+        for i, hg in enumerate(month_hidden)
+        if GAN_WUXING[hg] != day_wx and WUXING_SHENG[GAN_WUXING[hg]] != day_wx
+    )
+    month_dominated_by_non_dms = (non_dms_in_month / month_total) >= 0.65 if month_total > 0 else False
+
+    dominating_wx, dominating_score = _dominating_wuxing(pillars, day_wx)
+    same_score = strength.get("same", 0) + strength.get("sheng", 0)
+
+    transparent_in_gan = False
+    if dominating_wx:
+        transparent_in_gan = any(
+            GAN_WUXING[p.gan] == dominating_wx
+            for i, p in enumerate(pillars) if i != 2
+        )
+
+    ratio_ok = (dominating_score / max(same_score, 0.1)) >= 2.0
+
+    cond_1_month = month_dominated_by_non_dms
+    cond_2_transparent = transparent_in_gan
+    cond_3_ratio = ratio_ok
+    cond_4_strong = dominating_score >= 10
+
+    score = sum([cond_1_month, cond_2_transparent, cond_3_ratio, cond_4_strong])
+    triggered = score >= 3
+
+    suggested_phase = "day_master_dominant"
+    suggested_label = ""
+    if triggered and dominating_wx:
+        if WUXING_KE[day_wx] == dominating_wx:
+            suggested_phase = "dominating_god_cai_zuo_zhu"
+            suggested_label = f"旺神得令·财星({dominating_wx})主事 · 日主借力"
+        elif WUXING_KE[dominating_wx] == day_wx:
+            suggested_phase = "dominating_god_guan_zuo_zhu"
+            suggested_label = f"旺神得令·官杀({dominating_wx})主事 · 日主受制"
+        elif WUXING_SHENG[day_wx] == dominating_wx:
+            suggested_phase = "dominating_god_shishang_zuo_zhu"
+            suggested_label = f"旺神得令·食伤({dominating_wx})主事 · 日主泄秀"
+        elif WUXING_SHENG[dominating_wx] == day_wx:
+            suggested_phase = "dominating_god_yin_zuo_zhu"
+            suggested_label = f"旺神得令·印({dominating_wx})主事 · 日主被庇护"
+
+    return {
+        "phase_id": "P2_dominating_god",
+        "triggered": triggered,
+        "score": f"{score}/4",
+        "suggested_phase": suggested_phase,
+        "suggested_label": suggested_label,
+        "evidence": {
+            "dominating_wuxing": dominating_wx,
+            "dominating_score": round(dominating_score, 2),
+            "day_master_support": round(same_score, 2),
+            "ratio (dominating/dms)": round(dominating_score / max(same_score, 0.1), 2),
+            "month_dominated_by_non_dms": month_dominated_by_non_dms,
+            "transparent_in_gan": transparent_in_gan,
+            "conditions_met": {
+                "1_月令旺神主导 (≥65%)": cond_1_month,
+                "2_天干透出": cond_2_transparent,
+                "3_压日主比 ≥ 2": cond_3_ratio,
+                "4_旺神 ≥ 10": cond_4_strong,
+            },
+        },
+    }
+
+
+def detect_climate_inversion(pillars: List[Pillar], climate: Dict) -> Dict:
+    """P3 · 调候反向检测（外燥内湿 / 外湿内燥 / 上燥下寒等）。
+
+    climate.label ∈ 极端对冲类 → 触发
+    """
+    label = climate.get("label", "")
+    g_score = climate.get("干头分", 0)
+    z_score = climate.get("地支分", 0)
+
+    cond_1_inverted_label = label in ("外燥内湿", "外湿内燥")
+    cond_2_signs_opposite = (g_score > 0 and z_score < 0) or (g_score < 0 and z_score > 0)
+    cond_3_both_strong = abs(g_score) >= 4 and abs(z_score) >= 4
+
+    score = sum([cond_1_inverted_label, cond_2_signs_opposite, cond_3_both_strong])
+    triggered = score >= 2
+
+    suggested_phase = "day_master_dominant"
+    suggested_label = ""
+    if triggered:
+        if g_score > 0 and z_score < 0:
+            suggested_phase = "climate_inversion_dry_top"
+            suggested_label = "调候反向·上燥下寒（用神锁水：让地支水透干，制干头燥）"
+        elif g_score < 0 and z_score > 0:
+            suggested_phase = "climate_inversion_wet_top"
+            suggested_label = "调候反向·上湿下燥（用神锁火：让地支火透干，暖干头）"
+
+    return {
+        "phase_id": "P3_climate_inversion",
+        "triggered": triggered,
+        "score": f"{score}/3",
+        "suggested_phase": suggested_phase,
+        "suggested_label": suggested_label,
+        "evidence": {
+            "climate_label": label,
+            "干头分": g_score,
+            "地支分": z_score,
+            "conditions_met": {
+                "1_label 是极端对冲": cond_1_inverted_label,
+                "2_干支符号相反": cond_2_signs_opposite,
+                "3_两边都≥4": cond_3_both_strong,
+            },
+        },
+    }
+
+
+def detect_pseudo_following(pillars: List[Pillar], strength: Dict) -> Dict:
+    """P4 · 假从 / 真从边界检测。
+
+    日主同党 2.0~5.0（边界） + 微根是否被合化 / 拔根 → 真从 / 假从
+    """
+    day_gan = pillars[2].gan
+    day_wx = GAN_WUXING[day_gan]
+    support = strength.get("same", 0) + strength.get("sheng", 0)
+
+    in_boundary = 2.0 <= support <= 5.0
+
+    day_zhi = pillars[2].zhi
+    day_zhi_main_wx = GAN_WUXING[ZHI_HIDDEN_GAN[day_zhi][0]]
+    has_root = (day_zhi_main_wx == day_wx) or (WUXING_SHENG[day_zhi_main_wx] == day_wx)
+
+    chong_destroys_root = False
+    if has_root:
+        from_others = [pillars[i].zhi for i in (0, 1, 3)]
+        chong_pairs = {
+            "子": "午", "午": "子", "丑": "未", "未": "丑",
+            "寅": "申", "申": "寅", "卯": "酉", "酉": "卯",
+            "辰": "戌", "戌": "辰", "巳": "亥", "亥": "巳",
+        }
+        for z in from_others:
+            if chong_pairs.get(z) == day_zhi:
+                chong_destroys_root = True
+                break
+
+    triggered = in_boundary
+    if not triggered:
+        kind = None
+        suggested_phase = "day_master_dominant"
+        suggested_label = ""
+    elif has_root and not chong_destroys_root:
+        kind = "pseudo"
+        suggested_phase = "pseudo_following"
+        suggested_label = "假从格 · 日主有微根，仍按弱身扶身但加 caveat"
+    else:
+        kind = "true"
+        suggested_phase = "true_following"
+        suggested_label = "真从格 · 日主根被破或无根，按从神方向走"
+
+    return {
+        "phase_id": "P4_pseudo_following",
+        "triggered": triggered,
+        "kind": kind,
+        "suggested_phase": suggested_phase,
+        "suggested_label": suggested_label,
+        "evidence": {
+            "day_master_support": round(support, 2),
+            "in_boundary (2.0~5.0)": in_boundary,
+            "has_root_in_day_zhi": has_root,
+            "chong_destroys_root": chong_destroys_root,
+        },
+    }
+
+
+def detect_all_phase_candidates(bazi_dict: Dict) -> List[Dict]:
+    """跑全部 4 类 detect，返回触发的候选 + 全部 detect 详情。
+
+    输入是 bazi.json 解析后的 dict（含 pillars / strength / climate / pillar_info）。
+    输出 list 按 confidence 降序排序，仅 triggered=True 的进入。
+    """
+    pillars = [Pillar(p["gan"], p["zhi"]) for p in bazi_dict["pillars"]]
+    strength = bazi_dict["strength"]
+    climate = bazi_dict.get("yongshen", {}).get("climate") or climate_profile(pillars)
+
+    results = [
+        detect_floating_day_master(pillars, strength),
+        detect_dominating_god(pillars, strength),
+        detect_climate_inversion(pillars, climate),
+        detect_pseudo_following(pillars, strength),
+    ]
+    triggered = [r for r in results if r["triggered"]]
+    not_triggered = [r for r in results if not r["triggered"]]
+    return {
+        "triggered_candidates": triggered,
+        "all_detection_details": results,
+        "not_triggered": not_triggered,
+        "summary": {
+            "n_triggered": len(triggered),
+            "phases_suggested": [r["suggested_phase"] for r in triggered if r["suggested_phase"] != "day_master_dominant"],
+        },
+    }
+
+
+# ============================================================================
+# end of Phase Inversion Detection
+# ============================================================================
+
+
 def _wuxing_count(pillars: List[Pillar]) -> Dict[str, float]:
     cnt: Dict[str, float] = {wx: 0.0 for wx in WUXING_ORDER}
     for i, p in enumerate(pillars):

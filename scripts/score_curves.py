@@ -915,6 +915,144 @@ def cumulative_curve(yearly: List[float], lam: float) -> List[float]:
 
 # ---------- 主入口 ----------
 
+def apply_phase_override(bazi: dict, phase_id: str) -> dict:
+    """v7 P1-7 · 相位反演：按 phase_id 改写 strength.label / yongshen / climate / 加 phase 字段。
+
+    详见 references/phase_inversion_protocol.md §4.2
+
+    支持的 phase_id：
+        day_master_dominant         (默认 · 不反演)
+        floating_dms_to_cong_cai    日主虚浮 → 从财格
+        floating_dms_to_cong_sha    日主虚浮 → 从杀格
+        floating_dms_to_cong_er     日主虚浮 → 从儿格（食伤）
+        floating_dms_to_cong_yin    日主虚浮 → 从印格
+        dominating_god_cai_zuo_zhu  旺神得令·财星主事
+        dominating_god_guan_zuo_zhu 旺神得令·官杀主事
+        dominating_god_shishang_zuo_zhu  旺神得令·食伤主事
+        dominating_god_yin_zuo_zhu  旺神得令·印星主事
+        climate_inversion_dry_top   调候反向·上燥下寒（用神锁水）
+        climate_inversion_wet_top   调候反向·上湿下燥（用神锁火）
+        true_following              真从格（按从神方向）
+        pseudo_following            假从格（仍扶身但加 caveat）
+    """
+    if phase_id == "day_master_dominant" or not phase_id:
+        bazi.setdefault("phase", {"id": "day_master_dominant", "label": "默认 · 日主主导"})
+        return bazi
+
+    pid = phase_id
+    label_map = {
+        "floating_dms_to_cong_cai": "弃命从财（日主虚浮 → 财星主事）",
+        "floating_dms_to_cong_sha": "弃命从杀（日主虚浮 → 官杀主事）",
+        "floating_dms_to_cong_er": "弃命从儿（日主虚浮 → 食伤主事）",
+        "floating_dms_to_cong_yin": "弃命从印（日主虚浮 → 印星主事）",
+        "dominating_god_cai_zuo_zhu": "旺神得令·财星主事 · 日主借力",
+        "dominating_god_guan_zuo_zhu": "旺神得令·官杀主事 · 日主受制",
+        "dominating_god_shishang_zuo_zhu": "旺神得令·食伤主事 · 日主泄秀",
+        "dominating_god_yin_zuo_zhu": "旺神得令·印主事 · 日主被庇护",
+        "climate_inversion_dry_top": "调候反向·上燥下寒（用神锁水）",
+        "climate_inversion_wet_top": "调候反向·上湿下燥（用神锁火）",
+        "true_following": "真从格 · 按从神方向走",
+        "pseudo_following": "假从格 · 仍按弱身扶身但加 caveat",
+    }
+    if pid not in label_map:
+        raise ValueError(f"unknown --override-phase id: {pid!r}, valid: {list(label_map.keys()) + ['day_master_dominant']}")
+
+    bazi["phase"] = {
+        "id": pid,
+        "label": label_map[pid],
+        "is_inverted": True,
+        "default_phase_was": "day_master_dominant",
+    }
+    bazi.setdefault("yongshen", {})
+    bazi.setdefault("strength", {})
+
+    # ① 从势类：日主从弱反推为"按强读" + 用神锁定为"从神"方向
+    if pid.startswith("floating_dms_to_cong_") or pid == "true_following":
+        bazi["strength"]["_phase_orig_label"] = bazi["strength"].get("label")
+        bazi["strength"]["_phase_orig_score"] = bazi["strength"].get("score")
+        bazi["strength"]["label"] = "强"  # 从神为主 → 按强势日主读
+        bazi["strength"]["score"] = 30
+        cong_to_wuxing = {
+            "floating_dms_to_cong_cai": _strength_to_dom_wuxing(bazi, "ke"),
+            "floating_dms_to_cong_sha": _strength_to_dom_wuxing(bazi, "kewo"),
+            "floating_dms_to_cong_er": _strength_to_dom_wuxing(bazi, "xie"),
+            "floating_dms_to_cong_yin": _strength_to_dom_wuxing(bazi, "sheng"),
+            "true_following": _strength_to_dom_wuxing(bazi, None),
+        }
+        new_ys = cong_to_wuxing.get(pid)
+        if new_ys:
+            bazi["yongshen"]["_phase_orig_yongshen"] = bazi["yongshen"].get("yongshen")
+            bazi["yongshen"]["yongshen"] = new_ys
+            bazi["yongshen"]["_phase_override_reason"] = f"{label_map[pid]} → 用神锁定 {new_ys}"
+            bazi["yongshen"]["_locked"] = True
+
+    # ② 旺神得令：保留 strength.label，但改写 yongshen 为"旺神维持方向"
+    elif pid.startswith("dominating_god_"):
+        dom_dim = {
+            "dominating_god_cai_zuo_zhu": "ke",
+            "dominating_god_guan_zuo_zhu": "kewo",
+            "dominating_god_shishang_zuo_zhu": "xie",
+            "dominating_god_yin_zuo_zhu": "sheng",
+        }[pid]
+        new_ys = _strength_to_dom_wuxing(bazi, dom_dim)
+        if new_ys:
+            bazi["yongshen"]["_phase_orig_yongshen"] = bazi["yongshen"].get("yongshen")
+            bazi["yongshen"]["yongshen"] = new_ys
+            bazi["yongshen"]["_phase_override_reason"] = f"{label_map[pid]} → 用神锁定 {new_ys}"
+            bazi["yongshen"]["_locked"] = True
+
+    # ③ 调候反向：锁用神为"制反方向"
+    elif pid == "climate_inversion_dry_top":
+        bazi["yongshen"]["_phase_orig_yongshen"] = bazi["yongshen"].get("yongshen")
+        bazi["yongshen"]["yongshen"] = "水"
+        bazi["yongshen"]["_phase_override_reason"] = "上燥下寒 → 用神锁定 水"
+        bazi["yongshen"]["_locked"] = True
+    elif pid == "climate_inversion_wet_top":
+        bazi["yongshen"]["_phase_orig_yongshen"] = bazi["yongshen"].get("yongshen")
+        bazi["yongshen"]["yongshen"] = "火"
+        bazi["yongshen"]["_phase_override_reason"] = "上湿下燥 → 用神锁定 火"
+        bazi["yongshen"]["_locked"] = True
+
+    # ④ 假从：strength 保持，用神保持，仅加 caveat 标记
+    elif pid == "pseudo_following":
+        bazi["yongshen"]["_phase_caveat"] = "假从格 · 用神扶身但置信度降低；大运若顺从神则按从势补充读"
+
+    return bazi
+
+
+def _strength_to_dom_wuxing(bazi: dict, dim: str | None) -> str | None:
+    """根据 strength 字段或全局 _wuxing_count 推回旺神所属五行。
+
+    dim ∈ {ke (财), kewo (官杀), xie (食伤), sheng (印), None (取最强)}
+    """
+    from _bazi_core import GAN_WUXING, WUXING_KE, WUXING_SHENG, WUXING_ORDER, ZHI_HIDDEN_GAN
+
+    pillars_d = bazi["pillars"]
+    day_gan = bazi.get("day_master") or pillars_d[2]["gan"]
+    day_wx = GAN_WUXING[day_gan]
+    cnt = {wx: 0.0 for wx in WUXING_ORDER}
+    for i, p in enumerate(pillars_d):
+        cnt[GAN_WUXING[p["gan"]]] += 1.0
+        weight = 3.0 if i == 1 else 2.0
+        for j, hg in enumerate(ZHI_HIDDEN_GAN[p["zhi"]]):
+            cnt[GAN_WUXING[hg]] += weight * (1.0 if j == 0 else 0.3)
+
+    if dim is None:
+        candidates = [(wx, score) for wx, score in cnt.items() if wx != day_wx]
+        candidates.sort(key=lambda x: -x[1])
+        return candidates[0][0] if candidates else None
+
+    if dim == "ke":
+        return next((wx for wx in WUXING_ORDER if WUXING_KE.get(day_wx) == wx), None)
+    if dim == "kewo":
+        return next((wx for wx in WUXING_ORDER if WUXING_KE.get(wx) == day_wx), None)
+    if dim == "xie":
+        return next((wx for wx in WUXING_ORDER if WUXING_SHENG.get(day_wx) == wx), None)
+    if dim == "sheng":
+        return next((wx for wx in WUXING_ORDER if WUXING_SHENG.get(wx) == day_wx), None)
+    return None
+
+
 def score(
     bazi: dict,
     weights: Dict[str, float] | None = None,
@@ -925,6 +1063,7 @@ def score(
     forecast_window: int = 10,
     dispute_threshold: float = 20.0,
     mangpai: dict | None = None,
+    override_phase: str | None = None,
 ) -> dict:
     """计算 [age_start, age_end] 范围内的曲线 + 未来 forecast_window 年的拐点表。
 
@@ -938,6 +1077,8 @@ def score(
     """
     weights = weights or DEFAULT_WEIGHTS
     lambdas = lambdas or DEFAULT_LAMBDA
+    if override_phase:
+        bazi = apply_phase_override(bazi, override_phase)
     bazi = apply_geju_override(bazi)  # 格局为先：先识别格局，再用其覆盖用神
     base = l0_baseline(bazi)
     emo_base = emotion_baseline(bazi)  # v6 关系能量维度基线（独立通道，v7 现代化）
@@ -1105,6 +1246,7 @@ def score(
         "strength": bazi["strength"],
         "yongshen": bazi["yongshen"],
         "geju": bazi.get("geju", {}),
+        "phase": bazi.get("phase", {"id": "day_master_dominant", "label": "默认 · 日主主导", "is_inverted": False}),
         "birth_year": bazi["birth_year"],
         "gender": bazi["gender"],
         "orientation": bazi.get("orientation", "hetero"),
@@ -1267,6 +1409,16 @@ def main():
     ap.add_argument("--mangpai", default=None,
                     help="可选：mangpai.json 路径（mangpai_events.py 输出）；启用盲派烈度修正 + 事件附入 points")
     ap.add_argument("--strict", action="store_true", help="启用双盲自检")
+    ap.add_argument("--override-phase", default=None,
+                    help="v7 P1-7 相位反演 · 当 R0/R1 命中率 ≤ 2/6 时按反向假设重跑。"
+                         "可选：day_master_dominant (默认) / "
+                         "floating_dms_to_cong_cai / floating_dms_to_cong_sha / "
+                         "floating_dms_to_cong_er / floating_dms_to_cong_yin / "
+                         "dominating_god_cai_zuo_zhu / dominating_god_guan_zuo_zhu / "
+                         "dominating_god_shishang_zuo_zhu / dominating_god_yin_zuo_zhu / "
+                         "climate_inversion_dry_top / climate_inversion_wet_top / "
+                         "true_following / pseudo_following。"
+                         "详见 references/phase_inversion_protocol.md")
     args = ap.parse_args()
 
     age_end = args.age_end if args.age_cap is None else args.age_cap
@@ -1285,17 +1437,20 @@ def main():
         forecast_window=forecast_window,
         dispute_threshold=args.dispute_threshold,
         mangpai=mangpai_data,
+        override_phase=args.override_phase,
     )
 
     if args.strict:
+        bazi2 = json.loads(Path(args.bazi).read_text(encoding="utf-8"))
         result2 = score(
-            bazi,
+            bazi2,
             age_start=args.age_start,
             age_end=age_end,
             forecast_from_year=args.forecast_from_year,
             forecast_window=forecast_window,
             dispute_threshold=args.dispute_threshold,
             mangpai=mangpai_data,
+            override_phase=args.override_phase,
         )
         a = json.dumps(result, ensure_ascii=False, sort_keys=True)
         b = json.dumps(result2, ensure_ascii=False, sort_keys=True)

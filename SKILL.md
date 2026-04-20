@@ -97,6 +97,16 @@ Step 1  解析八字（含起运岁精算 / 用户指定）—— 单盘 1 份 /
             **Round 2**（仅 R1 < 3/3 时触发）：本性 + 历史锚点
             放行：R0 ≥ 1/2 且（R1 ≥ 2/3 或 R1+R2 ≥ 4/6）
             合盘场景：R0 仅对自己跑（对方感情史你未必清楚）；R1 双方都跑
+  → Step 2.55 【v7 强制】R0+R1+R2 ≤ 2/6 时 → 相位反演校验循环（P1-7）
+            handshake.py --dump-phase-candidates 输出 4 类相位反演候选
+                ① 日主虚浮（弃命从财/杀/儿/印）
+                ② 旺神得令反主事（财/杀/食伤/印当家）
+                ③ 调候反向（外燥内湿 / 上燥下寒）
+                ④ 假从 / 真从边界
+            LLM 跟用户讲"算法可能读反了" → 用户同意 → score_curves --override-phase X 重跑
+                → 重跑后命中率 ≥ 4/6 → 写 confirmed_facts.phase_override → 进 Step 3
+                → 全部候选都 < 4/6 → 才进入时辰扫描（Step 2.5 §12）
+            （命中率 ≥ 4/6 时本步跳过；4 类 detect 都未触发时本步也跳过）
   → Step 2.7 询问输出格式（v5 · 体验门槛）
             「要 HTML 交互图，还是只要 markdown 文字分析？」
             · 单盘默认问；合盘默认 markdown（HTML 仅可选）
@@ -337,6 +347,57 @@ R0 命中 → 取向准确度（不论命中几条，都继续走 R1）：
 - 对方八字若 R1 < 2/3，合盘 confidence 降级 + caveat："另一方八字校验不足，结论作为方向参考"
 
 完整规则见 `references/handshake_protocol.md`、`references/he_pan_protocol.md` §4 和 `references/diagnosis_pitfalls.md` §0 红线表。
+
+### 2.55 【v7 强制】R0+R1+R2 ≤ 2/6 时 · 相位反演校验循环（P1-7）→ `python scripts/handshake.py --dump-phase-candidates`
+
+**触发条件**：Step 2.5 总命中率 ≤ 2/6（含 R0 + R1 + R2）。
+**目的**：在跳到"八字错 / 时辰错"结论之前，先排除「**算法的相位选择反了**」这种可能。
+
+**为什么必须做**：某用户 1996 八字 `丙子 庚子 己卯 己巳`，默认相位命中率 30%，反向到 `climate_inversion_dry_top` 后跳到 90%——60 个百分点的差异。这是算法的盲区，不是用户的八字错。详见 `references/phase_inversion_protocol.md` 和 `references/diagnosis_pitfalls.md §12`。
+
+```bash
+python scripts/handshake.py \
+    --bazi out/bazi.json \
+    --dump-phase-candidates \
+    --default-hit-rate "2/6" \
+    --out out/phase_dump.json
+```
+
+输出 `phase_dump.json` 含 4 类相位候选（P1 日主虚浮 / P2 旺神得令 / P3 调候反向 / P4 假从-真从）中触发的子集 + 每个候选的 evidence + LLM 给用户的解释 + 重跑指令。
+
+**LLM 必守的 3 条话术铁律**（详见 `references/phase_inversion_protocol.md §5`）：
+
+1. **不允许第一句话就说"八字错"**：必须先讲"另一种可能是算法读反"
+2. **不允许反演后默默重跑**：必须用户同意才跑（**带上 `phase_dump.llm_explain_for_user` 的解释**）
+3. **重跑后必须明确告知"已反演"**：第一段输出必带「相位 = X，不是默认相位」
+
+**重跑流程**：
+
+```
+[1] 读 phase_dump.phase_candidates，按列表顺序跟用户讲解最有希望的候选
+[2] 用户同意 → 跑 phase_dump.phase_candidates[i].rerun_command（已生成好）
+              → 把生成的 curves_phase_inverted.json 当作新 curves
+              → 重新跑 handshake.py 生成新 R0/R1 候选
+              → 让用户重新回答 R1 三问（R0 已有答案可复用）
+[3] 重新计算命中率
+    ≥ 4/6 → 写 confirmed_facts.structural_corrections（kind=phase_override）
+            → 进 Step 3 出图（带「相位 = X」标记）
+    < 4/6 → 试候选 [i+1] / [i+2] ... → 全部失败再去时辰扫描（Step 2.5 §12）
+```
+
+**跳过相位反演的条件**：
+
+- 默认相位 R0+R1+R2 ≥ 4/6（happy path，本来就不需要）
+- `dump_phase_candidates` 返回 `n_triggered = 0`（4 类 detect 都没触发，命中率低更可能是八字错）
+- 用户明确说"我确定八字对，不需要试反向假设"
+
+**禁止**：
+
+- ❌ R0+R1+R2 ≤ 2/6 时跳过这一步直接判"八字错 / 时辰错"
+- ❌ 跳过 `--dump-phase-candidates` 直接 `score_curves --override-phase`（必须先看 detect 触发了什么）
+- ❌ 反演重跑后第一段还按默认相位的语义解读
+
+完整流程见 `references/phase_inversion_protocol.md` 和 `references/handshake_protocol.md §13`。
 
 ### 2.6 合盘分支（仅当输入 ≥ 2 份八字时执行）→ `python scripts/he_pan.py`
 
@@ -584,7 +645,7 @@ python3 scripts/save_confirmed_facts.py --bazi output/bazi.json --add-structural
 
 完整规则见 `references/dispute_analysis_protocol.md`。
 
-## 三大保障 + 四项强制（必须遵守 · v6 加 R0 反询问 · v7 加现代化解读铁律）
+## 三大保障 + 五项强制（必须遵守 · v6 加 R0 反询问 · v7 加现代化解读铁律 + 相位反演）
 
 - **准确**：分数来自脚本（单盘=「格局为先 + 三派交叉」+「emotion 独立通道」、合盘=「五行 + 干支 + 十神 + 大运」4 层），**禁止 LLM 直接打分**
 - **公正**：身份信息不得进入打分流程；同输入双盲必须 bit-for-bit 一致；合盘也只看八字结构、不接收姓名 / 关系状态 / 历史
@@ -593,6 +654,7 @@ python3 scripts/save_confirmed_facts.py --bazi output/bazi.json --add-structural
 - **合盘解读（强制）**：4 层评分必须按 he_pan_protocol §5 解读（按层 → 加 / 减分 → 大运同步 → confidence），禁止甩 grade、禁止给"配/不配"结论
 - **流式输出（强制 · v5）**：Step 3a / 合盘解读必须按节流式发出（每写完一节立刻发，禁止憋整段）；Step 2.7 必须先问用户要 markdown-only 还是要 HTML，禁止默认渲染 HTML 让用户白等
 - **R0 反询问 + 双层准确度（强制 · v6）**：Step 2.5 必须先抛 R0 反询问·关系画像 2 题（偏好类型 + 对方反应模式）做"取向校准"，再抛 R1 健康/重大事件 3 题做"命局校准"；最终 `accuracy_grade` 必须按 R0 + R1 双层判定（详见 §2.5），命中红线（关系①✗ + R1 ≤ 1/3）必须停手要时辰
+- **相位反演校验（强制 · v7 · P1-7）**：当 Step 2.5 R0+R1+R2 命中率 ≤ 2/6 时，**禁止**第一句话就判"八字错 / 时辰错"。**必须**先跑 Step 2.55 的 `handshake.py --dump-phase-candidates`，按 4 类相位反演候选（日主虚浮 / 旺神得令 / 调候反向 / 假从-真从）跟用户讨论"算法是否读反"，用户同意后用 `score_curves --override-phase X` 重跑。只有 4 类候选都跑过且 < 4/6 才进入时辰扫描。详见 `references/phase_inversion_protocol.md` 和 `references/diagnosis_pitfalls.md §12`。
 - **现代化解读铁律（强制 · v7）**：emotion 维度的解读**必须**遵守 fairness_protocol.md §10：
   - **命局可推**：关系结构 / 能量模式 / 偏好的互动模式 / 关系密度
   - **命局不可推**：对方生理性别 / 是否结婚 / 几段关系 / 是否生育 / 关系是否被祝福
@@ -605,6 +667,7 @@ python3 scripts/save_confirmed_facts.py --bazi output/bazi.json --add-structural
 
 - **用户问"怎么用 / 怎么触发 / 不会用"** → `USAGE.md`（直接复述给用户）
 - **每次接到八字 / 生日，进入 Step 2.5 之前** → `references/handshake_protocol.md`（强制）
+- **R0+R1+R2 命中率 ≤ 2/6 时（进入 Step 2.55 之前）** → `references/phase_inversion_protocol.md`（强制 · v7 新增）
 - **每次合盘前 / 用户给 ≥ 2 份八字** → `references/he_pan_protocol.md`（强制）
 - **每次跑 Step 2a 之前 / 用户问"盲派怎么看"** → `references/mangpai_protocol.md`（强制）
 - **每次进入 Step 3a 写 LLM 分析之前** → `references/multi_dim_xiangshu_protocol.md`（强制）

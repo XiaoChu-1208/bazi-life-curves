@@ -167,5 +167,69 @@
 [ ] 6. 用户反馈 → 体质画像被 ✗ → 立即停下重判
 [ ] 7. Round 1 ≥ 2/3 → Round 2；< 2 → 直接告诉用户八字不准
 [ ] 8. Round 2 → 合计 ≥ 4/6 才出图
+[ ] 8.5 Round 0+1+2 ≤ 2/6 → 【v7 强制】跑 handshake --dump-phase-candidates → 跟用户讨论反向假设
 [ ] 9. 出图后的 LLM 分析：每个推论必须有"推论过程"+"可证伪点"
 ```
+
+---
+
+## §12 「相位反向陷阱」（v7 新增 · 2026-04 真实 case study）
+
+### 背景：本协议的诞生案例
+
+某用户跑 1996 年八字 `丙子 庚子 己卯 己巳`：
+
+- **默认 Skill 推法**：日主己土弱 + 用神水（climate_override 已触发，方向对）→ 但 emotion / spirit / wealth 的整体读法仍按"身弱被克 + 印化杀"框架展开 → R0+R1 命中率 ≈ 30%
+- **LLM 反向推法**：丙火财星主事 + 日主借力 + 上燥下寒 → 命中率 ≈ 90%
+
+幅度差 60%。这是「**算法的相位选择反了**」，不是八字错。
+
+### 这个案例暴露的盲区
+
+1. `select_yongshen` 的 climate_override 已经把用神改对了（水），**但相位框架还是按"日主主导"**走；
+2. `apply_geju_override` 的格局识别没识别出来（4 个 detect 在 v7 之前都没有）；
+3. `evaluate_responses` 在命中率低时只会输出 "high/mid/low/reject"，**没有第三条路 = 反向假设**；
+4. 用户最终是靠 LLM 人肉反推救回来的——下次用户的 LLM 不一定会做。
+
+### v7 的修复
+
+加入 4 个 detect（P1-P4，详见 `phase_inversion_protocol.md`）+ `score_curves --override-phase` + `handshake --dump-phase-candidates` + `SKILL.md Step 2.6` 强制工作流。
+
+跑 1996 案例：
+
+```
+$ python scripts/handshake.py --bazi /tmp/.../bazi.json --dump-phase-candidates --default-hit-rate "2/6"
+[handshake] phase-dump → /tmp/.../phase_dump.json: 2 个相位反演候选 ↓
+  · climate_inversion_dry_top  (P3_climate_inversion, score=3/3)
+      → 调候反向·上燥下寒（用神锁水：让地支水透干，制干头燥）
+  · true_following  (P4_pseudo_following)
+      → 真从格 · 日主根被破或无根，按从神方向走
+```
+
+LLM 看到这个 dump 后**必须**按以下话术跟用户沟通（不允许改）：
+
+> 命中率 2/6 比较低，但这**不一定意味着**八字错。
+> 我有 2 个相位反向假设，最有希望的是「**调候反向·上燥下寒**」——
+> 你的命局表面看是寒湿命（月令子水 + 日支也接寒湿），但天干一片燥火土（丙庚己己），
+> **真正主导你体感和性格的是天干的燥**，不是地支的寒。
+> 现实表现可能是：自小怕热不怕冷 / 性格急躁 / 需要"水"来润降。
+>
+> 要不要我按这个反向假设重跑一次曲线？
+
+用户同意 → 跑 `--override-phase climate_inversion_dry_top` → 重新校验 → 进 Step 3。
+
+### 这种陷阱的通用形态
+
+| 表象 | 真实相位 | 学理依据 |
+|---|---|---|
+| 日主弱 + 月令克泄 → 默认按身弱补印 | 弃命从势：从财 / 从杀 / 从儿 / 从印 | 《滴天髓·从象》|
+| 月令旺神成势 + 透干 → 默认按日主为主 | 旺神得令反主事 | 《穷通宝鉴·总论》|
+| 月令寒 / 燥（按月令调候）| 干头 vs 地支对冲（外燥内湿 / 上燥下寒）| 《穷通宝鉴·四时调候》|
+| 日主有微根 → 默认不从 | 微根被合冲拔 → 真从 | 《子平真诠·从化篇》|
+
+### 🚨 不允许做的事
+
+- ❌ R0+R1 ≤ 2/6 时第一句话就判"八字错 / 时辰错"
+- ❌ 跳过 `--dump-phase-candidates` 直接重跑 / 直接出图
+- ❌ 反演重跑后假装"还是默认相位"——必须明确告知用户「相位 = X」
+- ❌ 4 个 detect 都未触发时硬要反演（n_triggered=0 时直接走时辰扫描）
