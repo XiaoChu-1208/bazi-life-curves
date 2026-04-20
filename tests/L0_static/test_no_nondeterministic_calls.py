@@ -61,6 +61,8 @@ DETERMINISTIC_CORE = {
     "calibrate.py",
     "family_profile.py",
     "rare_phase_detector.py",  # v9 PR-5 特殊格 detector,纯静态判定
+    "_school_registry.py",     # v9 PR-6 多流派注册表,纯静态判定
+    "multi_school_vote.py",    # v9 PR-6 加权投票,纯静态聚合
 }
 
 
