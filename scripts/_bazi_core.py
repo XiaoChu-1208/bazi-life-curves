@@ -530,8 +530,53 @@ def _dominating_wuxing(pillars: List[Pillar], day_wx: str) -> Tuple[Optional[str
     return candidates[0][0], candidates[0][1]
 
 
+def _bijie_grounded(pillars: List[Pillar], day_wx: str) -> bool:
+    """比劫是否通根（地支主气是否有同党）。
+    通根 = 至少一个地支的主气与日主同五行。
+    """
+    return any(
+        GAN_WUXING[ZHI_HIDDEN_GAN[p.zhi][0]] == day_wx
+        for p in pillars
+    )
+
+
+def _yin_grounded(pillars: List[Pillar], day_wx: str) -> bool:
+    """印星是否通根（天干有印 + 地支主气也有"生我"五行）。
+    印通根 = 天干有印 AND 至少一个地支主气是"生我"五行。
+    """
+    has_yin_in_gan = any(
+        WUXING_SHENG.get(GAN_WUXING[p.gan]) == day_wx
+        for i, p in enumerate(pillars) if i != 2
+    )
+    if not has_yin_in_gan:
+        return False
+    yin_grounded_in_zhi = any(
+        WUXING_SHENG.get(GAN_WUXING[ZHI_HIDDEN_GAN[p.zhi][0]]) == day_wx
+        for p in pillars
+    )
+    return yin_grounded_in_zhi
+
+
+def _shishen_class_from_wuxing(day_wx: str, target_wx: str) -> str:
+    """target_wx 在日主的视角是什么十神类。"""
+    if target_wx == day_wx:
+        return "比肩"
+    if WUXING_KE.get(day_wx) == target_wx:
+        return "正财"
+    if WUXING_KE.get(target_wx) == day_wx:
+        return "七杀"
+    if WUXING_SHENG.get(day_wx) == target_wx:
+        return "食神"
+    if WUXING_SHENG.get(target_wx) == day_wx:
+        return "正印"
+    return "比肩"
+
+
 def detect_floating_day_master(pillars: List[Pillar], strength: Dict) -> Dict:
-    """P1 · 日主虚浮反演检测。
+    """P1 · 日主虚浮反演检测（v7.1 重写：看「比劫 / 印 是否通根」而不是点数总和）。
+
+    学理：日主"虚浮" ≠ 五行点数低，而是「比劫不通根」+「印星无地支根」。
+    参考《滴天髓·从象》、《子平真诠·从化篇》。
 
     满足 4 / 5 → 触发，建议 phase = floating_dms_to_cong_<旺神所属十神>
     """
@@ -549,62 +594,56 @@ def detect_floating_day_master(pillars: List[Pillar], strength: Dict) -> Dict:
     day_zhi_main_wx = GAN_WUXING[ZHI_HIDDEN_GAN[day_zhi][0]]
     day_zhi_supports = (day_zhi_main_wx == day_wx) or (WUXING_SHENG[day_zhi_main_wx] == day_wx)
 
-    has_yin_in_gan = any(
-        WUXING_SHENG[GAN_WUXING[p.gan]] == day_wx
-        for i, p in enumerate(pillars) if i != 2
-    )
+    bijie_grounded = _bijie_grounded(pillars, day_wx)
+    yin_grounded = _yin_grounded(pillars, day_wx)
 
     dominating_wx, dominating_score = _dominating_wuxing(pillars, day_wx)
 
-    cond_1_no_root = support <= 2.0
-    cond_2_month_against = not month_supports
-    cond_3_day_zhi_against = not day_zhi_supports
-    cond_4_no_yin = not has_yin_in_gan
-    cond_5_dominating = dominating_score >= 12
+    # v7.1 五条件改为：
+    cond_1_bijie_floating = (not bijie_grounded) and same <= 3.0    # 比劫不通根（核心）
+    cond_2_month_against = not month_supports                        # 月令克泄
+    cond_3_day_zhi_against = not day_zhi_supports                    # 日支非同党
+    cond_4_yin_not_grounded = not yin_grounded                       # 印不通根（弱化版"无印"）
+    cond_5_dominating = dominating_score >= 8                        # 旺神成势（阈值由 12 → 8）
 
-    score = sum([cond_1_no_root, cond_2_month_against, cond_3_day_zhi_against, cond_4_no_yin, cond_5_dominating])
-    triggered = score >= 4
+    score = sum([cond_1_bijie_floating, cond_2_month_against, cond_3_day_zhi_against,
+                 cond_4_yin_not_grounded, cond_5_dominating])
+    # 触发条件：满足 4/5 → 触发；或者 cond_1 + cond_2 + cond_5 三大核心都满足 → 触发（即使有印通根）
+    core_three = cond_1_bijie_floating and cond_2_month_against and cond_5_dominating
+    triggered = score >= 4 or core_three
 
     suggested_phase = "day_master_dominant"
     suggested_label = ""
     if triggered and dominating_wx:
-        if WUXING_KE[day_wx] == dominating_wx:
-            shishen_class = "正财"  # 我克者为财
-        elif WUXING_KE[dominating_wx] == day_wx:
-            shishen_class = "七杀"  # 克我者为官杀
-        elif WUXING_SHENG[day_wx] == dominating_wx:
-            shishen_class = "食神"  # 我生者为食伤
-        elif WUXING_SHENG[dominating_wx] == day_wx:
-            shishen_class = "正印"  # 生我者为印
-        else:
-            shishen_class = "比肩"
+        shishen_class = _shishen_class_from_wuxing(day_wx, dominating_wx)
         suggested_phase = _shishen_to_phase(shishen_class)
         suggested_label = {
-            "floating_dms_to_cong_cai": "弃命从财",
-            "floating_dms_to_cong_sha": "弃命从杀",
-            "floating_dms_to_cong_er": "弃命从儿（食伤）",
-            "floating_dms_to_cong_yin": "弃命从印",
+            "floating_dms_to_cong_cai": "弃命从财（日主虚浮 → 财星主事）",
+            "floating_dms_to_cong_sha": "弃命从杀（日主虚浮 → 官杀主事）",
+            "floating_dms_to_cong_er": "弃命从儿（日主虚浮 → 食伤主事）",
+            "floating_dms_to_cong_yin": "弃命从印（日主虚浮 → 印星主事）",
         }.get(suggested_phase, "弃命从势")
 
     return {
         "phase_id": "P1_floating_day_master",
         "triggered": triggered,
-        "score": f"{score}/5",
+        "score": f"{score}/5" + ("（核心三条满足触发）" if core_three and score < 4 else ""),
         "suggested_phase": suggested_phase,
         "suggested_label": suggested_label,
         "evidence": {
-            "day_master_root（same+sheng）": round(support, 2),
+            "day_master_support（same+sheng）": round(support, 2),
+            "bijie_grounded": bijie_grounded,
+            "yin_grounded": yin_grounded,
             "month_supports_dms": month_supports,
             "day_zhi_supports_dms": day_zhi_supports,
-            "has_yin_in_gan": has_yin_in_gan,
             "dominating_wuxing": dominating_wx,
             "dominating_score": round(dominating_score, 2),
             "conditions_met": {
-                "1_无根 (support≤2)": cond_1_no_root,
+                "1_比劫不通根 (核心)": cond_1_bijie_floating,
                 "2_月令克泄": cond_2_month_against,
                 "3_日支非同党": cond_3_day_zhi_against,
-                "4_天干无印": cond_4_no_yin,
-                "5_旺神成势 (≥12)": cond_5_dominating,
+                "4_印不通根 (允许有透干印)": cond_4_yin_not_grounded,
+                "5_旺神成势 (≥8)": cond_5_dominating,
             },
         },
     }
@@ -733,46 +772,51 @@ def detect_climate_inversion(pillars: List[Pillar], climate: Dict) -> Dict:
 
 
 def detect_pseudo_following(pillars: List[Pillar], strength: Dict) -> Dict:
-    """P4 · 假从 / 真从边界检测。
+    """P4 · 假从 / 真从边界检测（v7.1 重写：综合看比劫根 + 印根 + 全四柱）。
 
-    日主同党 2.0~5.0（边界） + 微根是否被合化 / 拔根 → 真从 / 假从
+    学理：
+      真从 = 日主完全无救（无印 / 无比劫通根）
+      假从 = 有印护身 OR 时柱有比劫帮扶，仍顺财杀走但能保全自身
+
+    判断方法：
+      has_self_help = 比劫通根 OR 印通根 OR 时干印 OR 时支自坐印根
     """
     day_gan = pillars[2].gan
     day_wx = GAN_WUXING[day_gan]
     support = strength.get("same", 0) + strength.get("sheng", 0)
 
-    in_boundary = 2.0 <= support <= 5.0
+    bijie_grounded = _bijie_grounded(pillars, day_wx)
+    yin_grounded = _yin_grounded(pillars, day_wx)
 
-    day_zhi = pillars[2].zhi
-    day_zhi_main_wx = GAN_WUXING[ZHI_HIDDEN_GAN[day_zhi][0]]
-    has_root = (day_zhi_main_wx == day_wx) or (WUXING_SHENG[day_zhi_main_wx] == day_wx)
+    # 时柱印根：时干是印（生我）且时支主气是"生我"五行 → 印有自坐根
+    shi_pillar = pillars[3]
+    shi_gan_wx = GAN_WUXING[shi_pillar.gan]
+    shi_zhi_main_wx = GAN_WUXING[ZHI_HIDDEN_GAN[shi_pillar.zhi][0]]
+    shi_zuo_yin = (WUXING_SHENG.get(shi_gan_wx) == day_wx and
+                   WUXING_SHENG.get(shi_zhi_main_wx) == day_wx)
+    # 时干是日主同党且时支也支撑 → 时柱比劫自坐
+    shi_zuo_bijie = (shi_gan_wx == day_wx and
+                     (shi_zhi_main_wx == day_wx or WUXING_SHENG.get(shi_zhi_main_wx) == day_wx))
 
-    chong_destroys_root = False
-    if has_root:
-        from_others = [pillars[i].zhi for i in (0, 1, 3)]
-        chong_pairs = {
-            "子": "午", "午": "子", "丑": "未", "未": "丑",
-            "寅": "申", "申": "寅", "卯": "酉", "酉": "卯",
-            "辰": "戌", "戌": "辰", "巳": "亥", "亥": "巳",
-        }
-        for z in from_others:
-            if chong_pairs.get(z) == day_zhi:
-                chong_destroys_root = True
-                break
+    has_self_help = bijie_grounded or yin_grounded or shi_zuo_yin or shi_zuo_bijie
 
-    triggered = in_boundary
+    # 触发：support 在边界 2~5 之间 OR 比劫不通根但 support ≤ 5（覆盖更多假从场景）
+    in_boundary = 2.0 <= support <= 5.5
+    weak_no_grounded_bijie = (not bijie_grounded) and support <= 5.5
+    triggered = in_boundary or weak_no_grounded_bijie
+
     if not triggered:
         kind = None
         suggested_phase = "day_master_dominant"
         suggested_label = ""
-    elif has_root and not chong_destroys_root:
+    elif has_self_help:
         kind = "pseudo"
         suggested_phase = "pseudo_following"
-        suggested_label = "假从格 · 日主有微根，仍按弱身扶身但加 caveat"
+        suggested_label = "假从格 · 日主有印 / 时柱帮扶，顺势从财杀但能保全自身（比真从温和）"
     else:
         kind = "true"
         suggested_phase = "true_following"
-        suggested_label = "真从格 · 日主根被破或无根，按从神方向走"
+        suggested_label = "真从格 · 日主完全无救（无印 / 无比劫通根 / 时柱也无帮扶），完全顺旺神走"
 
     return {
         "phase_id": "P4_pseudo_following",
@@ -782,9 +826,119 @@ def detect_pseudo_following(pillars: List[Pillar], strength: Dict) -> Dict:
         "suggested_label": suggested_label,
         "evidence": {
             "day_master_support": round(support, 2),
-            "in_boundary (2.0~5.0)": in_boundary,
-            "has_root_in_day_zhi": has_root,
-            "chong_destroys_root": chong_destroys_root,
+            "in_boundary (2.0~5.5)": in_boundary,
+            "weak_no_grounded_bijie": weak_no_grounded_bijie,
+            "bijie_grounded": bijie_grounded,
+            "yin_grounded": yin_grounded,
+            "shi_pillar_yin_self_seated": shi_zuo_yin,
+            "shi_pillar_bijie_self_seated": shi_zuo_bijie,
+            "has_self_help": has_self_help,
+        },
+    }
+
+
+def detect_three_qi_cheng_xiang(pillars: List[Pillar], strength: Dict) -> Dict:
+    """P5 · 三气成象 / 财官印连环检测（v7.1 新增）。
+
+    学理：当日主弱 + 命局存在「财生官 + 官生印 + 印生身」或「食伤生财 + 财生官」
+    这种"三气流通"结构，命局主旋律不是"日主主导"而是"流通方向 = 主事"。
+    参考《滴天髓·体用篇》"流通生化，体用相宜"、《穷通宝鉴》气机论。
+
+    判断方法：
+      有 ≥ 3 个非日主五行存在（每个 ≥ 2 分）+ 日主弱 + 比劫不通根
+      → 命局是"多神成势"而不是"单神得令"
+      → suggested_phase = floating_dms_to_cong_<最强非日主五行>
+
+    与 P1 的关系：P5 处理"非单一旺神主导"的边缘 case（P1 漏掉的部分）。
+    """
+    day_gan = pillars[2].gan
+    day_wx = GAN_WUXING[day_gan]
+
+    cnt = {wx: 0.0 for wx in WUXING_ORDER}
+    for i, p in enumerate(pillars):
+        cnt[GAN_WUXING[p.gan]] += 1.0
+        weight = 3.0 if i == 1 else 2.0
+        for j, hg in enumerate(ZHI_HIDDEN_GAN[p.zhi]):
+            cnt[GAN_WUXING[hg]] += weight * (1.0 if j == 0 else 0.3)
+
+    non_dms = sorted(
+        [(wx, score) for wx, score in cnt.items() if wx != day_wx],
+        key=lambda x: -x[1]
+    )
+
+    # 至少 2 个非日主五行 ≥ 3 分（说明气机流通成势；少于 2 通常是单旺神 → 走 P1）
+    n_strong_non_dms = sum(1 for _, s in non_dms if s >= 3.0)
+    cond_1_three_strong = n_strong_non_dms >= 2
+
+    # 最强非日主 + 第二强非日主 ≥ 8（成势）
+    if len(non_dms) >= 2:
+        top_two_sum = non_dms[0][1] + non_dms[1][1]
+    else:
+        top_two_sum = 0
+    cond_2_top_two_strong = top_two_sum >= 8
+
+    # 日主**真的弱**：label = 弱 AND score ≤ -20 AND 比劫不通根（三个 AND，防中和命误报）
+    bijie_grounded = _bijie_grounded(pillars, day_wx)
+    cond_3_dms_truly_weak = (
+        strength.get("label") == "弱"
+        and strength.get("score", 0) <= -20
+        and (not bijie_grounded)
+    )
+
+    # 检测连环结构：A 生 B 生 C 这种链条
+    has_chain = False
+    if len(non_dms) >= 3:
+        top3_wx = [non_dms[i][0] for i in range(3)]
+        for src in top3_wx:
+            mid = WUXING_SHENG.get(src)
+            tgt = WUXING_SHENG.get(mid) if mid else None
+            if mid in top3_wx and tgt in top3_wx:
+                has_chain = True
+                break
+            # 链条也可以走到日主：财 → 官 → 印 → 身
+            if mid in top3_wx and WUXING_SHENG.get(mid) == day_wx:
+                has_chain = True
+                break
+
+    # 触发：必须同时满足 1 + 2 + 3 + has_chain（has_chain 强制要求，确保是"流通"而非"杂乱多神"）
+    triggered = (cond_1_three_strong and cond_2_top_two_strong
+                 and cond_3_dms_truly_weak and has_chain)
+    score = sum([cond_1_three_strong, cond_2_top_two_strong, cond_3_dms_truly_weak, has_chain])
+
+    suggested_phase = "day_master_dominant"
+    suggested_label = ""
+    if triggered and non_dms:
+        dominating_wx = non_dms[0][0]
+        shishen_class = _shishen_class_from_wuxing(day_wx, dominating_wx)
+        suggested_phase = _shishen_to_phase(shishen_class)
+        ten_god_label = {
+            "正财": "财", "正官": "官", "七杀": "杀",
+            "食神": "食伤", "正印": "印",
+        }.get(shishen_class, shishen_class)
+        suggested_label = (
+            f"三气成象·{ten_god_label}({dominating_wx})为主神 · "
+            f"日主弱借力流通（{'/'.join([w for w,_ in non_dms[:3]])}成势）"
+            f"{' · 含连环生化' if has_chain else ''}"
+        )
+
+    return {
+        "phase_id": "P5_three_qi_cheng_xiang",
+        "triggered": triggered,
+        "score": f"{score}/4",
+        "suggested_phase": suggested_phase,
+        "suggested_label": suggested_label,
+        "evidence": {
+            "non_dms_distribution": [{wx: round(s, 2)} for wx, s in non_dms[:4]],
+            "n_strong_non_dms (≥2)": n_strong_non_dms,
+            "top_two_sum": round(top_two_sum, 2),
+            "bijie_grounded": bijie_grounded,
+            "has_chain (生化连环)": has_chain,
+            "conditions_met": {
+                "1_两个非日主五行 ≥ 3": cond_1_three_strong,
+                "2_最强两个 ≥ 8": cond_2_top_two_strong,
+                "3_日主真弱 (label=弱 AND score≤-20 AND 比劫不通根)": cond_3_dms_truly_weak,
+                "4_存在连环生化链 (强制要求)": has_chain,
+            },
         },
     }
 
@@ -804,6 +958,7 @@ def detect_all_phase_candidates(bazi_dict: Dict) -> List[Dict]:
         detect_dominating_god(pillars, strength),
         detect_climate_inversion(pillars, climate),
         detect_pseudo_following(pillars, strength),
+        detect_three_qi_cheng_xiang(pillars, strength),
     ]
     triggered = [r for r in results if r["triggered"]]
     not_triggered = [r for r in results if not r["triggered"]]
