@@ -1298,14 +1298,19 @@ SHENSHA_IMPACT = {
 def detect_all_phase_candidates(bazi_dict: Dict) -> List[Dict]:
     """跑全部 4 类 detect，返回触发的候选 + 全部 detect 详情。
 
+    v8 改动：每个 detector 输出 dict 在原有字段上 augment 两个 v8 字段：
+        - confidence_for_decide: float ∈ [0, 1]，detector 对自己结论的信心
+        - phase_likelihoods: Dict[phase_id, float]，14 个 phase 上的 likelihood 分布（∑=1.0）
+                             用于 decide_phase 做贝叶斯先验融合（详见 phase_decision_protocol.md §3）
+
     输入是 bazi.json 解析后的 dict（含 pillars / strength / climate / pillar_info）。
-    输出 list 按 confidence 降序排序，仅 triggered=True 的进入。
+    输出 list 按 confidence 降序排序，仅 triggered=True 的进入 triggered_candidates。
     """
     pillars = [Pillar(p["gan"], p["zhi"]) for p in bazi_dict["pillars"]]
     strength = bazi_dict["strength"]
     climate = bazi_dict.get("yongshen", {}).get("climate") or climate_profile(pillars)
 
-    results = [
+    raw_results = [
         detect_floating_day_master(pillars, strength),
         detect_dominating_god(pillars, strength),
         detect_climate_inversion(pillars, climate),
@@ -1313,17 +1318,19 @@ def detect_all_phase_candidates(bazi_dict: Dict) -> List[Dict]:
         detect_three_qi_cheng_xiang(pillars, strength),
         detect_huaqi_pattern(pillars),
     ]
+    # v8 · augment 每个 detector 输出
+    results = [_augment_detector_output(r) for r in raw_results]
+
     triggered = [r for r in results if r["triggered"]]
     not_triggered = [r for r in results if not r["triggered"]]
 
     # v7.2 · 触发候选按置信度排序：先按 hit/total 比值降序，平手时按 hit 绝对值降序
-    # （hit 越多 = 越多条件命中 = detector 内在更扎实），P4 没分数 → ratio=0.5/hit=0
-    def _conf(det: Dict) -> tuple[float, int]:
+    def _conf(det: Dict) -> Tuple[float, int]:
         s = det.get("score", "")
         if not s or "/" not in str(s):
             return (0.5, 0)
         try:
-            hit, tot = str(s).split("/")
+            hit, tot = str(s).split("(")[0].split("/")
             hit_f, tot_f = float(hit), float(tot)
             return (hit_f / tot_f if tot_f > 0 else 0.5, int(hit_f))
         except Exception:
@@ -1339,6 +1346,641 @@ def detect_all_phase_candidates(bazi_dict: Dict) -> List[Dict]:
             "phases_suggested": [r["suggested_phase"] for r in triggered if r["suggested_phase"] != "day_master_dominant"],
         },
     }
+
+
+# ============================================================================
+# v8 · Phase Decision · detector → prior → posterior 融合
+# ----------------------------------------------------------------------------
+# 详见 references/phase_decision_protocol.md
+# ============================================================================
+
+# 每个 detector 能"投票"的 phase 家族（家族外 phase 给残余权重）
+_DETECTOR_PHASE_FAMILY: Dict[str, Tuple[str, ...]] = {
+    "P1_floating_day_master": (
+        "floating_dms_to_cong_cai", "floating_dms_to_cong_sha",
+        "floating_dms_to_cong_er", "floating_dms_to_cong_yin",
+    ),
+    "P2_dominating_god": (
+        "dominating_god_cai_zuo_zhu", "dominating_god_guan_zuo_zhu",
+        "dominating_god_shishang_zuo_zhu", "dominating_god_yin_zuo_zhu",
+    ),
+    "P3_climate_inversion": (
+        "climate_inversion_dry_top", "climate_inversion_wet_top",
+    ),
+    "P4_pseudo_following": (
+        "pseudo_following", "true_following",
+    ),
+    "P5_three_qi_cheng_xiang": (
+        "floating_dms_to_cong_cai", "floating_dms_to_cong_sha",
+        "floating_dms_to_cong_er", "floating_dms_to_cong_yin",
+    ),
+    "P6_huaqi": tuple(f"huaqi_to_{wx}" for wx in ("土", "金", "水", "木", "火")),
+}
+
+ALL_PHASE_IDS: Tuple[str, ...] = tuple(sorted({
+    "day_master_dominant",
+    *(p for fam in _DETECTOR_PHASE_FAMILY.values() for p in fam),
+}))
+
+# detector → 它语义上"邻近"但不在自己 family 里的 phase 集（语义相近 → 触发时给 moderate boost）
+# 例：P3（调候反向）触发，往往伴随 cong_xxx；P4（假从）本身是 cong 的子集
+_DETECTOR_NEIGHBOR_PHASES: Dict[str, Tuple[str, ...]] = {
+    "P3_climate_inversion": (
+        "floating_dms_to_cong_cai", "floating_dms_to_cong_sha",
+        "floating_dms_to_cong_er", "floating_dms_to_cong_yin",
+    ),
+    "P4_pseudo_following": (
+        "floating_dms_to_cong_cai", "floating_dms_to_cong_sha",
+        "floating_dms_to_cong_er", "floating_dms_to_cong_yin",
+    ),
+    "P5_three_qi_cheng_xiang": (
+        "pseudo_following", "true_following",
+    ),
+    "P1_floating_day_master": (
+        "pseudo_following", "true_following",
+    ),
+}
+
+
+def _parse_detector_score(score_str: str) -> Tuple[float, float]:
+    """解析 detector score 字段（如 "4/5（核心三条满足触发）"）→ (hit, tot)。"""
+    if not score_str or "/" not in str(score_str):
+        return (0.0, 1.0)
+    try:
+        head = str(score_str).split("（")[0].split("(")[0]
+        hit_s, tot_s = head.split("/")
+        return (float(hit_s), float(tot_s))
+    except Exception:
+        return (0.0, 1.0)
+
+
+def _phase_likelihoods_from_detector(det: Dict) -> Dict[str, float]:
+    """把单个 detector 输出映射成 18 phase 上的 likelihood 分布（∑=1.0）。
+
+    映射规则（启发式 · 详见 phase_decision_protocol.md §3）：
+      - triggered:
+          suggested_phase: 0.50 + 0.15 × score_ratio   → 0.50 ~ 0.65
+          family 其他成员: 各 0.04
+          neighbor 语义邻近 phase: 各 0.05
+          day_master_dominant: 0.04
+          其他 outside: 平分残余
+      - 未 triggered:
+          返回近似 uniform 分布（fusion 时会被跳过；保留是为了诊断 / 调试）
+          day_master_dominant: 0.10（轻微 DM 偏好）
+          其他: 均匀分摊剩余
+    """
+    detector_id = det.get("phase_id", "unknown")
+    family = set(_DETECTOR_PHASE_FAMILY.get(detector_id, ()))
+    neighbors = set(_DETECTOR_NEIGHBOR_PHASES.get(detector_id, ()))
+    neighbors -= family  # neighbors 与 family 不重叠
+    suggested = det.get("suggested_phase", "day_master_dominant")
+    triggered = bool(det.get("triggered", False))
+    hit, tot = _parse_detector_score(str(det.get("score", "0/1")))
+    score_ratio = (hit / tot) if tot > 0 else 0.5
+
+    out: Dict[str, float] = {}
+    if triggered:
+        w_suggested = 0.50 + 0.15 * score_ratio  # 0.50 ~ 0.65
+        w_family = 0.04
+        w_neighbor = 0.05
+        w_dm = 0.04
+        used_phases = {suggested, "day_master_dominant"} | family | neighbors
+        outside = [p for p in ALL_PHASE_IDS if p not in used_phases]
+        n_family_others = sum(1 for p in family if p != suggested)
+        n_neighbors = len(neighbors)
+        n_outside = len(outside)
+        consumed = (
+            w_suggested
+            + w_family * n_family_others
+            + w_neighbor * n_neighbors
+            + (w_dm if "day_master_dominant" not in family and "day_master_dominant" not in neighbors and "day_master_dominant" != suggested else 0.0)
+        )
+        w_outside = max((1.0 - consumed) / max(n_outside, 1), 0.005)
+
+        for pid in ALL_PHASE_IDS:
+            if pid == suggested:
+                out[pid] = w_suggested
+            elif pid in family:
+                out[pid] = w_family
+            elif pid in neighbors:
+                out[pid] = w_neighbor
+            elif pid == "day_master_dominant":
+                out[pid] = w_dm
+            else:
+                out[pid] = w_outside
+    else:
+        # 未触发：近似 uniform，DM 略偏好（fusion 时会被 _compute_prior 跳过）
+        w_dm = 0.10
+        w_other = (1.0 - w_dm) / (len(ALL_PHASE_IDS) - 1)
+        for pid in ALL_PHASE_IDS:
+            out[pid] = w_dm if pid == "day_master_dominant" else w_other
+
+    total = sum(out.values())
+    return {pid: round(out[pid] / total, 8) for pid in sorted(out.keys())}
+
+
+def _augment_detector_output(det: Dict) -> Dict:
+    """v8 · 在 detector 原 dict 上加 confidence_for_decide + phase_likelihoods。"""
+    triggered = bool(det.get("triggered", False))
+    hit, tot = _parse_detector_score(str(det.get("score", "0/1")))
+    score_ratio = (hit / tot) if tot > 0 else 0.5
+    if triggered:
+        confidence_for_decide = round(0.50 + 0.50 * score_ratio, 4)
+    else:
+        confidence_for_decide = round(max(0.05, 0.30 - 0.20 * score_ratio), 4)
+    out = dict(det)
+    out["confidence_for_decide"] = confidence_for_decide
+    out["phase_likelihoods"] = _phase_likelihoods_from_detector(det)
+    return out
+
+
+def _normalize_distribution(dist: Dict[str, float]) -> Dict[str, float]:
+    total = sum(dist.values())
+    if total <= 0:
+        n = len(dist) or 1
+        return {k: 1.0 / n for k in sorted(dist.keys())}
+    return {k: dist[k] / total for k in sorted(dist.keys())}
+
+
+def _compute_prior_distribution(detection_details: List[Dict]) -> Dict[str, float]:
+    """对所有 *已触发* detector 输出做乘性贝叶斯融合，得到 18 phase 上的先验分布。
+
+    设计要点（详见 phase_decision_protocol.md §3）：
+      - 起始 prior：DM = 0.30（baseline 偏好默认相位但不绝对），其它 17 phase 平分剩余 0.70
+      - 跳过未触发 detector：未触发 ≈ 无信息，不应把 DM 推到 99%
+      - 末尾 floor：DM ≥ 0.03（防止极端 case 把 DM 压到 0；但允许显著降低）
+    """
+    n = len(ALL_PHASE_IDS)
+    triggered = [d for d in detection_details if d.get("triggered", False)]
+
+    # 0 triggered → fast-path：DM_dominant 高置信，其它平分残余
+    # （detector 设计本身就是为了找"非默认"case；都没触发 = 默认相位的强证据）
+    if not triggered:
+        prior: Dict[str, float] = {pid: 0.10 / (n - 1) for pid in ALL_PHASE_IDS}
+        prior["day_master_dominant"] = 0.90
+        return _normalize_distribution(prior)
+
+    # 有 triggered → 弱 DM 偏置 + 乘性融合
+    prior = {pid: 0.70 / (n - 1) for pid in ALL_PHASE_IDS}
+    prior["day_master_dominant"] = 0.30
+    prior = _normalize_distribution(prior)
+
+    for det in triggered:
+        likelihoods = det.get("phase_likelihoods") or _phase_likelihoods_from_detector(det)
+        for pid in prior:
+            prior[pid] *= max(likelihoods.get(pid, 1e-6), 1e-6)
+        prior = _normalize_distribution(prior)
+    # day_master_dominant baseline floor，避免数值下溢
+    prior["day_master_dominant"] = max(prior["day_master_dominant"], 0.03)
+    return _normalize_distribution(prior)
+
+
+# 五行映射常量（供 _phase_five_tuple 使用）
+_WUXING_INV_KE: Dict[str, str] = {v: k for k, v in WUXING_KE.items()}  # 谁克我
+_WUXING_INV_SHENG: Dict[str, str] = {v: k for k, v in WUXING_SHENG.items()}  # 谁生我
+
+
+def _phase_five_tuple(phase_id: str, bazi_dict: Dict) -> Dict:
+    """根据 phase_id 算 (strength_label, yongshen, xishen, jishen, climate_label) 五元组。
+    详见 phase_decision_protocol.md §6。
+    """
+    pillars = [Pillar(p["gan"], p["zhi"]) for p in bazi_dict["pillars"]]
+    day_gan = pillars[2].gan
+    day_wx = GAN_WUXING[day_gan]
+    cai_wx = WUXING_KE[day_wx]              # 我克 = 财
+    sha_wx = _WUXING_INV_KE[day_wx]         # 克我 = 官杀
+    er_wx = WUXING_SHENG[day_wx]            # 我生 = 食伤
+    yin_wx = _WUXING_INV_SHENG[day_wx]      # 生我 = 印
+    bi_wx = day_wx                           # 比劫 = 我
+
+    default_strength = bazi_dict.get("strength", {})
+    default_yongshen = bazi_dict.get("yongshen", {}).get("yongshen", "")
+    default_climate = bazi_dict.get("yongshen", {}).get("climate", {}).get("label", "")
+
+    # 默认（DM_dominant）走原有 yongshen
+    if phase_id == "day_master_dominant":
+        return {
+            "strength": default_strength,
+            "yongshen": default_yongshen,
+            "xishen": _WUXING_INV_SHENG.get(default_yongshen, ""),
+            "jishen": _WUXING_INV_KE.get(default_yongshen, ""),
+            "climate": bazi_dict.get("yongshen", {}).get("climate", {}),
+            "phase_label": "默认 · 日主主导",
+        }
+
+    # cong_xxx 系列：日主弃命从某神
+    cong_map = {
+        "floating_dms_to_cong_cai": (cai_wx, er_wx, bi_wx, "弃命从财（日主虚浮 → 财星主事）"),
+        "floating_dms_to_cong_sha": (sha_wx, cai_wx, yin_wx, "弃命从杀（日主虚浮 → 官杀主事）"),
+        "floating_dms_to_cong_er":  (er_wx, bi_wx, yin_wx, "弃命从儿（日主虚浮 → 食伤主事）"),
+        "floating_dms_to_cong_yin": (yin_wx, sha_wx, cai_wx, "弃命从印（日主虚浮 → 印星主事）"),
+    }
+    if phase_id in cong_map:
+        ys, xs, js, label = cong_map[phase_id]
+        return {
+            "strength": {"label": "强（从神为主）", "score": 30, "_phase_overridden": True},
+            "yongshen": ys, "xishen": xs, "jishen": js,
+            "climate": bazi_dict.get("yongshen", {}).get("climate", {}),
+            "phase_label": label,
+        }
+
+    # dominating_god 系列：日主弱 + 旺神主事
+    dom_map = {
+        "dominating_god_cai_zuo_zhu":   (cai_wx, er_wx, bi_wx, "旺神得令·财星主事"),
+        "dominating_god_guan_zuo_zhu":  (sha_wx, cai_wx, yin_wx, "旺神得令·官杀主事"),
+        "dominating_god_shishang_zuo_zhu": (er_wx, bi_wx, yin_wx, "旺神得令·食伤主事"),
+        "dominating_god_yin_zuo_zhu":   (yin_wx, sha_wx, cai_wx, "旺神得令·印主事"),
+    }
+    if phase_id in dom_map:
+        ys, xs, js, label = dom_map[phase_id]
+        return {
+            "strength": {"label": "弱", "score": -25, "_phase_overridden": True},
+            "yongshen": ys, "xishen": xs, "jishen": js,
+            "climate": bazi_dict.get("yongshen", {}).get("climate", {}),
+            "phase_label": label,
+        }
+
+    # climate inversion · 调候反向
+    if phase_id == "climate_inversion_dry_top":
+        return {
+            "strength": default_strength,
+            "yongshen": "水", "xishen": "金", "jishen": "土",
+            "climate": {"label": "上燥下寒", "_phase_overridden": True},
+            "phase_label": "调候反向·上燥下寒（用神锁水）",
+        }
+    if phase_id == "climate_inversion_wet_top":
+        return {
+            "strength": default_strength,
+            "yongshen": "火", "xishen": "木", "jishen": "水",
+            "climate": {"label": "上湿下燥", "_phase_overridden": True},
+            "phase_label": "调候反向·上湿下燥（用神锁火）",
+        }
+
+    # pseudo_following · 假从（保留原 yongshen + caveat）
+    if phase_id == "pseudo_following":
+        return {
+            "strength": {"label": "弱", "score": -10, "_phase_overridden": True, "_caveat": "假从"},
+            "yongshen": default_yongshen,
+            "xishen": _WUXING_INV_SHENG.get(default_yongshen, ""),
+            "jishen": _WUXING_INV_KE.get(default_yongshen, ""),
+            "climate": bazi_dict.get("yongshen", {}).get("climate", {}),
+            "phase_label": "假从格 · 日主有印 / 时柱帮扶",
+        }
+
+    # true_following · 真从（按旺神方向）
+    if phase_id == "true_following":
+        # 旺神 wx 由 detector 找出；这里简化为最强非日主五行
+        cnt = _wuxing_count(pillars)
+        non_dms = sorted(
+            [(wx, score) for wx, score in cnt.items() if wx != day_wx],
+            key=lambda x: (-x[1], x[0])
+        )
+        dominating_wx = non_dms[0][0] if non_dms else cai_wx
+        ys = dominating_wx
+        xs = _WUXING_INV_SHENG.get(ys, "")
+        js = _WUXING_INV_KE.get(ys, "")
+        return {
+            "strength": {"label": "强（从神为主）", "score": 30, "_phase_overridden": True},
+            "yongshen": ys, "xishen": xs, "jishen": js,
+            "climate": bazi_dict.get("yongshen", {}).get("climate", {}),
+            "phase_label": f"真从格 · 顺{ys}走",
+        }
+
+    # huaqi_to_<wx> · 化气格
+    if phase_id.startswith("huaqi_to_"):
+        huashen = phase_id.replace("huaqi_to_", "")
+        return {
+            "strength": {"label": "强（化神为主）", "score": 25, "_phase_overridden": True},
+            "yongshen": huashen,
+            "xishen": _WUXING_INV_SHENG.get(huashen, ""),
+            "jishen": _WUXING_INV_KE.get(huashen, ""),
+            "climate": bazi_dict.get("yongshen", {}).get("climate", {}),
+            "phase_label": f"化气格 · 化{huashen}",
+        }
+
+    # 兜底
+    return {
+        "strength": default_strength,
+        "yongshen": default_yongshen,
+        "xishen": _WUXING_INV_SHENG.get(default_yongshen, ""),
+        "jishen": _WUXING_INV_KE.get(default_yongshen, ""),
+        "climate": bazi_dict.get("yongshen", {}).get("climate", {}),
+        "phase_label": phase_id,
+    }
+
+
+def _confidence_label(top_prob: float) -> str:
+    """详见 phase_decision_protocol.md §5。"""
+    if top_prob >= 0.80:
+        return "high"
+    if top_prob >= 0.60:
+        return "mid"
+    if top_prob >= 0.40:
+        return "low"
+    return "reject"
+
+
+def decide_phase(
+    bazi_dict: Dict,
+    user_answers: Optional[Dict[str, str]] = None,
+    dynamic_questions: Optional[List[Dict]] = None,
+) -> Dict:
+    """v8 核心 · phase decision。
+
+    Args:
+        bazi_dict: bazi.json 解析后的 dict（含 pillars / strength / yongshen / climate）
+        user_answers: Optional[Dict[question_id, option_id]]，None = 仅算先验
+        dynamic_questions: Optional list of dynamic question dicts (id, options, likelihood_table)
+                           — D3 流年题由 handshake 阶段动态生成，传给本函数算后验
+
+    Returns:
+        PhaseDecision dict（详见 references/phase_decision_protocol.md §6）
+    """
+    detection = detect_all_phase_candidates(bazi_dict)
+    detail = detection["all_detection_details"]
+
+    prior = _compute_prior_distribution(detail)
+
+    posterior = dict(prior)
+    answered_ids: List[str] = []
+    if user_answers:
+        # 静态题
+        try:
+            from _question_bank import get_static_questions  # type: ignore
+        except ImportError:
+            from scripts._question_bank import get_static_questions  # type: ignore
+        questions_by_id = {q.id: q for q in get_static_questions()}
+        # 动态题（D3 流年题）追加进 lookup
+        if dynamic_questions:
+            for dq in dynamic_questions:
+                questions_by_id[dq["id"]] = _DynamicQuestionShim(dq)
+
+        for qid, opt in sorted(user_answers.items()):
+            q = questions_by_id.get(qid)
+            if q is None:
+                continue
+            answered_ids.append(qid)
+            weight = 2.0 if q.weight_class == "hard_evidence" else 1.0
+            for pid in posterior:
+                like = q.likelihood_table.get(pid, {}).get(opt, 0.25)
+                posterior[pid] *= max(like, 1e-6) ** weight
+            posterior = _normalize_distribution(posterior)
+
+    # decision: top-1
+    sorted_phases = sorted(posterior.items(), key=lambda x: (-x[1], x[0]))
+    top_phase = sorted_phases[0][0]
+    top_prob = sorted_phases[0][1]
+    confidence = _confidence_label(top_prob)
+
+    five = _phase_five_tuple(top_phase, bazi_dict)
+
+    triggered_summary = [
+        f"{d['phase_id']}({d.get('score','')})"
+        for d in detection["triggered_candidates"]
+    ]
+    reason_parts = []
+    if triggered_summary:
+        reason_parts.append("detectors: " + ", ".join(triggered_summary))
+    else:
+        reason_parts.append("detectors: 无触发，走默认相位")
+    if answered_ids:
+        reason_parts.append(f"user answered: {', '.join(answered_ids)}")
+
+    candidates = [
+        {
+            "phase_id": pid,
+            "prior": round(prior[pid], 6),
+            "posterior": round(posterior[pid], 6),
+        }
+        for pid, _ in sorted_phases[:5]
+    ]
+
+    return {
+        "version": 8,
+        "candidates": candidates,
+        "prior_distribution": {k: round(v, 6) for k, v in sorted(prior.items())},
+        "posterior_distribution": {k: round(v, 6) for k, v in sorted(posterior.items())},
+        "decision": top_phase,
+        "decision_probability": round(top_prob, 6),
+        "phase_label": five["phase_label"],
+        "confidence": confidence,
+        "is_provisional": user_answers is None,
+        "strength_after_phase": five["strength"],
+        "yongshen_after_phase": five["yongshen"],
+        "xishen_after_phase": five["xishen"],
+        "jishen_after_phase": five["jishen"],
+        "climate_after_phase": five["climate"],
+        "answered_questions": sorted(answered_ids),
+        "reason": "; ".join(reason_parts),
+    }
+
+
+class _DynamicQuestionShim:
+    """把 D3 dynamic question dict 包装成 Question-like 对象，供 decide_phase 内部使用。"""
+    __slots__ = ("id", "weight_class", "likelihood_table")
+
+    def __init__(self, q_dict: Dict):
+        self.id = q_dict["id"]
+        self.weight_class = q_dict.get("weight_class", "hard_evidence")
+        self.likelihood_table = q_dict.get("likelihood_table", {})
+
+
+def compute_question_likelihoods(
+    bazi_dict: Dict,
+    top_k: int = 25,
+    discrimination_threshold: float = 0.18,
+) -> List[Dict]:
+    """v8 · 按当前命局 prior 自动从题库筛 phase-discriminative 题（按区分度倒排，取 top_k）。
+
+    返回 list of dict（每个含：id, dimension, weight_class, prompt, options, likelihood_table,
+    discrimination_power）—— handshake.py 把它打包进 v8 schema。
+    """
+    try:
+        from _question_bank import get_static_questions, discrimination_power  # type: ignore
+    except ImportError:
+        from scripts._question_bank import get_static_questions, discrimination_power  # type: ignore
+
+    detection = detect_all_phase_candidates(bazi_dict)
+    prior = _compute_prior_distribution(detection["all_detection_details"])
+
+    questions = get_static_questions()
+    scored = []
+    for q in questions:
+        dp = discrimination_power(q, prior)
+        if dp < discrimination_threshold:
+            continue
+        scored.append((dp, q))
+    # 倒排
+    scored.sort(key=lambda x: (-x[0], x[1].id))
+    selected = scored[:top_k]
+
+    out = []
+    for dp, q in selected:
+        out.append({
+            "id": q.id,
+            "dimension": q.dimension,
+            "weight_class": q.weight_class,
+            "prompt": q.prompt,
+            "options": [{"id": o.id, "label": o.label} for o in q.options],
+            "likelihood_table": {
+                pid: dict(sorted(row.items())) for pid, row in sorted(q.likelihood_table.items())
+            },
+            "discrimination_power": round(dp, 6),
+            "requires_dynamic_year": q.requires_dynamic_year,
+            "evidence_note": q.evidence_note,
+        })
+    return out
+
+
+def pairwise_discrimination_power(
+    q,  # Question or _DynamicQuestionShim
+    phase_a: str,
+    phase_b: str,
+) -> float:
+    """两个 phase 之间的 L1 区分度（[0, 2]，越大越能区分）。
+
+    用于 Round 2 confirmation：在 R1 决策的 top phase 与 runner-up 之间，
+    挑出最具判别力的题目继续追问。详见 references/phase_decision_protocol.md §7。
+    """
+    table = getattr(q, "likelihood_table", None) or {}
+    row_a = table.get(phase_a, {})
+    row_b = table.get(phase_b, {})
+    if not row_a or not row_b:
+        return 0.0
+    options = getattr(q, "options", None)
+    if options:
+        opt_ids = [o.id for o in options]
+    else:
+        opt_ids = sorted(set(row_a.keys()) | set(row_b.keys()))
+    return sum(abs(row_a.get(oid, 0.0) - row_b.get(oid, 0.0)) for oid in opt_ids)
+
+
+def compute_confirmation_questions(
+    bazi_dict: Dict,
+    decided_phase: str,
+    runner_up_phase: str,
+    exclude_ids: Optional[List[str]] = None,
+    top_k: int = 6,
+    discrimination_threshold: float = 0.30,
+) -> List[Dict]:
+    """v8 R2 · 在已决策 phase 与 runner-up 之间挑高判别力的静态题。
+
+    Args:
+        bazi_dict: bazi.json
+        decided_phase: R1 后验 top
+        runner_up_phase: R1 后验第二
+        exclude_ids: R1 已经问过的 question_id 列表
+        top_k: 返回数量上限
+        discrimination_threshold: pairwise L1 距离下限（< 此值的题判别力不足，过滤）
+    """
+    try:
+        from _question_bank import get_static_questions  # type: ignore
+    except ImportError:
+        from scripts._question_bank import get_static_questions  # type: ignore
+
+    excluded = set(exclude_ids or [])
+    scored: List[Tuple[float, "Question"]] = []
+    for q in get_static_questions():
+        if q.id in excluded:
+            continue
+        dp = pairwise_discrimination_power(q, decided_phase, runner_up_phase)
+        if dp < discrimination_threshold:
+            continue
+        scored.append((dp, q))
+
+    scored.sort(key=lambda x: (-x[0], x[1].id))
+    selected = scored[:top_k]
+
+    out: List[Dict] = []
+    for dp, q in selected:
+        out.append({
+            "id": q.id,
+            "dimension": q.dimension,
+            "weight_class": q.weight_class,
+            "prompt": q.prompt,
+            "options": [{"id": o.id, "label": o.label} for o in q.options],
+            "likelihood_table": {
+                pid: dict(sorted(row.items())) for pid, row in sorted(q.likelihood_table.items())
+            },
+            "discrimination_power": round(dp, 6),
+            "pairwise_target": {"a": decided_phase, "b": runner_up_phase},
+            "requires_dynamic_year": q.requires_dynamic_year,
+            "evidence_note": q.evidence_note,
+        })
+    return out
+
+
+def assess_confirmation(
+    r1_decision: str,
+    r1_probability: float,
+    r2_decision: str,
+    r2_probability: float,
+    confirmed_threshold: float = 0.85,
+    weakly_confirmed_threshold: float = 0.65,
+) -> Dict:
+    """v8 R2 · 比较 R1 / R2 决策，输出 confirmation_status。
+
+    详见 references/phase_decision_protocol.md §7。
+
+    Returns dict:
+        status: "confirmed" | "weakly_confirmed" | "decision_changed" | "uncertain"
+        message: 中文短说明
+        action: "render" | "render_with_caveat" | "escalate"
+    """
+    if r1_decision != r2_decision:
+        return {
+            "status": "decision_changed",
+            "message": (
+                f"R1 决策 {r1_decision} 经 R2 校验后翻转为 {r2_decision}（prob={r2_probability:.3f}）。"
+                "建议核对出生时辰 / 性别，或采纳 R2 新决策再次 R2 验证。"
+            ),
+            "action": "escalate",
+            "r1_decision": r1_decision,
+            "r2_decision": r2_decision,
+            "r1_probability": round(r1_probability, 6),
+            "r2_probability": round(r2_probability, 6),
+        }
+    # 决策一致
+    if r2_probability >= confirmed_threshold:
+        return {
+            "status": "confirmed",
+            "message": f"R2 高度确认 {r2_decision}（prob={r2_probability:.3f} ≥ {confirmed_threshold}）。",
+            "action": "render",
+            "r1_decision": r1_decision,
+            "r2_decision": r2_decision,
+            "r1_probability": round(r1_probability, 6),
+            "r2_probability": round(r2_probability, 6),
+        }
+    if r2_probability >= weakly_confirmed_threshold:
+        return {
+            "status": "weakly_confirmed",
+            "message": (
+                f"R2 弱确认 {r2_decision}（prob={r2_probability:.3f}，区间 "
+                f"[{weakly_confirmed_threshold}, {confirmed_threshold})）；可出图但需在解读处加 caveat。"
+            ),
+            "action": "render_with_caveat",
+            "r1_decision": r1_decision,
+            "r2_decision": r2_decision,
+            "r1_probability": round(r1_probability, 6),
+            "r2_probability": round(r2_probability, 6),
+        }
+    return {
+        "status": "uncertain",
+        "message": (
+            f"R2 后验 {r2_probability:.3f} < {weakly_confirmed_threshold}，命局结构尚有疑问；"
+            "建议核对时辰 / 性别后再走 R3，或人工 caveat 出图。"
+        ),
+        "action": "escalate",
+        "r1_decision": r1_decision,
+        "r2_decision": r2_decision,
+        "r1_probability": round(r1_probability, 6),
+        "r2_probability": round(r2_probability, 6),
+    }
+
+
+# ============================================================================
+# end of v8 phase decision
+# ============================================================================
 
 
 # ============================================================================
@@ -1373,20 +2015,11 @@ def _find_tongguan(pillars: List[Pillar]) -> Optional[str]:
 
 # --- 大运起运 ---
 
-def compute_qiyun_info_from_gregorian(date_str: str, gender: str) -> Optional[Dict]:
-    """用 lunar-python 精确算起运信息。失败返回 None。
+def compute_qiyun_age_from_gregorian(date_str: str, gender: str) -> Optional[int]:
+    """用 lunar-python 精确算起运岁。失败返回 None。
 
     `date_str` 可以是 'YYYY-MM-DD HH:MM' 或 'YYYY-MM-DD'。
-    起运岁 = 距下一节气（顺行）/上一节气（逆行）到出生时刻的距离 / 3 天 = 1 年。
-
-    返回 dict：
-        {
-          "qiyun_age_xu": int,        # 虚岁起运（lunar-python 的 getStartYear，向下取整）
-          "qiyun_year_offset": float, # 起运实数岁（精确到月），用于推算大运换运年
-          "qiyun_start_year": int,    # 第 1 步大运的精确换运公历年
-          "qiyun_start_solar": str,   # 第 1 步大运的精确换运公历日期 'YYYY-MM-DD HH:MM:SS'
-          "qiyun_age_real": int,      # 实岁起运（年数部分，向下取整），= qiyun_start_year - birth_year
-        }
+    起运岁 = 距出生最近的节气到出生时刻的距离 / 3 天 = 1 年（顺行 / 逆行依阴阳男女）。
     """
     try:
         from lunar_python import Solar
@@ -1404,28 +2037,11 @@ def compute_qiyun_info_from_gregorian(date_str: str, gender: str) -> Optional[Di
         ec = lunar.getEightChar()
         gender_int = 1 if gender.upper() in ("M", "MALE", "男") else 0
         yun = ec.getYun(gender_int)
-        start_solar = yun.getStartSolar()
-        start_year_real = int(start_solar.getYear())
-        return {
-            "qiyun_age_xu": int(yun.getStartYear()),
-            "qiyun_year_offset": (
-                int(yun.getStartYear()) + int(yun.getStartMonth()) / 12.0
-                + int(yun.getStartDay()) / 365.25
-            ),
-            "qiyun_start_year": start_year_real,
-            "qiyun_start_solar": start_solar.toYmdHms(),
-            "qiyun_age_real": start_year_real - y,
-        }
+        # getStartYear() = 起运虚岁；起运实岁 ≈ 虚岁 - 1
+        # 实测对真太阳时影响不大；这里返回虚岁（中国传统命书一致）
+        return int(yun.getStartYear())
     except Exception:
         return None
-
-
-def compute_qiyun_age_from_gregorian(date_str: str, gender: str) -> Optional[int]:
-    """[向后兼容] 返回起运虚岁。新代码请用 compute_qiyun_info_from_gregorian。"""
-    info = compute_qiyun_info_from_gregorian(date_str, gender)
-    if info is None:
-        return None
-    return info["qiyun_age_xu"]
 
 
 def get_dayun_sequence(
@@ -1434,7 +2050,6 @@ def get_dayun_sequence(
     birth_year: int,
     n_yun: int = 8,
     qiyun_age: int = 8,
-    qiyun_start_year: Optional[int] = None,
 ) -> List[Dict]:
     """生成大运序列。
 
@@ -1442,12 +2057,6 @@ def get_dayun_sequence(
     用户手动指定 `--qiyun-age`）。pillars 模式没有时分秒信息时，本函数无法精算，
     会沿用调用方传入的默认值（8 岁）—— 此时强烈建议用户从校验环节确认起运。
     方向按阴阳男女判断（阳男阴女顺行，阴男阳女逆行）。
-
-    `qiyun_start_year`（v7.7 新增）：第 1 步大运的精确换运公历年（来自
-    lunar-python 的 yun.getStartSolar().getYear()）。若提供则**优先使用**，
-    避免「虚岁向下取整 + birth_year + qiyun_age 简化算法」造成的 ±1 年偏差
-    （典型场景：起运 9 年 5 个月，简化算法会输出 1996+9=2005，但实际换运在
-    2006-05，其他主流软件都标 2006）。
 
     返回格式：[{ index, gan, zhi, start_age, start_year, end_age, end_year }, ...]
     """
@@ -1459,16 +2068,9 @@ def get_dayun_sequence(
     male = gender.upper() in ("M", "MALE", "男")
     forward = (yang and male) or (not yang and not male)
 
+    # Find indices
     g_idx = GAN.index(month_gan)
     z_idx = ZHI.index(month_zhi)
-
-    # 优先使用精确换运年；否则退回简化算法
-    if qiyun_start_year is not None:
-        first_start_year = qiyun_start_year
-        first_start_age = qiyun_start_year - birth_year
-    else:
-        first_start_age = qiyun_age
-        first_start_year = birth_year + qiyun_age
 
     seq = []
     for i in range(n_yun):
@@ -1479,8 +2081,8 @@ def get_dayun_sequence(
         else:
             ng = GAN[(g_idx - step) % 10]
             nz = ZHI[(z_idx - step) % 12]
-        start_age = first_start_age + i * 10
-        start_year = first_start_year + i * 10
+        start_age = qiyun_age + i * 10
+        start_year = birth_year + start_age
         seq.append({
             "index": i,
             "gan": ng,

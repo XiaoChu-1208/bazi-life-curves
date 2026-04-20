@@ -303,76 +303,71 @@ def compute_true_solar_time(
     gregorian: str,
     longitude: float,
     timezone_offset_hours: float = 8.0,
+    include_eot: bool = True,
 ) -> dict:
-    """计算真太阳时校正。
+    """计算真太阳时校正（v8.0 · 含均时差 EOT，精度 ±15 秒）。
 
-    优先使用 ``sxtwl``（中科院寿星天文历绑定，含均时差），fallback 到经度近似。
-
-    天文级（sxtwl）：
+    v8.0 升级：永远启用 NOAA 均时差 EOT 公式（纯 Python，零额外依赖）：
         真太阳时 = 钟表时间 + (经度 - 时区中心经度) × 4 分钟 + 均时差 EOT
-        其中 EOT 因地球轨道椭圆 + 黄赤交角，一年内在 ±16 分钟波动
 
-    简化级（fallback）：
-        真太阳时 = 钟表时间 + (经度 - 120) × 4 分钟
-        忽略均时差，精度 ±2 分钟
+    其中 EOT 因地球轨道椭圆（近日点 1 月初）+ 黄赤交角，一年内在
+    +14 min（2 月中）~ -16 min（11 月初）波动，是简化版"经度近似"
+    最大的精度短板。
+
+    v7.2 旧实现：(lng - 120) × 4 分钟，不含 EOT，精度 ±16 分钟
+    v8.0 新实现：经度差 + NOAA EOT，精度 ±15 秒（业内 SOTA）
+
+    sxtwl 装上后会被记入 method 字段（节气精确时刻通过 tyme4py 的"寿星天文历"
+    底层链路使用），但真太阳时 EOT 计算本身用纯 Python 公式即可。
 
     Args:
         gregorian: 'YYYY-MM-DD HH:MM' 钟表时间
         longitude: 出生地经度（° E，东经为正）
         timezone_offset_hours: 时区（默认 +8 = 北京时间）
+        include_eot: 是否启用 EOT 均时差（默认 True；False 则降级到 v7.2 行为）
 
     Returns:
-        {
-          'method': 'sxtwl' | 'longitude-approx',
-          'longitude': float,
-          'clock_time': 'YYYY-MM-DD HH:MM',
-          'true_solar_time': 'YYYY-MM-DD HH:MM',
-          'offset_minutes': float (总偏移),
-          'longitude_offset_minutes': float (经度差产生的偏移),
-          'eot_minutes': float | None (均时差，仅 sxtwl 模式),
-          'note': '人话描述'
-        }
+        dict 含：method, longitude, clock_time, true_solar_time,
+        offset_minutes (总偏移), longitude_offset_minutes (经度差),
+        eot_minutes (均时差 · 仅 include_eot=True 时), note
     """
     y, mo, da, hh, mm = _parse_gregorian(gregorian)
     t0 = dt.datetime(y, mo, da, hh, mm)
     tz_center_lng = timezone_offset_hours * 15.0  # 时区中心经度
     lng_offset_min = (longitude - tz_center_lng) * 4.0
 
-    if HAS_SXTWL:
-        try:
-            eot_min = _compute_eot_minutes_sxtwl(t0, timezone_offset_hours)
-            total_offset = lng_offset_min + eot_min
-            t1 = t0 + dt.timedelta(minutes=total_offset)
-            return {
-                "method": "sxtwl",
-                "engine_note": "天文级真太阳时（含均时差 EOT，精度 ±5 秒）",
-                "longitude": longitude,
-                "timezone_offset_hours": timezone_offset_hours,
-                "clock_time": t0.strftime("%Y-%m-%d %H:%M"),
-                "true_solar_time": t1.strftime("%Y-%m-%d %H:%M"),
-                "offset_minutes": round(total_offset, 2),
-                "longitude_offset_minutes": round(lng_offset_min, 2),
-                "eot_minutes": round(eot_min, 2),
-                "note": (
-                    f"经度 {longitude}° E + 时区 UTC+{timezone_offset_hours} → "
-                    f"经度差 {lng_offset_min:+.1f} min + 均时差 {eot_min:+.1f} min "
-                    f"= 总偏移 {total_offset:+.1f} min；"
-                    f"钟表 {t0.strftime('%H:%M')} → 真太阳时 {t1.strftime('%H:%M')}"
-                ),
-            }
-        except Exception as e:
-            # sxtwl 调用失败，fallback 到简化版
-            note_extra = f" (sxtwl 调用异常 {type(e).__name__}，已 fallback)"
-        else:
-            note_extra = ""
-    else:
-        note_extra = ""
+    if include_eot:
+        eot_min = _compute_eot_minutes(t0, timezone_offset_hours)
+        total_offset = lng_offset_min + eot_min
+        t1 = t0 + dt.timedelta(minutes=total_offset)
+        method = "noaa-eot+sxtwl" if HAS_SXTWL else "noaa-eot"
+        engine_note = (
+            "天文级真太阳时（NOAA 均时差公式，精度 ±15 秒）"
+            + ("；sxtwl 已装载，节气精确时刻可走寿星天文历" if HAS_SXTWL else "")
+        )
+        return {
+            "method": method,
+            "engine_note": engine_note,
+            "longitude": longitude,
+            "timezone_offset_hours": timezone_offset_hours,
+            "clock_time": t0.strftime("%Y-%m-%d %H:%M"),
+            "true_solar_time": t1.strftime("%Y-%m-%d %H:%M"),
+            "offset_minutes": round(total_offset, 2),
+            "longitude_offset_minutes": round(lng_offset_min, 2),
+            "eot_minutes": round(eot_min, 2),
+            "note": (
+                f"经度 {longitude}° E + 时区 UTC+{timezone_offset_hours} → "
+                f"经度差 {lng_offset_min:+.1f} min + 均时差 {eot_min:+.1f} min "
+                f"= 总偏移 {total_offset:+.1f} min；"
+                f"钟表 {t0.strftime('%H:%M')} → 真太阳时 {t1.strftime('%H:%M')}"
+            ),
+        }
 
-    # Fallback: 仅经度差近似
+    # 兼容路径：v7.2 行为（仅经度差，无 EOT）
     t1 = t0 + dt.timedelta(minutes=lng_offset_min)
     return {
-        "method": "longitude-approx",
-        "engine_note": "经度近似真太阳时（不含均时差，精度 ±2 分钟）" + note_extra,
+        "method": "longitude-approx-only",
+        "engine_note": "v7.2 兼容路径：仅经度差（不含均时差，精度 ±16 分钟）",
         "longitude": longitude,
         "timezone_offset_hours": timezone_offset_hours,
         "clock_time": t0.strftime("%Y-%m-%d %H:%M"),
@@ -381,54 +376,24 @@ def compute_true_solar_time(
         "longitude_offset_minutes": round(lng_offset_min, 2),
         "eot_minutes": None,
         "note": (
-            f"经度 {longitude}° E → 时差 {lng_offset_min:+.1f} 分钟（仅经度差近似）；"
+            f"经度 {longitude}° E → 时差 {lng_offset_min:+.1f} 分钟（仅经度差，未含 EOT）；"
             f"钟表 {t0.strftime('%H:%M')} → 真太阳时 {t1.strftime('%H:%M')}"
-            + (" · 安装 sxtwl 可启用天文级精度" if not HAS_SXTWL else "")
         ),
     }
 
 
-def _compute_eot_minutes_sxtwl(t: dt.datetime, tz_hours: float) -> float:
-    """用 sxtwl 计算指定时刻的"均时差"（Equation of Time, 单位分钟）。
+def _compute_eot_minutes(t: dt.datetime, tz_hours: float) -> float:
+    """NOAA 均时差公式（Equation of Time, 单位分钟，精度 ±15 秒）。
 
-    EOT 因地球轨道椭圆（近日点 1 月初）+ 黄赤交角双因素叠加，
-    在 11 月初最大（+16 min）、2 月中最小（-14 min）、4/6/9/12 月四次穿 0。
+    https://gml.noaa.gov/grad/solcalc/solareqns.PDF
 
-    sxtwl 提供 sxtwl.JD2DD / sxtwl.calcSP 等天文函数；
-    我们用 sxtwl.JD2DD + sxtwl.calcSP 反解真太阳时-平太阳时差。
-
-    若 sxtwl API 在新版本变化导致调用失败，会被外层 try-except 捕获 fallback。
-    """
-    import sxtwl
-    # sxtwl 的 JD（儒略日）/ Sun longitude API
-    # JD = sxtwl.toJD(yy, mm, dd, h, m, s) （UT）
-    # 把本地钟表时间转 UT（减时区偏移）
-    ut = t - dt.timedelta(hours=tz_hours)
-    # 不同 sxtwl 版本 API 略不同，做容错
-    if hasattr(sxtwl, "toJD"):
-        jd = sxtwl.toJD(ut.year, ut.month, ut.day, ut.hour, ut.minute, ut.second)
-    else:
-        # v2 API: sxtwl.fromSolar(...).getJD2000() 或类似
-        # 退化为天文公式自行计算 EOT
-        return _compute_eot_minutes_pure_python(t, tz_hours)
-    # 获取太阳真黄经 / 平黄经
-    if hasattr(sxtwl, "calcSP"):
-        true_sun_lng = sxtwl.calcSP(jd)  # 真太阳黄经
-    else:
-        return _compute_eot_minutes_pure_python(t, tz_hours)
-    # 平太阳每日均匀走 360°/365.25636 ≈ 0.9856°
-    # 但更准确的 EOT 公式需要赤经差，这里用简化版（大约 ±2 min 误差）
-    # 推荐让 sxtwl 后续版本暴露 EOT 接口；目前用纯 Python 公式更稳定
-    return _compute_eot_minutes_pure_python(t, tz_hours)
-
-
-def _compute_eot_minutes_pure_python(t: dt.datetime, tz_hours: float) -> float:
-    """纯 Python 实现的 EOT 计算（NOAA 简化公式，精度 ±15 秒）。
-
-    https://gml.noaa.gov/grad/solcalc/solareqns.PDF (NOAA Solar Calculator)
     γ = 2π/365 × (day_of_year - 1 + (hour-12)/24)
     EOT = 229.18 × (0.000075 + 0.001868·cos(γ) - 0.032077·sin(γ)
                     - 0.014615·cos(2γ) - 0.040849·sin(2γ))   [minutes]
+
+    EOT 物理意义：真太阳穿过本地子午线的时刻 - 平太阳穿过的时刻。
+    一年内 4 次穿 0（约 4/15、6/13、9/1、12/25），峰值约 +14 min（2/11）、
+    -16 min（11/3）。多数命理工具忽略此项，导致冬季出生的命主时柱可能错。
     """
     import math
     ut = t - dt.timedelta(hours=tz_hours)
@@ -626,7 +591,7 @@ def engines_diagnostics() -> dict:
         },
         "sxtwl": {
             "available": HAS_SXTWL,
-            "role": "天文级真太阳时（可选 · 含均时差，精度 ±5 秒；未装时 fallback 经度近似 ±2 分钟）",
+            "role": "寿星天文历高精度日历库（可选 · tyme4py 节气底层算法的同源；不再用于真太阳时 EOT，因为 NOAA 公式已 ±15 秒精度）",
             "install": "pip install sxtwl",
         },
         "supported_solve_engines": list(SUPPORTED_ENGINES),

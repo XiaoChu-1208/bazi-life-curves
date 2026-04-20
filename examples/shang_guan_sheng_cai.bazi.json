@@ -1,7 +1,8 @@
 {
-  "version": 1,
+  "version": 3,
   "input_kind": "pillars",
   "gender": "M",
+  "orientation": "hetero",
   "birth_year": 1977,
   "pillars": [
     {
@@ -74,12 +75,58 @@
   },
   "yongshen": {
     "yongshen": "金",
-    "xishen": "水",
-    "jishen": "土",
+    "xishen": "土",
+    "jishen": "火",
     "tongguan": null,
     "season": "春",
-    "day_master_wuxing": "土"
+    "day_master_wuxing": "土",
+    "climate": {
+      "干头分": 6.5,
+      "地支分": -0.5,
+      "总分": 3.7,
+      "label": "偏燥",
+      "干头主导": true,
+      "details": {
+        "干头": "丁+3.0+戊+2.0+庚+1.5",
+        "地支": "巳+1.5+辰-2.0",
+        "解读": "偏燥 · 干头主导 → 体感和性格按偏燥走，是真偏燥"
+      }
+    }
   },
+  "wuxing_distribution": {
+    "木": {
+      "score": 3.9,
+      "ratio": 0.212,
+      "missing": false
+    },
+    "火": {
+      "score": 3.6,
+      "ratio": 0.196,
+      "missing": false
+    },
+    "土": {
+      "score": 5.8,
+      "ratio": 0.315,
+      "missing": false
+    },
+    "金": {
+      "score": 3.6,
+      "ratio": 0.196,
+      "missing": false
+    },
+    "水": {
+      "score": 1.5,
+      "ratio": 0.082,
+      "missing": false
+    }
+  },
+  "weakest_wuxing": "水",
+  "strongest_wuxing": "土",
+  "qiyun_age": 8,
+  "qiyun_source": "默认值 8（pillars 模式无法精算，强烈建议在校验环节人工确认起运岁）",
+  "true_solar_time": null,
+  "engine": "lunar-python",
+  "engine_cross_check": null,
   "dayun": [
     {
       "index": 0,
@@ -803,5 +850,116 @@
       "gan_shishen": "正印",
       "zhi_shishen": "劫财"
     }
-  ]
+  ],
+  "phase": {
+    "id": "day_master_dominant",
+    "label": "默认 · 日主主导",
+    "is_provisional": true,
+    "is_inverted": false,
+    "default_phase_was": "day_master_dominant",
+    "confidence": "high",
+    "decision_probability": 0.9
+  },
+  "phase_decision": {
+    "version": 8,
+    "candidates": [
+      {
+        "phase_id": "day_master_dominant",
+        "prior": 0.9,
+        "posterior": 0.9
+      },
+      {
+        "phase_id": "climate_inversion_dry_top",
+        "prior": 0.005882,
+        "posterior": 0.005882
+      },
+      {
+        "phase_id": "climate_inversion_wet_top",
+        "prior": 0.005882,
+        "posterior": 0.005882
+      },
+      {
+        "phase_id": "dominating_god_cai_zuo_zhu",
+        "prior": 0.005882,
+        "posterior": 0.005882
+      },
+      {
+        "phase_id": "dominating_god_guan_zuo_zhu",
+        "prior": 0.005882,
+        "posterior": 0.005882
+      }
+    ],
+    "prior_distribution": {
+      "climate_inversion_dry_top": 0.005882,
+      "climate_inversion_wet_top": 0.005882,
+      "day_master_dominant": 0.9,
+      "dominating_god_cai_zuo_zhu": 0.005882,
+      "dominating_god_guan_zuo_zhu": 0.005882,
+      "dominating_god_shishang_zuo_zhu": 0.005882,
+      "dominating_god_yin_zuo_zhu": 0.005882,
+      "floating_dms_to_cong_cai": 0.005882,
+      "floating_dms_to_cong_er": 0.005882,
+      "floating_dms_to_cong_sha": 0.005882,
+      "floating_dms_to_cong_yin": 0.005882,
+      "huaqi_to_土": 0.005882,
+      "huaqi_to_木": 0.005882,
+      "huaqi_to_水": 0.005882,
+      "huaqi_to_火": 0.005882,
+      "huaqi_to_金": 0.005882,
+      "pseudo_following": 0.005882,
+      "true_following": 0.005882
+    },
+    "posterior_distribution": {
+      "climate_inversion_dry_top": 0.005882,
+      "climate_inversion_wet_top": 0.005882,
+      "day_master_dominant": 0.9,
+      "dominating_god_cai_zuo_zhu": 0.005882,
+      "dominating_god_guan_zuo_zhu": 0.005882,
+      "dominating_god_shishang_zuo_zhu": 0.005882,
+      "dominating_god_yin_zuo_zhu": 0.005882,
+      "floating_dms_to_cong_cai": 0.005882,
+      "floating_dms_to_cong_er": 0.005882,
+      "floating_dms_to_cong_sha": 0.005882,
+      "floating_dms_to_cong_yin": 0.005882,
+      "huaqi_to_土": 0.005882,
+      "huaqi_to_木": 0.005882,
+      "huaqi_to_水": 0.005882,
+      "huaqi_to_火": 0.005882,
+      "huaqi_to_金": 0.005882,
+      "pseudo_following": 0.005882,
+      "true_following": 0.005882
+    },
+    "decision": "day_master_dominant",
+    "decision_probability": 0.9,
+    "phase_label": "默认 · 日主主导",
+    "confidence": "high",
+    "is_provisional": true,
+    "strength_after_phase": {
+      "score": 12.0,
+      "label": "中和",
+      "in_season": true,
+      "same": 4.8,
+      "sheng": 3.6,
+      "xie": 3.6,
+      "ke": 1.5,
+      "kewo": 3.9
+    },
+    "yongshen_after_phase": "金",
+    "xishen_after_phase": "土",
+    "jishen_after_phase": "火",
+    "climate_after_phase": {
+      "干头分": 6.5,
+      "地支分": -0.5,
+      "总分": 3.7,
+      "label": "偏燥",
+      "干头主导": true,
+      "details": {
+        "干头": "丁+3.0+戊+2.0+庚+1.5",
+        "地支": "巳+1.5+辰-2.0",
+        "解读": "偏燥 · 干头主导 → 体感和性格按偏燥走，是真偏燥"
+      }
+    },
+    "answered_questions": [],
+    "reason": "detectors: 无触发，走默认相位"
+  }
 }

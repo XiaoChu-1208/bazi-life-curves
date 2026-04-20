@@ -1,0 +1,1029 @@
+{
+  "version": 8,
+  "round": 2,
+  "current_year": 2026,
+  "bazi_summary": {
+    "pillars": [
+      "壬戌",
+      "癸丑",
+      "庚午",
+      "丁丑"
+    ],
+    "day_master": "庚",
+    "day_master_wuxing": "金",
+    "gender": "F",
+    "birth_year": 1982
+  },
+  "round1_summary": {
+    "decision": "day_master_dominant",
+    "decision_probability": 0.9,
+    "runner_up": "climate_inversion_dry_top",
+    "runner_up_probability": 0.005882,
+    "answered_question_ids": []
+  },
+  "pairwise_target": {
+    "a": "day_master_dominant",
+    "b": "climate_inversion_dry_top"
+  },
+  "questions": [
+    {
+      "id": "D1_Q4_siblings",
+      "dimension": "ethnography_family",
+      "weight_class": "hard_evidence",
+      "prompt": "你的兄弟姐妹关系大致是？",
+      "options": [
+        {
+          "id": "A",
+          "label": "多个兄弟姐妹，关系紧密互助"
+        },
+        {
+          "id": "B",
+          "label": "1-2 个，关系普通"
+        },
+        {
+          "id": "C",
+          "label": "独生 / 没有同辈手足"
+        },
+        {
+          "id": "D",
+          "label": "有手足但常争执 / 远离 / 失和"
+        }
+      ],
+      "likelihood_table": {
+        "climate_inversion_dry_top": {
+          "A": 0.25,
+          "B": 0.25,
+          "C": 0.25,
+          "D": 0.25
+        },
+        "climate_inversion_wet_top": {
+          "A": 0.25,
+          "B": 0.25,
+          "C": 0.25,
+          "D": 0.25
+        },
+        "day_master_dominant": {
+          "A": 0.35,
+          "B": 0.4,
+          "C": 0.1,
+          "D": 0.15
+        },
+        "dominating_god_cai_zuo_zhu": {
+          "A": 0.2,
+          "B": 0.2,
+          "C": 0.15,
+          "D": 0.45
+        },
+        "dominating_god_guan_zuo_zhu": {
+          "A": 0.1,
+          "B": 0.2,
+          "C": 0.4,
+          "D": 0.3
+        },
+        "dominating_god_shishang_zuo_zhu": {
+          "A": 0.25,
+          "B": 0.25,
+          "C": 0.25,
+          "D": 0.25
+        },
+        "dominating_god_yin_zuo_zhu": {
+          "A": 0.25,
+          "B": 0.25,
+          "C": 0.25,
+          "D": 0.25
+        },
+        "floating_dms_to_cong_cai": {
+          "A": 0.2,
+          "B": 0.2,
+          "C": 0.15,
+          "D": 0.45
+        },
+        "floating_dms_to_cong_er": {
+          "A": 0.25,
+          "B": 0.25,
+          "C": 0.25,
+          "D": 0.25
+        },
+        "floating_dms_to_cong_sha": {
+          "A": 0.1,
+          "B": 0.2,
+          "C": 0.4,
+          "D": 0.3
+        },
+        "floating_dms_to_cong_yin": {
+          "A": 0.25,
+          "B": 0.25,
+          "C": 0.25,
+          "D": 0.25
+        },
+        "huaqi_to_土": {
+          "A": 0.25,
+          "B": 0.25,
+          "C": 0.25,
+          "D": 0.25
+        },
+        "huaqi_to_木": {
+          "A": 0.25,
+          "B": 0.25,
+          "C": 0.25,
+          "D": 0.25
+        },
+        "huaqi_to_水": {
+          "A": 0.25,
+          "B": 0.25,
+          "C": 0.25,
+          "D": 0.25
+        },
+        "huaqi_to_火": {
+          "A": 0.25,
+          "B": 0.25,
+          "C": 0.25,
+          "D": 0.25
+        },
+        "huaqi_to_金": {
+          "A": 0.25,
+          "B": 0.25,
+          "C": 0.25,
+          "D": 0.25
+        },
+        "pseudo_following": {
+          "A": 0.25,
+          "B": 0.25,
+          "C": 0.25,
+          "D": 0.25
+        },
+        "true_following": {
+          "A": 0.25,
+          "B": 0.25,
+          "C": 0.25,
+          "D": 0.25
+        }
+      },
+      "discrimination_power": 0.5,
+      "pairwise_target": {
+        "a": "day_master_dominant",
+        "b": "climate_inversion_dry_top"
+      },
+      "requires_dynamic_year": null,
+      "evidence_note": "比劫 = 兄弟；《三命通会·兄弟篇》"
+    },
+    {
+      "id": "D2_Q6_attraction_age_pattern",
+      "dimension": "relationship",
+      "weight_class": "soft_self_report",
+      "prompt": "你反复被吸引的对象，年龄段更常见是？",
+      "options": [
+        {
+          "id": "A",
+          "label": "比你大较多（5 岁以上）"
+        },
+        {
+          "id": "B",
+          "label": "与你相仿"
+        },
+        {
+          "id": "C",
+          "label": "比你小较多（5 岁以上）"
+        },
+        {
+          "id": "D",
+          "label": "无明显规律 / 跨度很大"
+        }
+      ],
+      "likelihood_table": {
+        "climate_inversion_dry_top": {
+          "A": 0.25,
+          "B": 0.25,
+          "C": 0.25,
+          "D": 0.25
+        },
+        "climate_inversion_wet_top": {
+          "A": 0.25,
+          "B": 0.25,
+          "C": 0.25,
+          "D": 0.25
+        },
+        "day_master_dominant": {
+          "A": 0.2,
+          "B": 0.5,
+          "C": 0.2,
+          "D": 0.1
+        },
+        "dominating_god_cai_zuo_zhu": {
+          "A": 0.15,
+          "B": 0.35,
+          "C": 0.35,
+          "D": 0.15
+        },
+        "dominating_god_guan_zuo_zhu": {
+          "A": 0.4,
+          "B": 0.3,
+          "C": 0.15,
+          "D": 0.15
+        },
+        "dominating_god_shishang_zuo_zhu": {
+          "A": 0.15,
+          "B": 0.3,
+          "C": 0.4,
+          "D": 0.15
+        },
+        "dominating_god_yin_zuo_zhu": {
+          "A": 0.45,
+          "B": 0.3,
+          "C": 0.1,
+          "D": 0.15
+        },
+        "floating_dms_to_cong_cai": {
+          "A": 0.15,
+          "B": 0.3,
+          "C": 0.4,
+          "D": 0.15
+        },
+        "floating_dms_to_cong_er": {
+          "A": 0.15,
+          "B": 0.25,
+          "C": 0.45,
+          "D": 0.15
+        },
+        "floating_dms_to_cong_sha": {
+          "A": 0.45,
+          "B": 0.25,
+          "C": 0.15,
+          "D": 0.15
+        },
+        "floating_dms_to_cong_yin": {
+          "A": 0.5,
+          "B": 0.25,
+          "C": 0.1,
+          "D": 0.15
+        },
+        "huaqi_to_土": {
+          "A": 0.15,
+          "B": 0.25,
+          "C": 0.15,
+          "D": 0.45
+        },
+        "huaqi_to_木": {
+          "A": 0.15,
+          "B": 0.25,
+          "C": 0.15,
+          "D": 0.45
+        },
+        "huaqi_to_水": {
+          "A": 0.15,
+          "B": 0.25,
+          "C": 0.15,
+          "D": 0.45
+        },
+        "huaqi_to_火": {
+          "A": 0.15,
+          "B": 0.25,
+          "C": 0.15,
+          "D": 0.45
+        },
+        "huaqi_to_金": {
+          "A": 0.15,
+          "B": 0.25,
+          "C": 0.15,
+          "D": 0.45
+        },
+        "pseudo_following": {
+          "A": 0.25,
+          "B": 0.25,
+          "C": 0.25,
+          "D": 0.25
+        },
+        "true_following": {
+          "A": 0.4,
+          "B": 0.2,
+          "C": 0.15,
+          "D": 0.25
+        }
+      },
+      "discrimination_power": 0.5,
+      "pairwise_target": {
+        "a": "day_master_dominant",
+        "b": "climate_inversion_dry_top"
+      },
+      "requires_dynamic_year": null,
+      "evidence_note": "十神年龄象征；《三命通会·六亲篇》"
+    },
+    {
+      "id": "D4_Q6_emotion_temperament",
+      "dimension": "tcm_body",
+      "weight_class": "hard_evidence",
+      "prompt": "你的长期情志倾向最像哪一种？",
+      "options": [
+        {
+          "id": "A",
+          "label": "急躁 / 易上火 / 一点就炸"
+        },
+        {
+          "id": "B",
+          "label": "沉郁 / 易思虑 / 容易'想太多'"
+        },
+        {
+          "id": "C",
+          "label": "平和 / 起伏小"
+        },
+        {
+          "id": "D",
+          "label": "情绪起伏剧烈，时而高昂时而低落"
+        }
+      ],
+      "likelihood_table": {
+        "climate_inversion_dry_top": {
+          "A": 0.5,
+          "B": 0.15,
+          "C": 0.15,
+          "D": 0.2
+        },
+        "climate_inversion_wet_top": {
+          "A": 0.15,
+          "B": 0.45,
+          "C": 0.2,
+          "D": 0.2
+        },
+        "day_master_dominant": {
+          "A": 0.2,
+          "B": 0.2,
+          "C": 0.45,
+          "D": 0.15
+        },
+        "dominating_god_cai_zuo_zhu": {
+          "A": 0.25,
+          "B": 0.25,
+          "C": 0.25,
+          "D": 0.25
+        },
+        "dominating_god_guan_zuo_zhu": {
+          "A": 0.25,
+          "B": 0.4,
+          "C": 0.15,
+          "D": 0.2
+        },
+        "dominating_god_shishang_zuo_zhu": {
+          "A": 0.2,
+          "B": 0.15,
+          "C": 0.2,
+          "D": 0.45
+        },
+        "dominating_god_yin_zuo_zhu": {
+          "A": 0.25,
+          "B": 0.25,
+          "C": 0.25,
+          "D": 0.25
+        },
+        "floating_dms_to_cong_cai": {
+          "A": 0.25,
+          "B": 0.25,
+          "C": 0.25,
+          "D": 0.25
+        },
+        "floating_dms_to_cong_er": {
+          "A": 0.2,
+          "B": 0.2,
+          "C": 0.2,
+          "D": 0.4
+        },
+        "floating_dms_to_cong_sha": {
+          "A": 0.25,
+          "B": 0.35,
+          "C": 0.15,
+          "D": 0.25
+        },
+        "floating_dms_to_cong_yin": {
+          "A": 0.25,
+          "B": 0.25,
+          "C": 0.25,
+          "D": 0.25
+        },
+        "huaqi_to_土": {
+          "A": 0.25,
+          "B": 0.25,
+          "C": 0.25,
+          "D": 0.25
+        },
+        "huaqi_to_木": {
+          "A": 0.25,
+          "B": 0.25,
+          "C": 0.25,
+          "D": 0.25
+        },
+        "huaqi_to_水": {
+          "A": 0.25,
+          "B": 0.25,
+          "C": 0.25,
+          "D": 0.25
+        },
+        "huaqi_to_火": {
+          "A": 0.25,
+          "B": 0.25,
+          "C": 0.25,
+          "D": 0.25
+        },
+        "huaqi_to_金": {
+          "A": 0.25,
+          "B": 0.25,
+          "C": 0.25,
+          "D": 0.25
+        },
+        "pseudo_following": {
+          "A": 0.25,
+          "B": 0.25,
+          "C": 0.15,
+          "D": 0.35
+        },
+        "true_following": {
+          "A": 0.2,
+          "B": 0.2,
+          "C": 0.2,
+          "D": 0.4
+        }
+      },
+      "discrimination_power": 0.7,
+      "pairwise_target": {
+        "a": "day_master_dominant",
+        "b": "climate_inversion_dry_top"
+      },
+      "requires_dynamic_year": null,
+      "evidence_note": "五志七情；《黄帝内经·素问·阴阳应象大论》"
+    },
+    {
+      "id": "D4_Q1_cold_heat",
+      "dimension": "tcm_body",
+      "weight_class": "hard_evidence",
+      "prompt": "你的整体寒热倾向是？",
+      "options": [
+        {
+          "id": "A",
+          "label": "怕冷、手脚常凉、爱穿厚"
+        },
+        {
+          "id": "B",
+          "label": "怕热、爱出汗、爱冷饮"
+        },
+        {
+          "id": "C",
+          "label": "上热下寒（脸红脚冷 / 口干腿凉）"
+        },
+        {
+          "id": "D",
+          "label": "上寒下热（咽痒脚心热）/ 寒热不定"
+        }
+      ],
+      "likelihood_table": {
+        "climate_inversion_dry_top": {
+          "A": 0.1,
+          "B": 0.3,
+          "C": 0.5,
+          "D": 0.1
+        },
+        "climate_inversion_wet_top": {
+          "A": 0.45,
+          "B": 0.1,
+          "C": 0.15,
+          "D": 0.3
+        },
+        "day_master_dominant": {
+          "A": 0.25,
+          "B": 0.25,
+          "C": 0.25,
+          "D": 0.25
+        },
+        "dominating_god_cai_zuo_zhu": {
+          "A": 0.25,
+          "B": 0.25,
+          "C": 0.25,
+          "D": 0.25
+        },
+        "dominating_god_guan_zuo_zhu": {
+          "A": 0.25,
+          "B": 0.25,
+          "C": 0.25,
+          "D": 0.25
+        },
+        "dominating_god_shishang_zuo_zhu": {
+          "A": 0.2,
+          "B": 0.35,
+          "C": 0.2,
+          "D": 0.25
+        },
+        "dominating_god_yin_zuo_zhu": {
+          "A": 0.25,
+          "B": 0.25,
+          "C": 0.25,
+          "D": 0.25
+        },
+        "floating_dms_to_cong_cai": {
+          "A": 0.25,
+          "B": 0.35,
+          "C": 0.2,
+          "D": 0.2
+        },
+        "floating_dms_to_cong_er": {
+          "A": 0.2,
+          "B": 0.35,
+          "C": 0.2,
+          "D": 0.25
+        },
+        "floating_dms_to_cong_sha": {
+          "A": 0.25,
+          "B": 0.25,
+          "C": 0.25,
+          "D": 0.25
+        },
+        "floating_dms_to_cong_yin": {
+          "A": 0.4,
+          "B": 0.2,
+          "C": 0.2,
+          "D": 0.2
+        },
+        "huaqi_to_土": {
+          "A": 0.25,
+          "B": 0.25,
+          "C": 0.25,
+          "D": 0.25
+        },
+        "huaqi_to_木": {
+          "A": 0.25,
+          "B": 0.25,
+          "C": 0.25,
+          "D": 0.25
+        },
+        "huaqi_to_水": {
+          "A": 0.25,
+          "B": 0.25,
+          "C": 0.25,
+          "D": 0.25
+        },
+        "huaqi_to_火": {
+          "A": 0.25,
+          "B": 0.25,
+          "C": 0.25,
+          "D": 0.25
+        },
+        "huaqi_to_金": {
+          "A": 0.25,
+          "B": 0.25,
+          "C": 0.25,
+          "D": 0.25
+        },
+        "pseudo_following": {
+          "A": 0.25,
+          "B": 0.25,
+          "C": 0.25,
+          "D": 0.25
+        },
+        "true_following": {
+          "A": 0.25,
+          "B": 0.25,
+          "C": 0.25,
+          "D": 0.25
+        }
+      },
+      "discrimination_power": 0.6,
+      "pairwise_target": {
+        "a": "day_master_dominant",
+        "b": "climate_inversion_dry_top"
+      },
+      "requires_dynamic_year": null,
+      "evidence_note": "《黄帝内经·素问》寒热辨证；干头 vs 地支冷暖独立判"
+    },
+    {
+      "id": "D4_Q2_sleep",
+      "dimension": "tcm_body",
+      "weight_class": "hard_evidence",
+      "prompt": "你过去 3 年的整体睡眠状况是？",
+      "options": [
+        {
+          "id": "A",
+          "label": "入睡快、深睡足、醒后清爽"
+        },
+        {
+          "id": "B",
+          "label": "多梦 / 浅眠 / 易醒，醒后疲乏"
+        },
+        {
+          "id": "C",
+          "label": "入睡难，但睡着后较深"
+        },
+        {
+          "id": "D",
+          "label": "睡眠时长足，但晨起仍困倦 / 沉重"
+        }
+      ],
+      "likelihood_table": {
+        "climate_inversion_dry_top": {
+          "A": 0.15,
+          "B": 0.25,
+          "C": 0.45,
+          "D": 0.15
+        },
+        "climate_inversion_wet_top": {
+          "A": 0.15,
+          "B": 0.25,
+          "C": 0.15,
+          "D": 0.45
+        },
+        "day_master_dominant": {
+          "A": 0.45,
+          "B": 0.25,
+          "C": 0.15,
+          "D": 0.15
+        },
+        "dominating_god_cai_zuo_zhu": {
+          "A": 0.25,
+          "B": 0.25,
+          "C": 0.25,
+          "D": 0.25
+        },
+        "dominating_god_guan_zuo_zhu": {
+          "A": 0.2,
+          "B": 0.3,
+          "C": 0.35,
+          "D": 0.15
+        },
+        "dominating_god_shishang_zuo_zhu": {
+          "A": 0.2,
+          "B": 0.45,
+          "C": 0.2,
+          "D": 0.15
+        },
+        "dominating_god_yin_zuo_zhu": {
+          "A": 0.25,
+          "B": 0.25,
+          "C": 0.25,
+          "D": 0.25
+        },
+        "floating_dms_to_cong_cai": {
+          "A": 0.25,
+          "B": 0.25,
+          "C": 0.25,
+          "D": 0.25
+        },
+        "floating_dms_to_cong_er": {
+          "A": 0.2,
+          "B": 0.4,
+          "C": 0.2,
+          "D": 0.2
+        },
+        "floating_dms_to_cong_sha": {
+          "A": 0.15,
+          "B": 0.3,
+          "C": 0.4,
+          "D": 0.15
+        },
+        "floating_dms_to_cong_yin": {
+          "A": 0.45,
+          "B": 0.2,
+          "C": 0.15,
+          "D": 0.2
+        },
+        "huaqi_to_土": {
+          "A": 0.25,
+          "B": 0.25,
+          "C": 0.25,
+          "D": 0.25
+        },
+        "huaqi_to_木": {
+          "A": 0.25,
+          "B": 0.25,
+          "C": 0.25,
+          "D": 0.25
+        },
+        "huaqi_to_水": {
+          "A": 0.25,
+          "B": 0.25,
+          "C": 0.25,
+          "D": 0.25
+        },
+        "huaqi_to_火": {
+          "A": 0.25,
+          "B": 0.25,
+          "C": 0.25,
+          "D": 0.25
+        },
+        "huaqi_to_金": {
+          "A": 0.25,
+          "B": 0.25,
+          "C": 0.25,
+          "D": 0.25
+        },
+        "pseudo_following": {
+          "A": 0.25,
+          "B": 0.25,
+          "C": 0.25,
+          "D": 0.25
+        },
+        "true_following": {
+          "A": 0.25,
+          "B": 0.25,
+          "C": 0.25,
+          "D": 0.25
+        }
+      },
+      "discrimination_power": 0.6,
+      "pairwise_target": {
+        "a": "day_master_dominant",
+        "b": "climate_inversion_dry_top"
+      },
+      "requires_dynamic_year": null,
+      "evidence_note": "心神 / 脾湿 / 肾水睡眠三辨；《黄帝内经·素问》《伤寒论·辨阳明病》"
+    },
+    {
+      "id": "D4_Q4_body_type",
+      "dimension": "tcm_body",
+      "weight_class": "hard_evidence",
+      "prompt": "你成年后的体型最常见是？",
+      "options": [
+        {
+          "id": "A",
+          "label": "偏瘦、骨架小 / 不易长肉"
+        },
+        {
+          "id": "B",
+          "label": "中等、匀称"
+        },
+        {
+          "id": "C",
+          "label": "偏壮 / 易长肉 / 易浮肿"
+        },
+        {
+          "id": "D",
+          "label": "起伏大 / 体重常波动"
+        }
+      ],
+      "likelihood_table": {
+        "climate_inversion_dry_top": {
+          "A": 0.5,
+          "B": 0.25,
+          "C": 0.1,
+          "D": 0.15
+        },
+        "climate_inversion_wet_top": {
+          "A": 0.1,
+          "B": 0.2,
+          "C": 0.5,
+          "D": 0.2
+        },
+        "day_master_dominant": {
+          "A": 0.2,
+          "B": 0.45,
+          "C": 0.2,
+          "D": 0.15
+        },
+        "dominating_god_cai_zuo_zhu": {
+          "A": 0.2,
+          "B": 0.3,
+          "C": 0.35,
+          "D": 0.15
+        },
+        "dominating_god_guan_zuo_zhu": {
+          "A": 0.25,
+          "B": 0.25,
+          "C": 0.25,
+          "D": 0.25
+        },
+        "dominating_god_shishang_zuo_zhu": {
+          "A": 0.25,
+          "B": 0.2,
+          "C": 0.15,
+          "D": 0.4
+        },
+        "dominating_god_yin_zuo_zhu": {
+          "A": 0.25,
+          "B": 0.25,
+          "C": 0.25,
+          "D": 0.25
+        },
+        "floating_dms_to_cong_cai": {
+          "A": 0.2,
+          "B": 0.3,
+          "C": 0.35,
+          "D": 0.15
+        },
+        "floating_dms_to_cong_er": {
+          "A": 0.25,
+          "B": 0.2,
+          "C": 0.15,
+          "D": 0.4
+        },
+        "floating_dms_to_cong_sha": {
+          "A": 0.25,
+          "B": 0.25,
+          "C": 0.25,
+          "D": 0.25
+        },
+        "floating_dms_to_cong_yin": {
+          "A": 0.25,
+          "B": 0.25,
+          "C": 0.25,
+          "D": 0.25
+        },
+        "huaqi_to_土": {
+          "A": 0.25,
+          "B": 0.25,
+          "C": 0.25,
+          "D": 0.25
+        },
+        "huaqi_to_木": {
+          "A": 0.25,
+          "B": 0.25,
+          "C": 0.25,
+          "D": 0.25
+        },
+        "huaqi_to_水": {
+          "A": 0.25,
+          "B": 0.25,
+          "C": 0.25,
+          "D": 0.25
+        },
+        "huaqi_to_火": {
+          "A": 0.25,
+          "B": 0.25,
+          "C": 0.25,
+          "D": 0.25
+        },
+        "huaqi_to_金": {
+          "A": 0.25,
+          "B": 0.25,
+          "C": 0.25,
+          "D": 0.25
+        },
+        "pseudo_following": {
+          "A": 0.25,
+          "B": 0.25,
+          "C": 0.25,
+          "D": 0.25
+        },
+        "true_following": {
+          "A": 0.25,
+          "B": 0.25,
+          "C": 0.25,
+          "D": 0.25
+        }
+      },
+      "discrimination_power": 0.6,
+      "pairwise_target": {
+        "a": "day_master_dominant",
+        "b": "climate_inversion_dry_top"
+      },
+      "requires_dynamic_year": null,
+      "evidence_note": "燥湿 → 体型；现代体质辨证 + 《伤寒论·辨痰饮病》"
+    }
+  ],
+  "askquestion_payload": [
+    {
+      "id": "D1_Q4_siblings",
+      "prompt": "你的兄弟姐妹关系大致是？",
+      "options": [
+        {
+          "id": "A",
+          "label": "多个兄弟姐妹，关系紧密互助"
+        },
+        {
+          "id": "B",
+          "label": "1-2 个，关系普通"
+        },
+        {
+          "id": "C",
+          "label": "独生 / 没有同辈手足"
+        },
+        {
+          "id": "D",
+          "label": "有手足但常争执 / 远离 / 失和"
+        }
+      ],
+      "allow_multiple": false
+    },
+    {
+      "id": "D2_Q6_attraction_age_pattern",
+      "prompt": "你反复被吸引的对象，年龄段更常见是？",
+      "options": [
+        {
+          "id": "A",
+          "label": "比你大较多（5 岁以上）"
+        },
+        {
+          "id": "B",
+          "label": "与你相仿"
+        },
+        {
+          "id": "C",
+          "label": "比你小较多（5 岁以上）"
+        },
+        {
+          "id": "D",
+          "label": "无明显规律 / 跨度很大"
+        }
+      ],
+      "allow_multiple": false
+    },
+    {
+      "id": "D4_Q6_emotion_temperament",
+      "prompt": "你的长期情志倾向最像哪一种？",
+      "options": [
+        {
+          "id": "A",
+          "label": "急躁 / 易上火 / 一点就炸"
+        },
+        {
+          "id": "B",
+          "label": "沉郁 / 易思虑 / 容易'想太多'"
+        },
+        {
+          "id": "C",
+          "label": "平和 / 起伏小"
+        },
+        {
+          "id": "D",
+          "label": "情绪起伏剧烈，时而高昂时而低落"
+        }
+      ],
+      "allow_multiple": false
+    },
+    {
+      "id": "D4_Q1_cold_heat",
+      "prompt": "你的整体寒热倾向是？",
+      "options": [
+        {
+          "id": "A",
+          "label": "怕冷、手脚常凉、爱穿厚"
+        },
+        {
+          "id": "B",
+          "label": "怕热、爱出汗、爱冷饮"
+        },
+        {
+          "id": "C",
+          "label": "上热下寒（脸红脚冷 / 口干腿凉）"
+        },
+        {
+          "id": "D",
+          "label": "上寒下热（咽痒脚心热）/ 寒热不定"
+        }
+      ],
+      "allow_multiple": false
+    },
+    {
+      "id": "D4_Q2_sleep",
+      "prompt": "你过去 3 年的整体睡眠状况是？",
+      "options": [
+        {
+          "id": "A",
+          "label": "入睡快、深睡足、醒后清爽"
+        },
+        {
+          "id": "B",
+          "label": "多梦 / 浅眠 / 易醒，醒后疲乏"
+        },
+        {
+          "id": "C",
+          "label": "入睡难，但睡着后较深"
+        },
+        {
+          "id": "D",
+          "label": "睡眠时长足，但晨起仍困倦 / 沉重"
+        }
+      ],
+      "allow_multiple": false
+    },
+    {
+      "id": "D4_Q4_body_type",
+      "prompt": "你成年后的体型最常见是？",
+      "options": [
+        {
+          "id": "A",
+          "label": "偏瘦、骨架小 / 不易长肉"
+        },
+        {
+          "id": "B",
+          "label": "中等、匀称"
+        },
+        {
+          "id": "C",
+          "label": "偏壮 / 易长肉 / 易浮肿"
+        },
+        {
+          "id": "D",
+          "label": "起伏大 / 体重常波动"
+        }
+      ],
+      "allow_multiple": false
+    }
+  ],
+  "cli_fallback_prompt": "请按以下编号回答（输入 D1_Q3=B 形式，每行一个，最后空行结束）：\n\nD1_Q4_siblings  [ethnography_family · hard_evidence]\n  问：你的兄弟姐妹关系大致是？\n    A) 多个兄弟姐妹，关系紧密互助\n    B) 1-2 个，关系普通\n    C) 独生 / 没有同辈手足\n    D) 有手足但常争执 / 远离 / 失和\n\nD2_Q6_attraction_age_pattern  [relationship · soft_self_report]\n  问：你反复被吸引的对象，年龄段更常见是？\n    A) 比你大较多（5 岁以上）\n    B) 与你相仿\n    C) 比你小较多（5 岁以上）\n    D) 无明显规律 / 跨度很大\n\nD4_Q6_emotion_temperament  [tcm_body · hard_evidence]\n  问：你的长期情志倾向最像哪一种？\n    A) 急躁 / 易上火 / 一点就炸\n    B) 沉郁 / 易思虑 / 容易'想太多'\n    C) 平和 / 起伏小\n    D) 情绪起伏剧烈，时而高昂时而低落\n\nD4_Q1_cold_heat  [tcm_body · hard_evidence]\n  问：你的整体寒热倾向是？\n    A) 怕冷、手脚常凉、爱穿厚\n    B) 怕热、爱出汗、爱冷饮\n    C) 上热下寒（脸红脚冷 / 口干腿凉）\n    D) 上寒下热（咽痒脚心热）/ 寒热不定\n\nD4_Q2_sleep  [tcm_body · hard_evidence]\n  问：你过去 3 年的整体睡眠状况是？\n    A) 入睡快、深睡足、醒后清爽\n    B) 多梦 / 浅眠 / 易醒，醒后疲乏\n    C) 入睡难，但睡着后较深\n    D) 睡眠时长足，但晨起仍困倦 / 沉重\n\nD4_Q4_body_type  [tcm_body · hard_evidence]\n  问：你成年后的体型最常见是？\n    A) 偏瘦、骨架小 / 不易长肉\n    B) 中等、匀称\n    C) 偏壮 / 易长肉 / 易浮肿\n    D) 起伏大 / 体重常波动\n",
+  "confirmation_threshold": {
+    "confirmed": 0.85,
+    "weakly_confirmed": 0.65
+  },
+  "_meta": {
+    "n_static_questions": 6,
+    "n_dynamic_questions": 0,
+    "n_total_questions": 6,
+    "n_excluded_from_r1": 0,
+    "fairness_blacklist_applied": true
+  },
+  "agent_instructions": "v8 R2 协议：用宿主结构化 AskQuestion 抛 askquestion_payload 全部 N 题给用户点选。收到 R2 user_answers 后，调 phase_posterior.py --round 2 合并 R1+R2 答案算最终后验，对照 confirmation_threshold 判 confirmed / weakly_confirmed / inconsistent。详见 references/handshake_protocol.md §4。"
+}

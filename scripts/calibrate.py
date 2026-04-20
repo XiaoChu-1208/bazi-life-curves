@@ -28,12 +28,17 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from solve_bazi import solve as solve_bazi
 from score_curves import score as score_curves
+from _bazi_core import decide_phase
 
 
 ROOT = Path(__file__).resolve().parent.parent
 DATASET = ROOT / "calibration" / "dataset.yaml"
+PHASE_DATASET = ROOT / "calibration" / "phase_dataset.yaml"
 THRESHOLDS = ROOT / "calibration" / "thresholds.yaml"
 PERSONAL_DIR = ROOT / "personal"
+
+# v8 phase_decision confidence 等级排序（由弱到强）
+_CONFIDENCE_RANK = {"reject": 0, "low": 1, "mid": 2, "high": 3}
 
 
 def load_dataset() -> List[Dict]:
@@ -207,10 +212,179 @@ def _personal_loss(curves: dict, observations: List[Dict]) -> float:
     return loss / max(n, 1)
 
 
+def load_phase_dataset(path: Path | None = None) -> Dict:
+    """读 phase_dataset.yaml 并返回完整 dict（含 metadata + samples）。"""
+    p = Path(path) if path else PHASE_DATASET
+    if not p.exists():
+        return {"metadata": {}, "samples": []}
+    raw = yaml.safe_load(p.read_text(encoding="utf-8")) or {}
+    if isinstance(raw, list):
+        # 兼容：纯 list 格式（无 metadata 包裹）
+        return {"metadata": {}, "samples": raw}
+    return raw
+
+
+def evaluate_phase_sample(sample: Dict) -> Dict:
+    """对单个 phase 样本评估先验 + 后验，返回详细比对结果。"""
+    bazi_input = sample.get("bazi_input", {})
+    pillars = bazi_input["pillars"]
+    gender = bazi_input["gender"]
+    birth_year = bazi_input["birth_year"]
+    expected = sample["expected_phase"]
+    min_prior = float(sample.get("expected_min_prior_prob", 0.0))
+    min_post = float(sample.get("expected_min_posterior_prob", 0.0))
+    min_conf = sample.get("expected_min_confidence_with_answers", "low")
+    answers = sample.get("simulated_user_answers")
+
+    bazi = solve_bazi(pillars, None, gender, birth_year, n_years=80)
+
+    prior_res = decide_phase(bazi, user_answers=None)
+    prior_dist = prior_res["prior_distribution"]
+    prior_top = max(prior_dist.items(), key=lambda x: (x[1], -ord(x[0][0])))
+    # 稳定排序：相同概率按 phase_id 升序
+    prior_top = sorted(prior_dist.items(), key=lambda x: (-x[1], x[0]))[0]
+    prior_top_phase, prior_top_prob = prior_top
+    prior_expected_prob = prior_dist.get(expected, 0.0)
+
+    if answers:
+        post_res = decide_phase(bazi, user_answers=answers)
+    else:
+        post_res = prior_res
+    post_dist = post_res["posterior_distribution"]
+    post_top = sorted(post_dist.items(), key=lambda x: (-x[1], x[0]))[0]
+    post_top_phase, post_top_prob = post_top
+    post_expected_prob = post_dist.get(expected, 0.0)
+    actual_conf = post_res.get("confidence", "reject")
+
+    return {
+        "id": sample.get("id", "?"),
+        "pillars": pillars,
+        "expected_phase": expected,
+        "answers_count": len(answers) if answers else 0,
+        # prior
+        "prior_top_phase": prior_top_phase,
+        "prior_top_prob": prior_top_prob,
+        "prior_expected_prob": prior_expected_prob,
+        "prior_recall_hit": prior_top_phase == expected,
+        "prior_prob_pass": prior_expected_prob >= min_prior,
+        "min_prior": min_prior,
+        # posterior
+        "posterior_top_phase": post_top_phase,
+        "posterior_top_prob": post_top_prob,
+        "posterior_expected_prob": post_expected_prob,
+        "posterior_recall_hit": post_top_phase == expected,
+        "posterior_prob_pass": post_expected_prob >= min_post,
+        "min_posterior": min_post,
+        # confidence
+        "actual_confidence": actual_conf,
+        "expected_min_confidence": min_conf,
+        "confidence_pass": (
+            _CONFIDENCE_RANK.get(actual_conf, 0) >= _CONFIDENCE_RANK.get(min_conf, 0)
+        ),
+    }
+
+
+def eval_phase_decision(phase_dataset_path: Path | None = None) -> int:
+    """v8 phase_decision 评估通道。
+
+    1. 读 phase_dataset.yaml
+    2. 对每个样本算先验 + 后验
+    3. 汇总 5 项指标 vs thresholds.yaml#phase_decision
+    4. 返回 exit code（0=PASS，2=任一指标低于阈值）
+    """
+    ds = load_phase_dataset(phase_dataset_path)
+    samples = ds.get("samples", [])
+    metadata = ds.get("metadata", {})
+
+    if not samples:
+        path = phase_dataset_path or PHASE_DATASET
+        print(f"[calibrate.phase] No samples found in {path}, skipping.")
+        return 0
+
+    thresholds_all = load_thresholds() or {}
+    pd_thresh = thresholds_all.get("phase_decision", {}) or {}
+    t_prior_recall = float(pd_thresh.get("prior_recall_min", 0.50))
+    t_prior_prob = float(pd_thresh.get("prior_prob_pass_min", 0.50))
+    t_post_recall = float(pd_thresh.get("posterior_recall_min", 0.85))
+    t_post_prob = float(pd_thresh.get("posterior_prob_pass_min", 0.85))
+    t_conf = float(pd_thresh.get("confidence_pass_min", 0.85))
+
+    n = len(samples)
+    schema_v = metadata.get("schema_version", "?")
+    print(f"[calibrate.phase] schema_version={schema_v} · {n} samples")
+    print()
+
+    results = [evaluate_phase_sample(s) for s in samples]
+
+    n_prior_recall = sum(1 for r in results if r["prior_recall_hit"])
+    n_prior_prob = sum(1 for r in results if r["prior_prob_pass"])
+    n_post_recall = sum(1 for r in results if r["posterior_recall_hit"])
+    n_post_prob = sum(1 for r in results if r["posterior_prob_pass"])
+    n_conf = sum(1 for r in results if r["confidence_pass"])
+
+    for r in results:
+        flags = "".join([
+            "P" if r["prior_recall_hit"] else "p",
+            "B" if r["prior_prob_pass"] else "b",
+            "Q" if r["posterior_recall_hit"] else "q",
+            "C" if r["posterior_prob_pass"] else "c",
+            "F" if r["confidence_pass"] else "f",
+        ])
+        marker_pri = "✓" if r["prior_recall_hit"] else "✗"
+        marker_pst = "✓" if r["posterior_recall_hit"] else "✗"
+        print(f"  [{flags}] {r['id']}  ({r['pillars']})")
+        print(f"      expected_phase = {r['expected_phase']}")
+        print(f"      prior     {marker_pri} top-1={r['prior_top_phase']} ({r['prior_top_prob']:.4f})  "
+              f"prior[expected]={r['prior_expected_prob']:.4f} ≥ {r['min_prior']:.2f}? "
+              f"{'PASS' if r['prior_prob_pass'] else 'FAIL'}")
+        print(f"      posterior {marker_pst} top-1={r['posterior_top_phase']} ({r['posterior_top_prob']:.4f})  "
+              f"posterior[expected]={r['posterior_expected_prob']:.4f} ≥ {r['min_posterior']:.2f}? "
+              f"{'PASS' if r['posterior_prob_pass'] else 'FAIL'}  "
+              f"({r['answers_count']} answers)")
+        print(f"      confidence={r['actual_confidence']} ≥ {r['expected_min_confidence']}? "
+              f"{'PASS' if r['confidence_pass'] else 'FAIL'}")
+        print()
+
+    rate_prior_recall = n_prior_recall / n
+    rate_prior_prob = n_prior_prob / n
+    rate_post_recall = n_post_recall / n
+    rate_post_prob = n_post_prob / n
+    rate_conf = n_conf / n
+
+    print(f"[calibrate.phase] === Aggregate metrics (n={n}) ===")
+    print(f"  prior_recall          : {n_prior_recall}/{n} = {rate_prior_recall:.2%}  (threshold ≥ {t_prior_recall:.2%})")
+    print(f"  prior_prob_pass       : {n_prior_prob}/{n} = {rate_prior_prob:.2%}  (threshold ≥ {t_prior_prob:.2%})")
+    print(f"  posterior_recall      : {n_post_recall}/{n} = {rate_post_recall:.2%}  (threshold ≥ {t_post_recall:.2%})")
+    print(f"  posterior_prob_pass   : {n_post_prob}/{n} = {rate_post_prob:.2%}  (threshold ≥ {t_post_prob:.2%})")
+    print(f"  confidence_pass       : {n_conf}/{n} = {rate_conf:.2%}  (threshold ≥ {t_conf:.2%})")
+
+    failures = []
+    if rate_prior_recall < t_prior_recall:
+        failures.append("prior_recall below threshold")
+    if rate_prior_prob < t_prior_prob:
+        failures.append("prior_prob_pass below threshold")
+    if rate_post_recall < t_post_recall:
+        failures.append("posterior_recall below threshold")
+    if rate_post_prob < t_post_prob:
+        failures.append("posterior_prob_pass below threshold")
+    if rate_conf < t_conf:
+        failures.append("confidence_pass below threshold")
+
+    if failures:
+        print(f"[calibrate.phase] FAIL: {'; '.join(failures)}", file=sys.stderr)
+        return 2
+    print("[calibrate.phase] PASS")
+    return 0
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--personal", help="个人化校准 spec YAML 路径")
     ap.add_argument("--symmetry", action="store_true", help="性别对称性测试")
+    ap.add_argument("--phase-only", action="store_true",
+                    help="仅跑 v8 phase_decision 评估通道（读 calibration/phase_dataset.yaml）")
+    ap.add_argument("--phase-dataset", default=None,
+                    help="phase_dataset.yaml 路径（默认 calibration/phase_dataset.yaml）")
     ap.add_argument("--soft", action="store_true",
                     help="仅报告不阻塞（用于追踪算法改进，CI 上推荐）")
     args = ap.parse_args()
@@ -220,6 +394,13 @@ def main():
 
     if args.symmetry:
         sys.exit(symmetry_test())
+
+    if args.phase_only:
+        path = Path(args.phase_dataset) if args.phase_dataset else None
+        code = eval_phase_decision(path)
+        if args.soft:
+            sys.exit(0)
+        sys.exit(code)
 
     code = run_calibration()
     if args.soft:

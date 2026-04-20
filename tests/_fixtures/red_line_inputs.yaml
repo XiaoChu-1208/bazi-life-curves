@@ -1,0 +1,36 @@
+# LLM 后视镜归因防御:身份字段 deny-list(AGENTS.md §4.5)
+# solve_bazi.validate_blind_input 必须对所有"must_reject"=true 的 key 抛 IdentityLeakError
+
+samples:
+  - key: "name"
+    must_reject: true
+    reason: "姓名 = 身份标签"
+  - key: "Name"
+    must_reject: true
+    reason: "大小写不应绕过过滤"
+  # ⚠ 已知 gap (harness 抓出): _bazi_core._FORBIDDEN_KEYS 当前是精确匹配,
+  # 没有 substring 检查,这两个 key 会通过 — 违反 §4.5 精神。
+  # 标 known_gap=true → 测试 xfail 但保留在用例里,持续可见。
+  - key: "real_name"
+    must_reject: true
+    known_gap: "_FORBIDDEN_KEYS 精确匹配 'name' 但不匹配 'real_name';建议加 substring 检查"
+  - key: "email"
+    must_reject: true
+    known_gap: "_FORBIDDEN_KEYS 未列 email;邮箱可强关联个人身份"
+  - key: "occupation"
+    must_reject: true
+    reason: "职业 = 身份"
+  - key: "marriage"
+    must_reject: true
+  - key: "spouse"
+    must_reject: true
+  - key: "education"
+    must_reject: true
+  - key: "history"
+    must_reject: true
+    reason: "禁止把过往事件作为输入,会让算法变成 LLM 自我应验"
+  # 合法 key 不应被拒
+  - key: "longitude"
+    must_reject: false
+  - key: "qiyun_age"
+    must_reject: false

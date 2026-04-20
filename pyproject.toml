@@ -1,0 +1,16 @@
+[tool.pytest.ini_options]
+minversion = "7.0"
+testpaths = ["tests"]
+addopts = [
+    "-ra",
+    "--strict-markers",
+    "--strict-config",
+]
+markers = [
+    "fast: 快测,本地 pre-commit 必跑(< 30s)",
+    "slow: 慢测,只在 CI 跑",
+    "static: L0 静态扫描层",
+    "contract: L4 schema/契约层",
+    "fairness: L7 fairness/红线层",
+    "e2e: L5 端到端 pipeline 层",
+]

@@ -1,3 +1,4 @@
+# bazi-life-curves · 核心依赖（必装）
 lunar-python>=1.4.4
 matplotlib>=3.7.0
 PyYAML>=6.0

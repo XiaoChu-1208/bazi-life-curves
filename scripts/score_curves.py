@@ -1190,8 +1190,17 @@ def score(
     weights = weights or DEFAULT_WEIGHTS
     lambdas = lambdas or DEFAULT_LAMBDA
     bazi, sc_applied = apply_structural_corrections(bazi, confirmed_facts)
-    if override_phase:
-        bazi = apply_phase_override(bazi, override_phase)
+
+    # v8 · 优先级：override_phase（CLI 调试强制） > bazi.phase.id（来自 solve_bazi/phase_posterior） > 默认
+    # 仅当 phase 不是默认相位时才反演（DM_dominant 不需要走 apply_phase_override）
+    effective_phase_id: str | None = override_phase
+    if not effective_phase_id:
+        bp = bazi.get("phase") or {}
+        candidate_pid = bp.get("id")
+        if candidate_pid and candidate_pid != "day_master_dominant":
+            effective_phase_id = candidate_pid
+    if effective_phase_id:
+        bazi = apply_phase_override(bazi, effective_phase_id)
     bazi = apply_geju_override(bazi)  # 格局为先：先识别格局，再用其覆盖用神
     base = l0_baseline(bazi)
     emo_base = emotion_baseline(bazi)  # v6 关系能量维度基线（独立通道，v7 现代化）

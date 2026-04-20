@@ -42,31 +42,86 @@
 | 5 | 己亥 | 48 | 2025 |
 | 6 | 戊戌 | 58 | 2035 |
 
-## 出图前的下马威（Step 2.5）
+## v8 相位决策与判别问答（Step 2.5）
 
-```
-我先用 3 条最高把握的推论让你校验一下八字的准确性。
-对得上 ≥ 2 条 → 回复"准 / 继续 / 画图"，我直接进入绘图。
-对得上 0–1 条 → 八字十有八九不准（出生时辰差 1 小时月柱 / 时柱可能跳一位）→ 请确认时辰。
+> v8 起，"出图前下马威"被重构为**多维相位判别问答**。Agent 不再用自然语言抛 3 条假设让用户口头确认；
+> 而是按 `references/handshake_protocol.md` 通过结构化 `AskQuestion` 工具抛出可点选题目，用户答案
+> 通过 `phase_posterior.py` 做 Bayesian 更新，再决定是否覆写 `bazi.phase`。
 
-① 【本性基底】稳重承载型——爱掌控产出、爱建结构，对'失去主导权 / 没有成果'最敏感。
-   用神为金 → 你最舒适的活动类型是「结构化的产出 / 收割 / 定型」（写作、做产品、打磨作品、收尾）。
-   依据：日主戊（土） + 用神金
-   可证伪点：如果你觉得自己最享受'被人安排 + 没产出归属感'，这条就是错的
+**provisional decision（先验直出，未与用户校验前）：**
 
-② 【过往大波动】48 岁那年（2025 乙巳）你在外界关注度上明显回落、或主动 / 被动从某个公开身份退下来
-   （命理触发：相穿，"明伤未必痛、暗里被磨"）
-   依据：2025 乙巳 · 大运 己亥 · 名声 53.1（基线 65.5，偏离 12.4） · 置信度 high · 互动 相穿
-   可证伪点：如果 2025±1 年那段你的名声维度没出现明显波动，这条就是错的
-
-③ 【过往大波动】6 岁那年（1983 癸亥）你的内在世界经历过一次大震动——价值观重塑、长期挣扎的'断'，
-   或某个关键身份的告别（命理触发：反吟天克地冲，"剧变 / 一翻一覆"）
-   依据：1983 癸亥 · 大运 起运前 · 精神 41.7（基线 50.0，偏离 8.3） · 置信度 high · 互动 反吟,相穿
-   可证伪点：如果 1983±1 年那段没有家庭层面的大变动 / 重要关系断裂，这条就是错的
+```json
+"provisional_decision": {
+  "decision": "day_master_dominant",
+  "confidence": "high",
+  "decision_probability": 0.900,
+  "is_provisional": true
+}
 ```
 
-> 完整握手数据见 `shang_guan_sheng_cai.handshake.json`。
-> 用户回应"准 / 继续"后，再进入下面的曲线渲染。
+候选 5 个相位中（`day_master_dominant`、`climate_inversion_dry_top`、`climate_inversion_wet_top`、
+`dominating_god_cai_zuo_zhu`、`dominating_god_guan_zuo_zhu`），仅 `day_master_dominant` 先验显著
+（≈ 0.900），其余 ≤ 0.006，可视为弱对照。
+
+**Step 2.5 判别问答（22 题 · 5 个维度）**
+
+`handshake.json/questions[]` 排序后摘前 6 条（按 `discrimination_power` 降序）：
+
+| # | 题目 ID | 维度 | 判别力 |
+|---|---|---|---|
+| 1 | `D1_Q4_siblings` | ethnography_family（兄弟姐妹结构） | 0.551 |
+| 2 | `D1_Q3_mother_presence` | ethnography_family（母亲在场度） | 0.353 |
+| 3 | `D1_Q2_father_presence` | ethnography_family（父亲在场度） | 0.318 |
+| 4 | `D1_Q1_birth_economic_condition` | ethnography_family（出生经济条件） | 0.269 |
+| 5 | `D1_Q5_birth_place_era` | ethnography_family（出生地 × 时代） | 0.203 |
+| 6 | `D2_Q6_attraction_age_pattern` | relationship（择偶年龄偏好） | 0.586 |
+
+题目分布覆盖 5 个维度：D1 民族志 / 原生家庭 · D2 关系 · D3 流年大事件（动态生成 · 本盘 4 条） ·
+D4 中医 · D5 自我感知。Agent **必须**通过 `AskQuestion` 抛出至少前 3 条；只有当 posterior 明显
+偏离 prior（决策跳出 `day_master_dominant`、置信度 ≥ "high"）时，才会触发 `phase_posterior.py`
+覆写 `bazi.phase` 并重渲染。
+
+**v8.1 · Round 2 confirmation（必跑）**
+
+> R1 即使 high confidence，也存在"答对几道家庭题就被偶然推到从财"的风险。R2 拿 R1 决策
+> phase 与 runner-up 之间高 pairwise 判别力的 6-8 道题再问一次，看决策是否经得起第二批独立证据。
+
+```bash
+# R1 用户答案到位后（user_answers.r1.json）
+python3 ../scripts/phase_posterior.py --round 1 \
+  --bazi shang_guan_sheng_cai.bazi.json \
+  --questions shang_guan_sheng_cai.handshake.json \
+  --answers user_answers.r1.json \
+  --out shang_guan_sheng_cai.bazi.json
+
+# 跑 R2 confirmation handshake
+python3 ../scripts/handshake.py --round 2 \
+  --bazi shang_guan_sheng_cai.bazi.json \
+  --curves shang_guan_sheng_cai.curves.json \
+  --r1-handshake shang_guan_sheng_cai.handshake.json \
+  --r1-answers user_answers.r1.json \
+  --current-year 2026 \
+  --out shang_guan_sheng_cai.handshake.r2.json
+
+# Agent 抛 R2 题 → user_answers.r2.json → 合并算最终后验
+python3 ../scripts/phase_posterior.py --round 2 \
+  --bazi shang_guan_sheng_cai.bazi.json \
+  --r1-handshake shang_guan_sheng_cai.handshake.json --r1-answers user_answers.r1.json \
+  --r2-handshake shang_guan_sheng_cai.handshake.r2.json --r2-answers user_answers.r2.json \
+  --out shang_guan_sheng_cai.bazi.json
+```
+
+R2 输出 `bazi.phase_confirmation.action` ∈ {`render`, `render_with_caveat`, `escalate`}：
+
+| confirmation_status | 出图 | 解读 caveat |
+|---|---|---|
+| `confirmed`（R2 决策 == R1 AND prob ≥ 0.85） | ✓ 直接出图 | 无 |
+| `weakly_confirmed`（决策一致 AND 0.65 ≤ prob < 0.85） | ✓ 出图 | 自动加"R2 弱确认"caveat |
+| `uncertain`（决策一致 AND prob < 0.65） | ✗ escalate | 建议核对时辰 / 性别 |
+| `decision_changed`（R2 决策 != R1） | ✗ escalate | 必须报告反转 |
+
+> 完整握手数据见 `shang_guan_sheng_cai.handshake.json` / `.handshake.r2.json`；判别问答原始定义见
+> `references/discriminative_question_bank.md`；两轮校验完整协议见 `references/handshake_protocol.md` §4。
 
 ## 50 年评分曲线
 
@@ -124,7 +179,22 @@ cd ~/.claude/skills/bazi-life-curves/examples
 python3 ../scripts/solve_bazi.py --pillars "丁巳 甲辰 戊寅 庚申" --gender M --birth-year 1977 --out shang_guan_sheng_cai.bazi.json
 python3 ../scripts/score_curves.py --bazi shang_guan_sheng_cai.bazi.json --out shang_guan_sheng_cai.curves.json --strict --age-end 60 --dispute-threshold 18
 python3 ../scripts/handshake.py --bazi shang_guan_sheng_cai.bazi.json --curves shang_guan_sheng_cai.curves.json --current-year 2026 --out shang_guan_sheng_cai.handshake.json
-# (用户校验下马威 → "准" → 才进行下面两步)
+# Round 1（disambiguation）：Agent 用 AskQuestion 抛全部题给用户点选，写 user_answers.r1.json，然后
+# python3 ../scripts/phase_posterior.py --round 1 --bazi shang_guan_sheng_cai.bazi.json \
+#   --questions shang_guan_sheng_cai.handshake.json --answers user_answers.r1.json \
+#   --out shang_guan_sheng_cai.bazi.json
+# Round 2（confirmation · 必跑）：
+# python3 ../scripts/handshake.py --round 2 --bazi shang_guan_sheng_cai.bazi.json \
+#   --curves shang_guan_sheng_cai.curves.json \
+#   --r1-handshake shang_guan_sheng_cai.handshake.json --r1-answers user_answers.r1.json \
+#   --current-year 2026 --out shang_guan_sheng_cai.handshake.r2.json
+# Agent 抛 R2 题 → user_answers.r2.json，然后
+# python3 ../scripts/phase_posterior.py --round 2 --bazi shang_guan_sheng_cai.bazi.json \
+#   --r1-handshake shang_guan_sheng_cai.handshake.json --r1-answers user_answers.r1.json \
+#   --r2-handshake shang_guan_sheng_cai.handshake.r2.json --r2-answers user_answers.r2.json \
+#   --out shang_guan_sheng_cai.bazi.json
+# bazi.phase_confirmation.action == "render" / "render_with_caveat" 才进入下面渲染；
+# == "escalate" 时停下来提示核对时辰 / 性别。
 python3 ../scripts/render_artifact.py --curves shang_guan_sheng_cai.curves.json --out shang_guan_sheng_cai.html
 python3 ../scripts/render_chart.py --curves shang_guan_sheng_cai.curves.json --out shang_guan_sheng_cai.png
 ```

@@ -22,69 +22,113 @@
   h1 { font-size: 18px; font-weight: 600; margin: 0 0 4px; color: #1a1a1a; }
   .meta { color: #888; font-size: 13px; margin-bottom: 16px; }
   .meta b { color: #555; font-weight: 600; }
+
+  /* --- 图表 --- */
   .chart-wrap { background: #fff; border-radius: 12px; padding: 20px 8px 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.04); }
   .legend-row { display: flex; flex-wrap: wrap; gap: 16px 24px; padding: 0 16px 12px; font-size: 13px; }
   .legend-item { display: inline-flex; align-items: center; gap: 6px; }
-  .legend-line { display: inline-block; width: 24px; height: 0; border-top: 2.4px solid; }
-  .legend-line.dashed { border-top-style: dashed; border-top-width: 1.6px; }
-  .turning {
-    margin-top: 24px; background: #fff; border-radius: 12px; padding: 16px 20px;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.04);
-  }
-  .turning h2 { font-size: 15px; font-weight: 600; margin: 0 0 12px; color: #1a1a1a; }
-  .turning table { width: 100%; border-collapse: collapse; font-size: 13px; }
-  .turning th, .turning td { padding: 6px 10px; text-align: left; border-bottom: 1px solid #f0f0ed; }
-  .turning th { color: #888; font-weight: 500; font-size: 12px; }
-  .conf-high { color: #2c7a52; }
-  .conf-mid { color: #b07a26; }
-  .conf-low { color: #a3a3a3; }
-  .dim-spirit { color: #8B7BC7; }
-  .dim-wealth { color: #4A9D7F; }
-  .dim-fame { color: #D88E5C; }
-  .caveat { font-size: 12px; color: #999; margin-top: 8px; }
-  .disputes {
-    margin-top: 16px; background: #fffaf0; border-radius: 12px;
-    padding: 16px 20px; border: 1px solid #f0e3c0;
-  }
-  .disputes h2 { font-size: 15px; font-weight: 600; margin: 0 0 4px; color: #8b5a00; }
-  .disputes .sub { font-size: 12px; color: #b07a26; margin-bottom: 14px; }
-  .dispute-card {
-    background: #fff; border: 1px solid #f0e3c0; border-radius: 8px;
-    padding: 12px 14px; margin-bottom: 10px;
-  }
-  .dispute-head { font-weight: 600; font-size: 13px; margin-bottom: 6px; }
-  .dispute-bars { display: flex; flex-direction: column; gap: 4px; margin: 8px 0; }
-  .dispute-bar { display: flex; align-items: center; gap: 8px; font-size: 12px; }
-  .dispute-bar .name { width: 60px; color: #555; }
-  .dispute-bar .bar { flex: 1; height: 14px; background: #f5f2ea; border-radius: 3px; overflow: hidden; }
-  .dispute-bar .fill { height: 100%; }
-  .dispute-bar .val { width: 40px; text-align: right; color: #333; font-variant-numeric: tabular-nums; }
-  .dispute-hints { font-size: 12px; color: #6b5028; margin-top: 6px; line-height: 1.5; }
-  .dispute-hints li { margin: 2px 0; }
-  .dispute-llm-cue {
-    margin-top: 8px; padding: 6px 10px; background: #fff3d9;
-    border-radius: 4px; font-size: 11px; color: #8b5a00; font-style: italic;
-  }
-  /* 整图综合分析 + 多维取象 */
-  .overall-analysis {
-    margin-top: 24px; background: #fff; border-radius: 12px;
+  .legend-line { display: inline-block; width: 28px; height: 0; border-top: 2.6px solid; }
+  .legend-line.dashed { border-top-style: dashed; border-top-width: 1.4px; opacity: 0.55; }
+  .caveat { font-size: 12px; color: #999; margin-top: 8px; padding: 0 8px; }
+  .mp-summary { margin-top: 6px; font-size: 11px; color: #888; padding: 0 8px; }
+
+  /* --- 通用卡片 --- */
+  .card {
+    margin-top: 20px; background: #fff; border-radius: 12px;
     padding: 16px 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.04);
   }
-  .overall-analysis > summary {
-    font-size: 15px; font-weight: 600; color: #1a1a1a; cursor: pointer;
-    list-style: none; padding: 4px 0;
+  .card > h2 { font-size: 15px; font-weight: 600; margin: 0 0 12px; color: #1a1a1a; }
+  .card > .sub { font-size: 12px; color: #888; margin-bottom: 12px; }
+
+  /* --- details 折叠 --- */
+  details { padding: 4px 0; }
+  details > summary {
+    cursor: pointer; list-style: none; padding: 6px 0;
+    font-size: 14px; font-weight: 600; color: #1a1a1a;
   }
-  .overall-analysis > summary::-webkit-details-marker { display: none; }
-  .overall-analysis > summary::before {
-    content: "▸ "; display: inline-block; width: 14px; transition: transform 0.15s;
-    color: #999;
+  details > summary::-webkit-details-marker { display: none; }
+  details > summary::before {
+    content: "▸ "; display: inline-block; width: 16px;
+    color: #999; transition: transform 0.15s;
   }
-  .overall-analysis[open] > summary::before { transform: rotate(90deg); }
-  .overall-analysis .markdown { padding-top: 12px; }
-  .overall-analysis .placeholder {
-    color: #b8b8b8; font-style: italic; padding: 12px 0; font-size: 13px;
+  details[open] > summary::before { transform: rotate(90deg); }
+
+  /* --- 大运评价 --- */
+  .dayun-list { display: flex; flex-direction: column; gap: 4px; }
+  .dayun-item {
+    border-bottom: 1px solid #f0f0ed;
+    padding: 4px 0;
   }
-  /* details 通用 markdown */
+  .dayun-item:last-child { border-bottom: none; }
+  .dayun-item > summary {
+    display: flex; align-items: center; gap: 12px;
+    font-size: 13px; font-weight: 500;
+  }
+  .dayun-item .du-tag {
+    display: inline-block; padding: 2px 8px; border-radius: 4px;
+    font-size: 12px; font-weight: 600; color: #fff;
+    min-width: 38px; text-align: center;
+  }
+  .dayun-item .du-range {
+    color: #888; font-size: 12px; font-weight: normal;
+  }
+  .dayun-item .du-summary {
+    color: #555; font-size: 12px; font-weight: normal; flex: 1;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .dayun-item .du-body { padding: 8px 0 12px 28px; }
+
+  /* --- 关键年份评价 --- */
+  .key-year {
+    border-bottom: 1px solid #f0f0ed;
+    padding: 6px 0;
+  }
+  .key-year:last-child { border-bottom: none; }
+  .key-year > summary {
+    display: flex; align-items: center; gap: 10px;
+    font-size: 13px; font-weight: 500; flex-wrap: wrap;
+  }
+  .key-year .ky-year { font-weight: 600; color: #1a1a1a; min-width: 84px; }
+  .key-year .ky-tag {
+    display: inline-block; padding: 1px 7px; border-radius: 10px;
+    font-size: 11px; line-height: 1.5;
+  }
+  .ky-tag.peak { background: #eaf4ee; color: #2c7a52; border: 1px solid #d3e8de; }
+  .ky-tag.dip  { background: #fdf0e8; color: #b14a1a; border: 1px solid #f0d9c2; }
+  .ky-tag.shift{ background: #f4f1fb; color: #5a4d8a; border: 1px solid #e2dcf2; }
+  .key-year .ky-headline {
+    color: #555; font-size: 12px; font-weight: normal;
+    flex: 1; min-width: 200px;
+  }
+  .key-year .ky-body { padding: 8px 0 12px 24px; }
+
+  /* --- 一生评价（三维度并列卡） --- */
+  .life-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 14px; margin-top: 4px;
+  }
+  .life-cell {
+    border: 1px solid #f0f0ed; border-radius: 10px;
+    padding: 12px 14px;
+  }
+  .life-cell .lc-head {
+    font-size: 13px; font-weight: 600; margin-bottom: 8px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .life-cell .lc-dot {
+    display: inline-block; width: 10px; height: 10px; border-radius: 50%;
+  }
+  .life-cell.spirit { background: #faf9fd; }
+  .life-cell.spirit .lc-dot { background: #8B7BC7; }
+  .life-cell.spirit .lc-head { color: #5a4d8a; }
+  .life-cell.wealth { background: #f7fbf9; }
+  .life-cell.wealth .lc-dot { background: #4A9D7F; }
+  .life-cell.wealth .lc-head { color: #2c6f5a; }
+  .life-cell.fame   { background: #fdf8f4; }
+  .life-cell.fame   .lc-dot { background: #D88E5C; }
+  .life-cell.fame   .lc-head { color: #9c5d2e; }
+
+  /* --- markdown --- */
   .markdown { font-size: 13px; line-height: 1.7; color: #333; }
   .markdown h1, .markdown h2, .markdown h3 { margin: 14px 0 6px; color: #1a1a1a; }
   .markdown h1 { font-size: 16px; }
@@ -101,84 +145,93 @@
     background: #f0eee7; padding: 1px 5px; border-radius: 3px; font-size: 12px;
   }
   .markdown strong { color: #1a1a1a; }
-  /* turning point row 展开 */
-  .turning td.expand-cell {
-    cursor: pointer; color: #888; user-select: none; text-align: center; width: 30px;
+
+  .placeholder {
+    color: #b8b8b8; font-style: italic; font-size: 12px; padding: 6px 0;
   }
-  .turning tr.tp-detail-row td {
-    background: #faf8f4; padding: 12px 16px;
+
+  /* --- 整图综合分析 --- */
+  .overall-analysis {
+    background: #fff; border-radius: 12px;
+    padding: 16px 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+    margin-top: 20px;
   }
-  /* 维度 chip：同年多维度收拢到单元格里 */
-  .dim-chip {
-    display: inline-block; font-size: 11px; padding: 2px 8px;
-    border-radius: 10px; margin: 0 4px 2px 0; background: #f5f2ea;
-    border: 1px solid transparent; line-height: 1.5; white-space: nowrap;
+  .overall-analysis > summary {
+    font-size: 15px; font-weight: 600; color: #1a1a1a;
+    padding: 4px 0;
   }
-  .dim-chip.dim-spirit { color: #5a4d8a; border-color: #e2dcf2; background: #f4f1fb; }
-  .dim-chip.dim-wealth { color: #2c6f5a; border-color: #d3e8de; background: #eef7f3; }
-  .dim-chip.dim-fame   { color: #9c5d2e; border-color: #f0d9c2; background: #fbf0e6; }
-  .dim-chip.conf-low   { opacity: 0.55; }
-  .turning .tp-trigger {
-    font-size: 11px; color: #6b6b6b; max-width: 280px;
+  .overall-analysis .markdown { padding-top: 12px; }
+
+  /* --- v7.5 时代-民俗志卡片 --- */
+  .era-list { display: flex; flex-direction: column; gap: 8px; }
+  .era-item {
+    border: 1px solid #ece7da; border-radius: 8px;
+    padding: 10px 14px; background: #fbf9f3;
   }
-  .tp-mp-events {
-    margin-top: 8px; padding: 10px 12px; background: #fff;
-    border: 1px dashed #d4c896; border-radius: 6px;
+  .era-item > summary {
+    display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap;
+    font-size: 13px; font-weight: 600; color: #5a4a26;
   }
-  .tp-mp-events .head {
-    font-size: 12px; color: #8b5a00; font-weight: 600; margin-bottom: 6px;
+  .era-item .era-span {
+    font-size: 12px; color: #8a6f3a; font-weight: 500;
   }
-  .tp-mp-event-item {
-    font-size: 12px; color: #5a4a26; margin: 4px 0; line-height: 1.5;
+  .era-item .era-keywords {
+    color: #8a8676; font-size: 11px; font-weight: normal;
+    flex: 1; min-width: 200px; overflow: hidden;
+    text-overflow: ellipsis; white-space: nowrap;
   }
-  .tp-mp-event-item .badge {
+  .era-item .era-tag {
+    display: inline-block; font-size: 10px; padding: 1px 6px; border-radius: 3px;
+    background: #d4c896; color: #3a2c10;
+  }
+  .era-item .era-body { padding: 8px 0 0 0; margin-top: 8px;
+    border-top: 1px dashed #e2d9be; }
+  .era-item .era-meta {
+    font-size: 11px; color: #8a8676; margin-bottom: 6px; line-height: 1.5;
+  }
+  .era-item .era-meta b { color: #5a4a26; font-weight: 600; }
+  .era-banner {
+    font-size: 11px; color: #888; margin-bottom: 12px;
+    padding: 6px 10px; background: #f6f4ee; border-radius: 4px;
+    border-left: 3px solid #d4c896;
+  }
+
+  /* --- 盲派事件小标签 --- */
+  .mp-events { padding: 8px 12px; background: #fffaf0; border: 1px dashed #d4c896; border-radius: 6px; margin-top: 8px; }
+  .mp-events .head { font-size: 12px; color: #8b5a00; font-weight: 600; margin-bottom: 6px; }
+  .mp-event-item { font-size: 12px; color: #5a4a26; margin: 4px 0; line-height: 1.5; }
+  .mp-event-item .badge {
     display: inline-block; font-size: 10px; padding: 1px 6px; border-radius: 3px;
     background: #E8B947; color: #fff; margin-right: 6px;
   }
-  .tp-mp-event-item .badge.mid { background: #d4a847; }
-  .tp-mp-event-item .badge.light { background: #c9b878; }
-  .tp-no-analysis {
-    color: #b8b8b8; font-style: italic; font-size: 12px; padding: 8px 0;
-  }
-  /* dispute LLM details */
-  .dispute-llm-details {
-    margin-top: 10px; border-top: 1px dashed #f0e3c0; padding-top: 8px;
-  }
-  .dispute-llm-details > summary {
-    font-size: 12px; color: #8b5a00; cursor: pointer; list-style: none;
-    padding: 4px 0; font-weight: 600;
-  }
-  .dispute-llm-details > summary::-webkit-details-marker { display: none; }
-  .dispute-llm-details > summary::before {
-    content: "▸ "; display: inline-block; width: 14px; color: #b07a26;
-    transition: transform 0.15s;
-  }
-  .dispute-llm-details[open] > summary::before { transform: rotate(90deg); }
-  .dispute-llm-details .markdown { padding: 6px 4px 4px; }
-  .dispute-llm-details .placeholder {
-    color: #b8b8b8; font-style: italic; font-size: 12px; padding: 4px 0;
-  }
-  /* 流年 mangpai 标记（图表下小注） */
-  .mp-summary {
-    margin-top: 10px; font-size: 11px; color: #888; padding: 0 8px;
-  }
+  .mp-event-item .badge.mid { background: #d4a847; }
+  .mp-event-item .badge.light { background: #c9b878; }
 </style>
 </head>
 <body>
 <div id="app" class="root"></div>
 
 <script>
-window.__BAZI_CURVES__ = {"version": 3, "weights": {"alpha": 0.3, "beta": 0.4, "gamma": 0.3}, "lambdas": {"spirit": 0.85, "wealth": 0.92, "fame": 0.96}, "age_start": 0, "age_end": 60, "forecast_from_year": 2026, "forecast_window": 10, "dispute_threshold": 20.0, "baseline": {"spirit": 54.3, "wealth": 52.8, "fame": 63.3}, "pillars_str": "壬戌 癸丑 庚午 丁丑", "day_master": "庚", "strength": {"score": 28.0, "label": "强", "in_season": true, "same": 2.1, "sheng": 7.6, "xie": 3.5, "ke": 0, "kewo": 3.6}, "yongshen": {"yongshen": "木", "xishen": "火", "jishen": "土", "tongguan": "木", "season": "冬", "day_master_wuxing": "金"}, "birth_year": 1982, "gender": "F", "dayun_segments": [{"label": "壬子", "start_age": 8, "end_age": 17, "start_year": 1990, "end_year": 1999}, {"label": "辛亥", "start_age": 18, "end_age": 27, "start_year": 2000, "end_year": 2009}, {"label": "庚戌", "start_age": 28, "end_age": 37, "start_year": 2010, "end_year": 2019}, {"label": "己酉", "start_age": 38, "end_age": 47, "start_year": 2020, "end_year": 2029}, {"label": "戊申", "start_age": 48, "end_age": 57, "start_year": 2030, "end_year": 2039}, {"label": "丁未", "start_age": 58, "end_age": 60, "start_year": 2040, "end_year": 2042}], "points": [{"age": 0, "year": 1982, "ganzhi": "壬戌", "dayun": "起运前", "spirit_yearly": 43.9, "wealth_yearly": 49.4, "fame_yearly": 54.0, "confidence": {"spirit": "high", "wealth": "high", "fame": "mid"}, "divergence": {"spirit": 2.4, "wealth": 4.3, "fame": 13.8}, "school_scores": {"spirit": {"fuyi": 48.5, "tiaohou": 46.4, "geju": 48.8}, "wealth": {"fuyi": 46.5, "tiaohou": 50.8, "geju": 50.8}, "fame": {"fuyi": 67.8, "tiaohou": 54.0, "geju": 54.0}}, "interactions": [{"type": "伏吟", "with": "年柱", "magnitude": "中"}], "transition": false, "is_disputed": false, "disputed_dimensions": [], "mangpai_events": [{"key": "fuyin_yingqi", "name": "伏吟应期", "intensity": "中", "canonical_event": "旧事重演 / 必须直面同一类课题；情绪上多内省、纠结、'怎么又是这个'", "evidence": "流年壬戌 与 年柱伏吟", "school": "盲派应期模型", "falsifiability": "如果该年并未出现重复性的旧事 / 旧关系 / 旧课题再现，这条就是错的"}], "mangpai_adjust": {"spirit": -4.0, "wealth": 0.0, "fame": 0.0}, "spirit_cumulative": 82.2, "wealth_cumulative": 10.0, "fame_cumulative": 10.0, "sigma": {"spirit": 6.44, "wealth": 6.99, "fame": 9.72}}, {"age": 1, "year": 1983, "ganzhi": "癸亥", "dayun": "起运前", "spirit_yearly": 48.6, "wealth_yearly": 51.4, "fame_yearly": 53.4, "confidence": {"spirit": "high", "wealth": "high", "fame": "low"}, "divergence": {"spirit": 7.0, "wealth": 1.7, "fame": 24.6}, "school_scores": {"spirit": {"fuyi": 50.1, "tiaohou": 44.3, "geju": 51.3}, "wealth": {"fuyi": 52.5, "tiaohou": 50.8, "geju": 50.8}, "fame": {"fuyi": 73.5, "tiaohou": 54.0, "geju": 48.9}}, "interactions": [{"type": "伤官见官", "magnitude": "高"}], "transition": false, "is_disputed": true, "disputed_dimensions": ["fame"], "mangpai_events": [], "mangpai_adjust": {"spirit": 0.0, "wealth": 0.0, "fame": 0.0}, "spirit_cumulative": 81.2, "wealth_cumulative": 19.1, "fame_cumulative": 12.2, "sigma": {"spirit": 7.76, "wealth": 6.24, "fame": 12.82}}, {"age": 2, "year": 1984, "ganzhi": "甲子", "dayun": "起运前", "spirit_yearly": 40.2, "wealth_yearly": 53.7, "fame_yearly": 58.2, "confidence": {"spirit": "high", "wealth": "high", "fame": "mid"}, "divergence": {"spirit": 4.8, "wealth": 7.0, "fame": 18.4}, "school_scores": {"spirit": {"fuyi": 50.8, "tiaohou": 46.0, "geju": 47.9}, "wealth": {"fuyi": 57.8, "tiaohou": 50.8, "geju": 52.5}, "fame": {"fuyi": 72.4, "tiaohou": 54.0, "geju": 58.2}}, "interactions": [{"type": "通关", "wuxing": "木", "magnitude": "中"}, {"type": "反吟", "with": "日柱", "magnitude": "高"}, {"type": "冲日柱", "magnitude": "高"}], "transition": false, "is_disputed": false, "disputed_dimensions": [], "mangpai_events": [{"key": "fanyin_yingqi", "name": "反吟应期", "intensity": "重", "canonical_event": "天克地冲应期：身体 / 居所 / 关系层面的剧变，常应'一翻一覆'——先得后失或先失后得", "evidence": "流年甲子 与 日柱庚午 天克地冲", "school": "盲派应期模型", "falsifiability": "如果该年并无身体 / 居所 / 关系的剧变事件（哪怕是先得后失），这条就是错的"}], "mangpai_adjust": {"spirit": -8.0, "wealth": 0.0, "fame": 0.0}, "spirit_cumulative": 63.5, "wealth_cumulative": 42.4, "fame_cumulative": 17.7, "sigma": {"spirit": 8.99, "wealth": 9.79, "fame": 13.92}}, {"age": 3, "year": 1985, "ganzhi": "乙丑", "dayun": "起运前", "spirit_yearly": 50.9, "wealth_yearly": 52.8, "fame_yearly": 56.5, "confidence": {"spirit": "high", "wealth": "high", "fame": "mid"}, "divergence": {"spirit": 5.3, "wealth": 5.9, "fame": 14.0}, "school_scores": {"spirit": {"fuyi": 51.1, "tiaohou": 48.1, "geju": 53.4}, "wealth": {"fuyi": 50.9, "tiaohou": 50.8, "geju": 56.7}, "fame": {"fuyi": 68.0, "tiaohou": 54.0, "geju": 56.5}}, "interactions": [{"type": "通关", "wuxing": "木", "magnitude": "中"}, {"type": "相穿", "with": "日柱", "magnitude": "低"}], "transition": false, "is_disputed": false, "disputed_dimensions": [], "mangpai_events": [], "mangpai_adjust": {"spirit": 0.0, "wealth": 0.0, "fame": 0.0}, "spirit_cumulative": 69.9, "wealth_cumulative": 58.1, "fame_cumulative": 21.8, "sigma": {"spirit": 8.22, "wealth": 8.42, "fame": 11.05}}, {"age": 4, "year": 1986, "ganzhi": "丙寅", "dayun": "起运前", "spirit_yearly": 40.1, "wealth_yearly": 53.7, "fame_yearly": 56.5, "confidence": {"spirit": "high", "wealth": "high", "fame": "mid"}, "divergence": {"spirit": 5.7, "wealth": 6.1, "fame": 17.1}, "school_scores": {"spirit": {"fuyi": 50.9, "tiaohou": 49.8, "geju": 55.5}, "wealth": {"fuyi": 56.9, "tiaohou": 50.8, "geju": 53.4}, "fame": {"fuyi": 71.9, "tiaohou": 54.8, "geju": 56.5}}, "interactions": [{"type": "通关", "wuxing": "木", "magnitude": "中"}], "transition": false, "is_disputed": false, "disputed_dimensions": [], "mangpai_events": [{"key": "guan_sha_hun_za", "name": "官杀混杂", "intensity": "中", "canonical_event": "身份 / 职业 / 婚姻同时承受多重压力，左右为难、不易决断；女命常应婚姻波折", "evidence": "原局有正官无七杀，流年天干丙=七杀 → 补出七杀 ", "school": "《滴天髓》《盲派命理》通用", "falsifiability": "如果该年并无『被多重身份 / 责任挤压』的明显感受，这条就是错的"}, {"key": "lu_chong", "name": "禄被冲", "intensity": "重", "canonical_event": "移居 / 工作变动 / 关键关系切换，或身体上有意外（轻则磕碰，重则大病大手术）", "evidence": "日干庚的禄位=申，流年支=寅（申寅相冲）", "school": "段建业《盲派命理》", "falsifiability": "如果该年既无明显的居所 / 职业切换，又无身体上的强变动，这条就是错的"}], "mangpai_adjust": {"spirit": -12, "wealth": 0.0, "fame": 0.0}, "spirit_cumulative": 53.6, "wealth_cumulative": 78.3, "fame_cumulative": 25.7, "sigma": {"spirit": 7.39, "wealth": 7.5, "fame": 10.67}}, {"age": 5, "year": 1987, "ganzhi": "丁卯", "dayun": "起运前", "spirit_yearly": 48.7, "wealth_yearly": 53.4, "fame_yearly": 56.5, "confidence": {"spirit": "high", "wealth": "high", "fame": "mid"}, "divergence": {"spirit": 5.7, "wealth": 5.2, "fame": 16.0}, "school_scores": {"spirit": {"fuyi": 52.9, "tiaohou": 49.8, "geju": 55.5}, "wealth": {"fuyi": 56.0, "tiaohou": 50.8, "geju": 53.4}, "fame": {"fuyi": 70.8, "tiaohou": 54.8, "geju": 56.5}}, "interactions": [{"type": "通关", "wuxing": "木", "magnitude": "中"}], "transition": false, "is_disputed": false, "disputed_dimensions": [], "mangpai_events": [{"key": "yangren_chong", "name": "羊刃逢冲", "intensity": "中", "canonical_event": "突发性事件多发——意外、争执、强烈情绪爆发，或主动做出激烈的决定", "evidence": "日干庚的羊刃=酉，流年支=卯（酉卯相冲）", "school": "盲派民间口诀", "falsifiability": "如果该年没有任何突发性事件 / 强烈情绪爆发 / 激烈决定，这条就是错的"}], "mangpai_adjust": {"spirit": -4.0, "wealth": 0.0, "fame": 0.0}, "spirit_cumulative": 57.2, "wealth_cumulative": 95.0, "fame_cumulative": 29.5, "sigma": {"spirit": 7.39, "wealth": 7.24, "fame": 10.35}}, {"age": 6, "year": 1988, "ganzhi": "戊辰", "dayun": "起运前", "spirit_yearly": 47.2, "wealth_yearly": 47.3, "fame_yearly": 60.7, "confidence": {"spirit": "high", "wealth": "high", "fame": "mid"}, "divergence": {"spirit": 1.8, "wealth": 8.0, "fame": 10.8}, "school_scores": {"spirit": {"fuyi": 46.3, "tiaohou": 48.1, "geju": 47.1}, "wealth": {"fuyi": 42.8, "tiaohou": 50.8, "geju": 48.3}, "fame": {"fuyi": 64.8, "tiaohou": 54.0, "geju": 60.7}}, "interactions": [{"type": "官库被冲开", "pillar": "壬戌", "magnitude": "中"}, {"type": "反吟", "with": "年柱", "magnitude": "高"}], "transition": false, "is_disputed": false, "disputed_dimensions": [], "mangpai_events": [], "mangpai_adjust": {"spirit": 0.0, "wealth": 0.0, "fame": 0.0}, "spirit_cumulative": 57.1, "wealth_cumulative": 71.2, "fame_cumulative": 36.0, "sigma": {"spirit": 7.09, "wealth": 9.1, "fame": 10.01}}, {"age": 7, "year": 1989, "ganzhi": "己巳", "dayun": "起运前", "spirit_yearly": 45.8, "wealth_yearly": 49.5, "fame_yearly": 54.0, "confidence": {"spirit": "high", "wealth": "high", "fame": "mid"}, "divergence": {"spirit": 3.8, "wealth": 7.2, "fame": 15.6}, "school_scores": {"spirit": {"fuyi": 47.5, "tiaohou": 50.6, "geju": 51.3}, "wealth": {"fuyi": 45.3, "tiaohou": 52.5, "geju": 50.8}, "fame": {"fuyi": 69.6, "tiaohou": 54.0, "geju": 54.0}}, "interactions": [], "transition": false, "is_disputed": false, "disputed_dimensions": [], "mangpai_events": [{"key": "guan_sha_hun_za", "name": "官杀混杂", "intensity": "中", "canonical_event": "身份 / 职业 / 婚姻同时承受多重压力，左右为难、不易决断；女命常应婚姻波折", "evidence": "原局有正官无七杀，流年地支巳主气=七杀 → 补出七杀 ", "school": "《滴天髓》《盲派命理》通用", "falsifiability": "如果该年并无『被多重身份 / 责任挤压』的明显感受，这条就是错的"}], "mangpai_adjust": {"spirit": -4.0, "wealth": 0.0, "fame": 0.0}, "spirit_cumulative": 54.2, "wealth_cumulative": 63.6, "fame_cumulative": 37.6, "sigma": {"spirit": 5.95, "wealth": 6.8, "fame": 8.9}}, {"age": 8, "year": 1990, "ganzhi": "庚午", "dayun": "壬子", "spirit_yearly": 42.9, "wealth_yearly": 50.0, "fame_yearly": 52.4, "confidence": {"spirit": "mid", "wealth": "mid", "fame": "low"}, "divergence": {"spirit": 16.1, "wealth": 12.2, "fame": 24.5}, "school_scores": {"spirit": {"fuyi": 57.7, "tiaohou": 45.5, "geju": 41.6}, "wealth": {"fuyi": 60.5, "tiaohou": 50.0, "geju": 48.3}, "fame": {"fuyi": 78.5, "tiaohou": 54.0, "geju": 54.0}}, "interactions": [{"type": "伏吟", "with": "日柱", "magnitude": "中"}, {"type": "相穿", "with": "月柱", "magnitude": "低"}], "transition": true, "is_disputed": true, "disputed_dimensions": ["fame"], "mangpai_events": [{"key": "fuyin_yingqi", "name": "伏吟应期", "intensity": "中", "canonical_event": "旧事重演 / 必须直面同一类课题；情绪上多内省、纠结、'怎么又是这个'", "evidence": "流年庚午 与 日柱伏吟", "school": "盲派应期模型", "falsifiability": "如果该年并未出现重复性的旧事 / 旧关系 / 旧课题再现，这条就是错的"}], "mangpai_adjust": {"spirit": -4.0, "wealth": 0.0, "fame": 0.0}, "spirit_cumulative": 45.8, "wealth_cumulative": 59.7, "fame_cumulative": 38.1, "sigma": {"spirit": 11.73, "wealth": 10.46, "fame": 14.46}}, {"age": 9, "year": 1991, "ganzhi": "辛未", "dayun": "壬子", "spirit_yearly": 43.0, "wealth_yearly": 48.3, "fame_yearly": 54.8, "confidence": {"spirit": "mid", "wealth": "mid", "fame": "low"}, "divergence": {"spirit": 13.2, "wealth": 10.8, "fame": 21.0}, "school_scores": {"spirit": {"fuyi": 55.2, "tiaohou": 43.0, "geju": 42.0}, "wealth": {"fuyi": 56.6, "tiaohou": 48.3, "geju": 45.8}, "fame": {"fuyi": 75.0, "tiaohou": 54.0, "geju": 55.7}}, "interactions": [{"type": "反吟", "with": "时柱", "magnitude": "高"}], "transition": false, "is_disputed": true, "disputed_dimensions": ["fame"], "mangpai_events": [], "mangpai_adjust": {"spirit": 0.0, "wealth": 0.0, "fame": 0.0}, "spirit_cumulative": 39.0, "wealth_cumulative": 45.1, "fame_cumulative": 40.2, "sigma": {"spirit": 9.54, "wealth": 8.85, "fame": 11.79}}, {"age": 10, "year": 1992, "ganzhi": "壬申", "dayun": "壬子", "spirit_yearly": 46.2, "wealth_yearly": 48.3, "fame_yearly": 53.4, "confidence": {"spirit": "mid", "wealth": "mid", "fame": "low"}, "divergence": {"spirit": 16.7, "wealth": 13.7, "fame": 22.3}, "school_scores": {"spirit": {"fuyi": 58.0, "tiaohou": 41.3, "geju": 46.2}, "wealth": {"fuyi": 62.0, "tiaohou": 48.3, "geju": 48.3}, "fame": {"fuyi": 76.3, "tiaohou": 54.0, "geju": 54.0}}, "interactions": [], "transition": false, "is_disputed": true, "disputed_dimensions": ["fame"], "mangpai_events": [], "mangpai_adjust": {"spirit": 0.0, "wealth": 0.0, "fame": 0.0}, "spirit_cumulative": 39.7, "wealth_cumulative": 31.7, "fame_cumulative": 41.2, "sigma": {"spirit": 9.18, "wealth": 8.43, "fame": 10.58}}, {"age": 11, "year": 1993, "ganzhi": "癸酉", "dayun": "壬子", "spirit_yearly": 44.1, "wealth_yearly": 48.3, "fame_yearly": 53.4, "confidence": {"spirit": "mid", "wealth": "mid", "fame": "low"}, "divergence": {"spirit": 13.9, "wealth": 12.5, "fame": 28.7}, "school_scores": {"spirit": {"fuyi": 55.2, "tiaohou": 41.3, "geju": 44.1}, "wealth": {"fuyi": 60.8, "tiaohou": 48.3, "geju": 48.3}, "fame": {"fuyi": 77.6, "tiaohou": 54.0, "geju": 48.9}}, "interactions": [{"type": "相穿", "with": "年柱", "magnitude": "低"}, {"type": "伤官见官", "magnitude": "高"}], "transition": false, "is_disputed": true, "disputed_dimensions": ["fame"], "mangpai_events": [], "mangpai_adjust": {"spirit": 0.0, "wealth": 0.0, "fame": 0.0}, "spirit_cumulative": 36.0, "wealth_cumulative": 19.4, "fame_cumulative": 42.2, "sigma": {"spirit": 11.02, "wealth": 10.56, "fame": 15.83}}, {"age": 12, "year": 1994, "ganzhi": "甲戌", "dayun": "壬子", "spirit_yearly": 50.4, "wealth_yearly": 54.2, "fame_yearly": 55.5, "confidence": {"spirit": "mid", "wealth": "mid", "fame": "low"}, "divergence": {"spirit": 12.3, "wealth": 18.1, "fame": 20.9}, "school_scores": {"spirit": {"fuyi": 55.3, "tiaohou": 43.0, "geju": 50.4}, "wealth": {"fuyi": 66.4, "tiaohou": 48.3, "geju": 54.2}, "fame": {"fuyi": 74.9, "tiaohou": 54.0, "geju": 56.5}}, "interactions": [{"type": "通关", "wuxing": "木", "magnitude": "中"}], "transition": false, "is_disputed": true, "disputed_dimensions": ["fame"], "mangpai_events": [], "mangpai_adjust": {"spirit": 0.0, "wealth": 0.0, "fame": 0.0}, "spirit_cumulative": 45.6, "wealth_cumulative": 45.9, "fame_cumulative": 44.7, "sigma": {"spirit": 9.29, "wealth": 10.95, "fame": 11.76}}, {"age": 13, "year": 1995, "ganzhi": "乙亥", "dayun": "壬子", "spirit_yearly": 50.4, "wealth_yearly": 53.6, "fame_yearly": 55.5, "confidence": {"spirit": "mid", "wealth": "low", "fame": "low"}, "divergence": {"spirit": 17.3, "wealth": 22.7, "fame": 25.2}, "school_scores": {"spirit": {"fuyi": 58.2, "tiaohou": 40.9, "geju": 50.4}, "wealth": {"fuyi": 71.0, "tiaohou": 48.3, "geju": 54.2}, "fame": {"fuyi": 79.2, "tiaohou": 54.0, "geju": 56.5}}, "interactions": [{"type": "通关", "wuxing": "木", "magnitude": "中"}], "transition": false, "is_disputed": true, "disputed_dimensions": ["wealth", "fame"], "mangpai_events": [], "mangpai_adjust": {"spirit": 0.0, "wealth": 0.0, "fame": 0.0}, "spirit_cumulative": 53.8, "wealth_cumulative": 66.3, "fame_cumulative": 47.0, "sigma": {"spirit": 10.72, "wealth": 12.28, "fame": 12.99}}, {"age": 14, "year": 1996, "ganzhi": "丙子", "dayun": "壬子", "spirit_yearly": 30.6, "wealth_yearly": 48.6, "fame_yearly": 54.8, "confidence": {"spirit": "mid", "wealth": "low", "fame": "low"}, "divergence": {"spirit": 14.6, "wealth": 21.4, "fame": 29.8}, "school_scores": {"spirit": {"fuyi": 53.2, "tiaohou": 42.6, "geju": 38.6}, "wealth": {"fuyi": 65.5, "tiaohou": 48.3, "geju": 44.1}, "fame": {"fuyi": 84.6, "tiaohou": 54.8, "geju": 55.7}}, "interactions": [{"type": "反吟", "with": "日柱", "magnitude": "高"}, {"type": "冲日柱", "magnitude": "高"}], "transition": false, "is_disputed": true, "disputed_dimensions": ["wealth", "fame"], "mangpai_events": [{"key": "guan_sha_hun_za", "name": "官杀混杂", "intensity": "中", "canonical_event": "身份 / 职业 / 婚姻同时承受多重压力，左右为难、不易决断；女命常应婚姻波折", "evidence": "原局有正官无七杀，流年天干丙=七杀 → 补出七杀 ", "school": "《滴天髓》《盲派命理》通用", "falsifiability": "如果该年并无『被多重身份 / 责任挤压』的明显感受，这条就是错的"}, {"key": "fanyin_yingqi", "name": "反吟应期", "intensity": "重", "canonical_event": "天克地冲应期：身体 / 居所 / 关系层面的剧变，常应'一翻一覆'——先得后失或先失后得", "evidence": "流年丙子 与 日柱庚午 天克地冲", "school": "盲派应期模型", "falsifiability": "如果该年并无身体 / 居所 / 关系的剧变事件（哪怕是先得后失），这条就是错的"}], "mangpai_adjust": {"spirit": -12, "wealth": 0.0, "fame": 0.0}, "spirit_cumulative": 20.8, "wealth_cumulative": 52.8, "fame_cumulative": 48.8, "sigma": {"spirit": 11.25, "wealth": 13.46, "fame": 16.19}}, {"age": 15, "year": 1997, "ganzhi": "丁丑", "dayun": "壬子", "spirit_yearly": 40.7, "wealth_yearly": 48.3, "fame_yearly": 54.1, "confidence": {"spirit": "mid", "wealth": "mid", "fame": "low"}, "divergence": {"spirit": 13.9, "wealth": 11.0, "fame": 25.1}, "school_scores": {"spirit": {"fuyi": 55.5, "tiaohou": 44.7, "geju": 41.6}, "wealth": {"fuyi": 59.3, "tiaohou": 48.3, "geju": 48.3}, "fame": {"fuyi": 79.1, "tiaohou": 54.8, "geju": 54.0}}, "interactions": [{"type": "伏吟", "with": "时柱", "magnitude": "中"}, {"type": "相穿", "with": "日柱", "magnitude": "低"}], "transition": false, "is_disputed": true, "disputed_dimensions": ["fame"], "mangpai_events": [{"key": "fuyin_yingqi", "name": "伏吟应期", "intensity": "中", "canonical_event": "旧事重演 / 必须直面同一类课题；情绪上多内省、纠结、'怎么又是这个'", "evidence": "流年丁丑 与 时柱伏吟", "school": "盲派应期模型", "falsifiability": "如果该年并未出现重复性的旧事 / 旧关系 / 旧课题再现，这条就是错的"}], "mangpai_adjust": {"spirit": -4.0, "wealth": 0.0, "fame": 0.0}, "spirit_cumulative": 13.1, "wealth_cumulative": 38.8, "fame_cumulative": 49.9, "sigma": {"spirit": 11.02, "wealth": 10.08, "fame": 14.66}}, {"age": 16, "year": 1998, "ganzhi": "戊寅", "dayun": "壬子", "spirit_yearly": 42.4, "wealth_yearly": 50.7, "fame_yearly": 55.5, "confidence": {"spirit": "mid", "wealth": "low", "fame": "low"}, "divergence": {"spirit": 13.4, "wealth": 21.8, "fame": 21.8}, "school_scores": {"spirit": {"fuyi": 56.4, "tiaohou": 43.0, "geju": 50.4}, "wealth": {"fuyi": 70.1, "tiaohou": 48.3, "geju": 50.8}, "fame": {"fuyi": 75.8, "tiaohou": 54.0, "geju": 56.5}}, "interactions": [{"type": "通关", "wuxing": "木", "magnitude": "中"}], "transition": false, "is_disputed": true, "disputed_dimensions": ["wealth", "fame"], "mangpai_events": [{"key": "lu_chong", "name": "禄被冲", "intensity": "重", "canonical_event": "移居 / 工作变动 / 关键关系切换，或身体上有意外（轻则磕碰，重则大病大手术）", "evidence": "日干庚的禄位=申，流年支=寅（申寅相冲）", "school": "段建业《盲派命理》", "falsifiability": "如果该年既无明显的居所 / 职业切换，又无身体上的强变动，这条就是错的"}], "mangpai_adjust": {"spirit": -8.0, "wealth": 0.0, "fame": 0.0}, "spirit_cumulative": 10.0, "wealth_cumulative": 41.2, "fame_cumulative": 52.0, "sigma": {"spirit": 9.6, "wealth": 12.02, "fame": 12.02}}, {"age": 17, "year": 1999, "ganzhi": "己卯", "dayun": "壬子", "spirit_yearly": 46.3, "wealth_yearly": 50.5, "fame_yearly": 53.9, "confidence": {"spirit": "mid", "wealth": "low", "fame": "low"}, "divergence": {"spirit": 14.4, "wealth": 20.9, "fame": 23.1}, "school_scores": {"spirit": {"fuyi": 57.4, "tiaohou": 43.0, "geju": 50.4}, "wealth": {"fuyi": 69.2, "tiaohou": 48.3, "geju": 50.8}, "fame": {"fuyi": 77.1, "tiaohou": 54.0, "geju": 56.5}}, "interactions": [{"type": "通关", "wuxing": "木", "magnitude": "中"}], "transition": true, "is_disputed": true, "disputed_dimensions": ["wealth", "fame"], "mangpai_events": [{"key": "yangren_chong", "name": "羊刃逢冲", "intensity": "中", "canonical_event": "突发性事件多发——意外、争执、强烈情绪爆发，或主动做出激烈的决定", "evidence": "日干庚的羊刃=酉，流年支=卯（酉卯相冲）", "school": "盲派民间口诀", "falsifiability": "如果该年没有任何突发性事件 / 强烈情绪爆发 / 激烈决定，这条就是错的"}], "mangpai_adjust": {"spirit": -4.0, "wealth": 0.0, "fame": 0.0}, "spirit_cumulative": 15.2, "wealth_cumulative": 42.1, "fame_cumulative": 52.9, "sigma": {"spirit": 9.89, "wealth": 11.76, "fame": 12.39}}, {"age": 18, "year": 2000, "ganzhi": "庚辰", "dayun": "辛亥", "spirit_yearly": 50.9, "wealth_yearly": 49.1, "fame_yearly": 56.1, "confidence": {"spirit": "mid", "wealth": "high", "fame": "high"}, "divergence": {"spirit": 11.6, "wealth": 3.6, "fame": 9.2}, "school_scores": {"spirit": {"fuyi": 57.8, "tiaohou": 46.2, "geju": 51.3}, "wealth": {"fuyi": 47.2, "tiaohou": 48.3, "geju": 50.8}, "fame": {"fuyi": 63.2, "tiaohou": 54.0, "geju": 59.0}}, "interactions": [{"type": "官库被冲开", "pillar": "壬戌", "magnitude": "中"}], "transition": true, "is_disputed": false, "disputed_dimensions": [], "mangpai_events": [], "mangpai_adjust": {"spirit": 0.0, "wealth": 0.0, "fame": 0.0}, "spirit_cumulative": 28.9, "wealth_cumulative": 34.3, "fame_cumulative": 55.3, "sigma": {"spirit": 9.08, "wealth": 6.78, "fame": 8.39}}, {"age": 19, "year": 2001, "ganzhi": "辛巳", "dayun": "辛亥", "spirit_yearly": 48.3, "wealth_yearly": 49.7, "fame_yearly": 54.0, "confidence": {"spirit": "high", "wealth": "high", "fame": "mid"}, "divergence": {"spirit": 8.2, "wealth": 2.4, "fame": 12.6}, "school_scores": {"spirit": {"fuyi": 56.9, "tiaohou": 48.7, "geju": 51.3}, "wealth": {"fuyi": 48.4, "tiaohou": 50.0, "geju": 50.8}, "fame": {"fuyi": 66.6, "tiaohou": 54.0, "geju": 54.0}}, "interactions": [], "transition": false, "is_disputed": false, "disputed_dimensions": [], "mangpai_events": [{"key": "guan_sha_hun_za", "name": "官杀混杂", "intensity": "中", "canonical_event": "身份 / 职业 / 婚姻同时承受多重压力，左右为难、不易决断；女命常应婚姻波折", "evidence": "原局有正官无七杀，流年地支巳主气=七杀 → 补出七杀 ", "school": "《滴天髓》《盲派命理》通用", "falsifiability": "如果该年并无『被多重身份 / 责任挤压』的明显感受，这条就是错的"}], "mangpai_adjust": {"spirit": -4.0, "wealth": 0.0, "fame": 0.0}, "spirit_cumulative": 35.3, "wealth_cumulative": 31.0, "fame_cumulative": 56.2, "sigma": {"spirit": 7.05, "wealth": 5.6, "fame": 8.15}}, {"age": 20, "year": 2002, "ganzhi": "壬午", "dayun": "辛亥", "spirit_yearly": 49.2, "wealth_yearly": 51.3, "fame_yearly": 54.0, "confidence": {"spirit": "mid", "wealth": "high", "fame": "mid"}, "divergence": {"spirit": 13.0, "wealth": 3.1, "fame": 17.8}, "school_scores": {"spirit": {"fuyi": 60.0, "tiaohou": 47.0, "geju": 49.2}, "wealth": {"fuyi": 53.1, "tiaohou": 50.0, "geju": 50.8}, "fame": {"fuyi": 71.8, "tiaohou": 54.0, "geju": 54.0}}, "interactions": [{"type": "相穿", "with": "月柱", "magnitude": "低"}], "transition": false, "is_disputed": false, "disputed_dimensions": [], "mangpai_events": [], "mangpai_adjust": {"spirit": 0.0, "wealth": 0.0, "fame": 0.0}, "spirit_cumulative": 42.6, "wealth_cumulative": 38.0, "fame_cumulative": 57.0, "sigma": {"spirit": 9.49, "wealth": 6.64, "fame": 10.87}}, {"age": 21, "year": 2003, "ganzhi": "癸未", "dayun": "辛亥", "spirit_yearly": 47.1, "wealth_yearly": 49.3, "fame_yearly": 54.0, "confidence": {"spirit": "mid", "wealth": "high", "fame": "mid"}, "divergence": {"spirit": 12.6, "wealth": 3.0, "fame": 19.1}, "school_scores": {"spirit": {"fuyi": 57.1, "tiaohou": 44.5, "geju": 47.1}, "wealth": {"fuyi": 51.3, "tiaohou": 48.3, "geju": 48.3}, "fame": {"fuyi": 69.7, "tiaohou": 54.0, "geju": 50.6}}, "interactions": [{"type": "反吟", "with": "时柱", "magnitude": "高"}, {"type": "伤官见官", "magnitude": "高"}], "transition": false, "is_disputed": false, "disputed_dimensions": [], "mangpai_events": [], "mangpai_adjust": {"spirit": 0.0, "wealth": 0.0, "fame": 0.0}, "spirit_cumulative": 44.5, "wealth_cumulative": 31.6, "fame_cumulative": 57.8, "sigma": {"spirit": 10.59, "wealth": 7.48, "fame": 12.71}}, {"age": 22, "year": 2004, "ganzhi": "甲申", "dayun": "辛亥", "spirit_yearly": 55.5, "wealth_yearly": 53.8, "fame_yearly": 56.5, "confidence": {"spirit": "mid", "wealth": "high", "fame": "mid"}, "divergence": {"spirit": 15.9, "wealth": 8.4, "fame": 10.6}, "school_scores": {"spirit": {"fuyi": 62.1, "tiaohou": 46.2, "geju": 55.5}, "wealth": {"fuyi": 56.3, "tiaohou": 48.3, "geju": 56.7}, "fame": {"fuyi": 64.6, "tiaohou": 54.0, "geju": 56.5}}, "interactions": [{"type": "通关", "wuxing": "木", "magnitude": "中"}], "transition": false, "is_disputed": false, "disputed_dimensions": [], "mangpai_events": [], "mangpai_adjust": {"spirit": 0.0, "wealth": 0.0, "fame": 0.0}, "spirit_cumulative": 63.1, "wealth_cumulative": 54.3, "fame_cumulative": 60.3, "sigma": {"spirit": 10.32, "wealth": 8.16, "fame": 8.8}}, {"age": 23, "year": 2005, "ganzhi": "乙酉", "dayun": "辛亥", "spirit_yearly": 53.4, "wealth_yearly": 52.9, "fame_yearly": 56.5, "confidence": {"spirit": "mid", "wealth": "high", "fame": "mid"}, "divergence": {"spirit": 14.5, "wealth": 8.4, "fame": 10.6}, "school_scores": {"spirit": {"fuyi": 60.7, "tiaohou": 46.2, "geju": 53.4}, "wealth": {"fuyi": 53.8, "tiaohou": 48.3, "geju": 56.7}, "fame": {"fuyi": 64.6, "tiaohou": 54.0, "geju": 56.5}}, "interactions": [{"type": "通关", "wuxing": "木", "magnitude": "中"}, {"type": "相穿", "with": "年柱", "magnitude": "低"}], "transition": false, "is_disputed": false, "disputed_dimensions": [], "mangpai_events": [], "mangpai_adjust": {"spirit": 0.0, "wealth": 0.0, "fame": 0.0}, "spirit_cumulative": 74.7, "wealth_cumulative": 69.9, "fame_cumulative": 62.6, "sigma": {"spirit": 11.21, "wealth": 9.23, "fame": 9.95}}, {"age": 24, "year": 2006, "ganzhi": "丙戌", "dayun": "辛亥", "spirit_yearly": 47.4, "wealth_yearly": 49.2, "fame_yearly": 54.8, "confidence": {"spirit": "high", "wealth": "high", "fame": "mid"}, "divergence": {"spirit": 7.2, "wealth": 2.5, "fame": 14.4}, "school_scores": {"spirit": {"fuyi": 55.1, "tiaohou": 47.9, "geju": 51.3}, "wealth": {"fuyi": 48.6, "tiaohou": 48.3, "geju": 50.8}, "fame": {"fuyi": 68.4, "tiaohou": 54.8, "geju": 54.0}}, "interactions": [], "transition": false, "is_disputed": false, "disputed_dimensions": [], "mangpai_events": [{"key": "guan_sha_hun_za", "name": "官杀混杂", "intensity": "中", "canonical_event": "身份 / 职业 / 婚姻同时承受多重压力，左右为难、不易决断；女命常应婚姻波折", "evidence": "原局有正官无七杀，流年天干丙=七杀 → 补出七杀 ", "school": "《滴天髓》《盲派命理》通用", "falsifiability": "如果该年并无『被多重身份 / 责任挤压』的明显感受，这条就是错的"}], "mangpai_adjust": {"spirit": -4.0, "wealth": 0.0, "fame": 0.0}, "spirit_cumulative": 72.5, "wealth_cumulative": 60.5, "fame_cumulative": 63.8, "sigma": {"spirit": 6.8, "wealth": 5.62, "fame": 8.6}}, {"age": 25, "year": 2007, "ganzhi": "丁亥", "dayun": "辛亥", "spirit_yearly": 51.3, "wealth_yearly": 51.0, "fame_yearly": 54.8, "confidence": {"spirit": "mid", "wealth": "high", "fame": "mid"}, "divergence": {"spirit": 14.2, "wealth": 5.6, "fame": 17.6}, "school_scores": {"spirit": {"fuyi": 60.0, "tiaohou": 45.8, "geju": 51.3}, "wealth": {"fuyi": 53.9, "tiaohou": 48.3, "geju": 50.8}, "fame": {"fuyi": 71.6, "tiaohou": 54.8, "geju": 54.0}}, "interactions": [], "transition": false, "is_disputed": false, "disputed_dimensions": [], "mangpai_events": [], "mangpai_adjust": {"spirit": 0.0, "wealth": 0.0, "fame": 0.0}, "spirit_cumulative": 78.4, "wealth_cumulative": 63.2, "fame_cumulative": 64.8, "sigma": {"spirit": 8.55, "wealth": 6.4, "fame": 9.4}}, {"age": 26, "year": 2008, "ganzhi": "戊子", "dayun": "辛亥", "spirit_yearly": 47.9, "wealth_yearly": 50.2, "fame_yearly": 54.0, "confidence": {"spirit": "mid", "wealth": "high", "fame": "mid"}, "divergence": {"spirit": 11.9, "wealth": 4.8, "fame": 15.7}, "school_scores": {"spirit": {"fuyi": 56.0, "tiaohou": 44.1, "geju": 47.9}, "wealth": {"fuyi": 53.1, "tiaohou": 48.3, "geju": 49.2}, "fame": {"fuyi": 69.7, "tiaohou": 54.0, "geju": 54.0}}, "interactions": [{"type": "冲日柱", "magnitude": "高"}], "transition": false, "is_disputed": false, "disputed_dimensions": [], "mangpai_events": [], "mangpai_adjust": {"spirit": 0.0, "wealth": 0.0, "fame": 0.0}, "spirit_cumulative": 76.6, "wealth_cumulative": 60.6, "fame_cumulative": 65.3, "sigma": {"spirit": 9.17, "wealth": 7.13, "fame": 10.26}}, {"age": 27, "year": 2009, "ganzhi": "己丑", "dayun": "辛亥", "spirit_yearly": 49.4, "wealth_yearly": 49.1, "fame_yearly": 52.8, "confidence": {"spirit": "mid", "wealth": "high", "fame": "mid"}, "divergence": {"spirit": 11.1, "wealth": 3.9, "fame": 12.7}, "school_scores": {"spirit": {"fuyi": 57.3, "tiaohou": 46.2, "geju": 49.2}, "wealth": {"fuyi": 46.9, "tiaohou": 48.3, "geju": 50.8}, "fame": {"fuyi": 66.7, "tiaohou": 54.0, "geju": 54.0}}, "interactions": [{"type": "相穿", "with": "日柱", "magnitude": "低"}], "transition": true, "is_disputed": false, "disputed_dimensions": [], "mangpai_events": [], "mangpai_adjust": {"spirit": 0.0, "wealth": 0.0, "fame": 0.0}, "spirit_cumulative": 78.1, "wealth_cumulative": 50.9, "fame_cumulative": 64.9, "sigma": {"spirit": 8.94, "wealth": 6.87, "fame": 9.4}}, {"age": 28, "year": 2010, "ganzhi": "庚寅", "dayun": "庚戌", "spirit_yearly": 44.7, "wealth_yearly": 50.5, "fame_yearly": 53.4, "confidence": {"spirit": "high", "wealth": "high", "fame": "high"}, "divergence": {"spirit": 4.2, "wealth": 5.5, "fame": 2.5}, "school_scores": {"spirit": {"fuyi": 54.8, "tiaohou": 51.3, "geju": 55.5}, "wealth": {"fuyi": 47.9, "tiaohou": 50.8, "geju": 53.4}, "fame": {"fuyi": 54.2, "tiaohou": 54.0, "geju": 56.5}}, "interactions": [{"type": "通关", "wuxing": "木", "magnitude": "中"}], "transition": true, "is_disputed": false, "disputed_dimensions": [], "mangpai_events": [{"key": "lu_chong", "name": "禄被冲", "intensity": "重", "canonical_event": "移居 / 工作变动 / 关键关系切换，或身体上有意外（轻则磕碰，重则大病大手术）", "evidence": "日干庚的禄位=申，流年支=寅（申寅相冲）", "school": "段建业《盲派命理》", "falsifiability": "如果该年既无明显的居所 / 职业切换，又无身体上的强变动，这条就是错的"}], "mangpai_adjust": {"spirit": -8.0, "wealth": 0.0, "fame": 0.0}, "spirit_cumulative": 69.9, "wealth_cumulative": 51.1, "fame_cumulative": 65.0, "sigma": {"spirit": 6.96, "wealth": 7.33, "fame": 6.47}}, {"age": 29, "year": 2011, "ganzhi": "辛卯", "dayun": "庚戌", "spirit_yearly": 49.5, "wealth_yearly": 49.9, "fame_yearly": 54.9, "confidence": {"spirit": "high", "wealth": "high", "fame": "high"}, "divergence": {"spirit": 4.2, "wealth": 7.8, "fame": 2.5}, "school_scores": {"spirit": {"fuyi": 53.8, "tiaohou": 51.3, "geju": 55.5}, "wealth": {"fuyi": 45.6, "tiaohou": 50.8, "geju": 53.4}, "fame": {"fuyi": 54.2, "tiaohou": 54.0, "geju": 56.5}}, "interactions": [{"type": "通关", "wuxing": "木", "magnitude": "中"}], "transition": false, "is_disputed": false, "disputed_dimensions": [], "mangpai_events": [{"key": "yangren_chong", "name": "羊刃逢冲", "intensity": "中", "canonical_event": "突发性事件多发——意外、争执、强烈情绪爆发，或主动做出激烈的决定", "evidence": "日干庚的羊刃=酉，流年支=卯（酉卯相冲）", "school": "盲派民间口诀", "falsifiability": "如果该年没有任何突发性事件 / 强烈情绪爆发 / 激烈决定，这条就是错的"}], "mangpai_adjust": {"spirit": -4.0, "wealth": 0.0, "fame": 0.0}, "spirit_cumulative": 72.7, "wealth_cumulative": 47.7, "fame_cumulative": 66.1, "sigma": {"spirit": 6.96, "wealth": 7.99, "fame": 6.47}}, {"age": 30, "year": 2012, "ganzhi": "壬辰", "dayun": "庚戌", "spirit_yearly": 50.2, "wealth_yearly": 50.8, "fame_yearly": 56.1, "confidence": {"spirit": "high", "wealth": "mid", "fame": "high"}, "divergence": {"spirit": 1.7, "wealth": 12.0, "fame": 5.0}, "school_scores": {"spirit": {"fuyi": 49.7, "tiaohou": 49.6, "geju": 51.3}, "wealth": {"fuyi": 38.8, "tiaohou": 50.8, "geju": 50.8}, "fame": {"fuyi": 55.3, "tiaohou": 54.0, "geju": 59.0}}, "interactions": [{"type": "官库被冲开", "pillar": "壬戌", "magnitude": "中"}], "transition": false, "is_disputed": false, "disputed_dimensions": [], "mangpai_events": [], "mangpai_adjust": {"spirit": 0.0, "wealth": 0.0, "fame": 0.0}, "spirit_cumulative": 76.4, "wealth_cumulative": 50.1, "fame_cumulative": 67.9, "sigma": {"spirit": 6.24, "wealth": 9.2, "fame": 7.19}}, {"age": 31, "year": 2013, "ganzhi": "癸巳", "dayun": "庚戌", "spirit_yearly": 46.6, "wealth_yearly": 50.8, "fame_yearly": 54.0, "confidence": {"spirit": "high", "wealth": "mid", "fame": "mid"}, "divergence": {"spirit": 3.6, "wealth": 10.5, "fame": 11.2}, "school_scores": {"spirit": {"fuyi": 48.5, "tiaohou": 52.1, "geju": 51.3}, "wealth": {"fuyi": 42.0, "tiaohou": 52.5, "geju": 50.8}, "fame": {"fuyi": 60.1, "tiaohou": 54.0, "geju": 48.9}}, "interactions": [{"type": "伤官见官", "magnitude": "高"}], "transition": false, "is_disputed": false, "disputed_dimensions": [], "mangpai_events": [{"key": "guan_sha_hun_za", "name": "官杀混杂", "intensity": "中", "canonical_event": "身份 / 职业 / 婚姻同时承受多重压力，左右为难、不易决断；女命常应婚姻波折", "evidence": "原局有正官无七杀，流年地支巳主气=七杀 → 补出七杀 ", "school": "《滴天髓》《盲派命理》通用", "falsifiability": "如果该年并无『被多重身份 / 责任挤压』的明显感受，这条就是错的"}], "mangpai_adjust": {"spirit": -4.0, "wealth": 0.0, "fame": 0.0}, "spirit_cumulative": 72.3, "wealth_cumulative": 52.4, "fame_cumulative": 68.3, "sigma": {"spirit": 6.78, "wealth": 8.77, "fame": 8.97}}, {"age": 32, "year": 2014, "ganzhi": "甲午", "dayun": "庚戌", "spirit_yearly": 53.7, "wealth_yearly": 52.5, "fame_yearly": 56.5, "confidence": {"spirit": "high", "wealth": "mid", "fame": "high"}, "divergence": {"spirit": 0.4, "wealth": 10.3, "fame": 4.9}, "school_scores": {"spirit": {"fuyi": 53.8, "tiaohou": 53.8, "geju": 53.4}, "wealth": {"fuyi": 46.4, "tiaohou": 52.5, "geju": 56.7}, "fame": {"fuyi": 58.9, "tiaohou": 54.0, "geju": 56.5}}, "interactions": [{"type": "通关", "wuxing": "木", "magnitude": "中"}, {"type": "相穿", "with": "月柱", "magnitude": "低"}], "transition": false, "is_disputed": false, "disputed_dimensions": [], "mangpai_events": [], "mangpai_adjust": {"spirit": 0.0, "wealth": 0.0, "fame": 0.0}, "spirit_cumulative": 83.0, "wealth_cumulative": 65.3, "fame_cumulative": 70.3, "sigma": {"spirit": 6.63, "wealth": 9.85, "fame": 8.09}}, {"age": 33, "year": 2015, "ganzhi": "乙未", "dayun": "庚戌", "spirit_yearly": 53.0, "wealth_yearly": 50.8, "fame_yearly": 55.3, "confidence": {"spirit": "high", "wealth": "mid", "fame": "high"}, "divergence": {"spirit": 4.2, "wealth": 13.5, "fame": 2.5}, "school_scores": {"spirit": {"fuyi": 52.2, "tiaohou": 51.3, "geju": 55.5}, "wealth": {"fuyi": 43.2, "tiaohou": 50.8, "geju": 56.7}, "fame": {"fuyi": 55.5, "tiaohou": 54.0, "geju": 56.5}}, "interactions": [{"type": "通关", "wuxing": "木", "magnitude": "中"}], "transition": false, "is_disputed": false, "disputed_dimensions": [], "mangpai_events": [], "mangpai_adjust": {"spirit": 0.0, "wealth": 0.0, "fame": 0.0}, "spirit_cumulative": 90.8, "wealth_cumulative": 66.4, "fame_cumulative": 71.5, "sigma": {"spirit": 6.96, "wealth": 9.63, "fame": 6.47}}, {"age": 34, "year": 2016, "ganzhi": "丙申", "dayun": "庚戌", "spirit_yearly": 47.9, "wealth_yearly": 50.8, "fame_yearly": 55.2, "confidence": {"spirit": "high", "wealth": "mid", "fame": "high"}, "divergence": {"spirit": 1.7, "wealth": 13.3, "fame": 2.9}, "school_scores": {"spirit": {"fuyi": 51.5, "tiaohou": 53.0, "geju": 51.3}, "wealth": {"fuyi": 37.5, "tiaohou": 50.8, "geju": 50.8}, "fame": {"fuyi": 56.9, "tiaohou": 54.8, "geju": 54.0}}, "interactions": [], "transition": false, "is_disputed": false, "disputed_dimensions": [], "mangpai_events": [{"key": "guan_sha_hun_za", "name": "官杀混杂", "intensity": "中", "canonical_event": "身份 / 职业 / 婚姻同时承受多重压力，左右为难、不易决断；女命常应婚姻波折", "evidence": "原局有正官无七杀，流年天干丙=七杀 → 补出七杀 ", "school": "《滴天髓》《盲派命理》通用", "falsifiability": "如果该年并无『被多重身份 / 责任挤压』的明显感受，这条就是错的"}], "mangpai_adjust": {"spirit": -4.0, "wealth": 0.0, "fame": 0.0}, "spirit_cumulative": 87.2, "wealth_cumulative": 67.3, "fame_cumulative": 72.5, "sigma": {"spirit": 5.42, "wealth": 8.32, "fame": 5.72}}, {"age": 35, "year": 2017, "ganzhi": "丁酉", "dayun": "庚戌", "spirit_yearly": 51.4, "wealth_yearly": 50.8, "fame_yearly": 54.8, "confidence": {"spirit": "high", "wealth": "mid", "fame": "high"}, "divergence": {"spirit": 3.8, "wealth": 15.2, "fame": 1.7}, "school_scores": {"spirit": {"fuyi": 52.1, "tiaohou": 53.0, "geju": 49.2}, "wealth": {"fuyi": 35.6, "tiaohou": 50.8, "geju": 50.8}, "fame": {"fuyi": 55.7, "tiaohou": 54.8, "geju": 54.0}}, "interactions": [{"type": "相穿", "with": "年柱", "magnitude": "低"}], "transition": false, "is_disputed": false, "disputed_dimensions": [], "mangpai_events": [], "mangpai_adjust": {"spirit": 0.0, "wealth": 0.0, "fame": 0.0}, "spirit_cumulative": 91.2, "wealth_cumulative": 68.2, "fame_cumulative": 73.3, "sigma": {"spirit": 6.84, "wealth": 10.12, "fame": 6.24}}, {"age": 36, "year": 2018, "ganzhi": "戊戌", "dayun": "庚戌", "spirit_yearly": 50.0, "wealth_yearly": 50.8, "fame_yearly": 53.4, "confidence": {"spirit": "high", "wealth": "mid", "fame": "high"}, "divergence": {"spirit": 3.8, "wealth": 15.7, "fame": 1.7}, "school_scores": {"spirit": {"fuyi": 47.5, "tiaohou": 51.3, "geju": 51.3}, "wealth": {"fuyi": 35.1, "tiaohou": 50.8, "geju": 50.8}, "fame": {"fuyi": 52.3, "tiaohou": 54.0, "geju": 54.0}}, "interactions": [], "transition": false, "is_disputed": false, "disputed_dimensions": [], "mangpai_events": [], "mangpai_adjust": {"spirit": 0.0, "wealth": 0.0, "fame": 0.0}, "spirit_cumulative": 91.7, "wealth_cumulative": 69.0, "fame_cumulative": 73.0, "sigma": {"spirit": 5.95, "wealth": 8.92, "fame": 5.42}}, {"age": 37, "year": 2019, "ganzhi": "己亥", "dayun": "庚戌", "spirit_yearly": 50.4, "wealth_yearly": 50.6, "fame_yearly": 53.7, "confidence": {"spirit": "high", "wealth": "mid", "fame": "high"}, "divergence": {"spirit": 2.2, "wealth": 10.4, "fame": 4.0}, "school_scores": {"spirit": {"fuyi": 51.4, "tiaohou": 49.2, "geju": 51.3}, "wealth": {"fuyi": 40.4, "tiaohou": 50.8, "geju": 50.8}, "fame": {"fuyi": 58.0, "tiaohou": 54.0, "geju": 54.0}}, "interactions": [], "transition": true, "is_disputed": false, "disputed_dimensions": [], "mangpai_events": [], "mangpai_adjust": {"spirit": 0.0, "wealth": 0.0, "fame": 0.0}, "spirit_cumulative": 93.0, "wealth_cumulative": 68.2, "fame_cumulative": 73.0, "sigma": {"spirit": 5.55, "wealth": 7.6, "fame": 6.0}}, {"age": 38, "year": 2020, "ganzhi": "庚子", "dayun": "己酉", "spirit_yearly": 49.5, "wealth_yearly": 49.4, "fame_yearly": 54.0, "confidence": {"spirit": "high", "wealth": "mid", "fame": "high"}, "divergence": {"spirit": 3.0, "wealth": 13.7, "fame": 5.2}, "school_scores": {"spirit": {"fuyi": 50.9, "tiaohou": 49.2, "geju": 47.9}, "wealth": {"fuyi": 37.1, "tiaohou": 50.8, "geju": 49.2}, "fame": {"fuyi": 59.2, "tiaohou": 54.0, "geju": 54.0}}, "interactions": [{"type": "冲日柱", "magnitude": "高"}], "transition": true, "is_disputed": false, "disputed_dimensions": [], "mangpai_events": [], "mangpai_adjust": {"spirit": 0.0, "wealth": 0.0, "fame": 0.0}, "spirit_cumulative": 92.3, "wealth_cumulative": 60.3, "fame_cumulative": 73.1, "sigma": {"spirit": 6.61, "wealth": 9.69, "fame": 7.24}}, {"age": 39, "year": 2021, "ganzhi": "辛丑", "dayun": "己酉", "spirit_yearly": 50.2, "wealth_yearly": 50.7, "fame_yearly": 54.3, "confidence": {"spirit": "high", "wealth": "low", "fame": "high"}, "divergence": {"spirit": 2.1, "wealth": 21.3, "fame": 0.8}, "school_scores": {"spirit": {"fuyi": 50.2, "tiaohou": 51.3, "geju": 49.2}, "wealth": {"fuyi": 29.5, "tiaohou": 50.8, "geju": 50.8}, "fame": {"fuyi": 54.8, "tiaohou": 54.0, "geju": 54.0}}, "interactions": [{"type": "相穿", "with": "日柱", "magnitude": "低"}], "transition": false, "is_disputed": true, "disputed_dimensions": ["wealth"], "mangpai_events": [], "mangpai_adjust": {"spirit": 0.0, "wealth": 0.0, "fame": 0.0}, "spirit_cumulative": 93.1, "wealth_cumulative": 60.9, "fame_cumulative": 73.4, "sigma": {"spirit": 6.35, "wealth": 11.87, "fame": 5.98}}, {"age": 40, "year": 2022, "ganzhi": "壬寅", "dayun": "己酉", "spirit_yearly": 44.9, "wealth_yearly": 50.3, "fame_yearly": 56.4, "confidence": {"spirit": "high", "wealth": "high", "fame": "high"}, "divergence": {"spirit": 5.9, "wealth": 6.8, "fame": 4.6}, "school_scores": {"spirit": {"fuyi": 53.6, "tiaohou": 49.6, "geju": 55.5}, "wealth": {"fuyi": 46.6, "tiaohou": 50.8, "geju": 53.4}, "fame": {"fuyi": 58.6, "tiaohou": 54.0, "geju": 56.5}}, "interactions": [{"type": "通关", "wuxing": "木", "magnitude": "中"}], "transition": false, "is_disputed": false, "disputed_dimensions": [], "mangpai_events": [{"key": "lu_chong", "name": "禄被冲", "intensity": "重", "canonical_event": "移居 / 工作变动 / 关键关系切换，或身体上有意外（轻则磕碰，重则大病大手术）", "evidence": "日干庚的禄位=申，流年支=寅（申寅相冲）", "school": "段建业《盲派命理》", "falsifiability": "如果该年既无明显的居所 / 职业切换，又无身体上的强变动，这条就是错的"}], "mangpai_adjust": {"spirit": -8.0, "wealth": 0.0, "fame": 0.0}, "spirit_cumulative": 83.1, "wealth_cumulative": 58.9, "fame_cumulative": 75.2, "sigma": {"spirit": 7.45, "wealth": 7.7, "fame": 7.07}}, {"age": 41, "year": 2023, "ganzhi": "癸卯", "dayun": "己酉", "spirit_yearly": 48.4, "wealth_yearly": 50.2, "fame_yearly": 55.1, "confidence": {"spirit": "high", "wealth": "high", "fame": "high"}, "divergence": {"spirit": 5.9, "wealth": 7.0, "fame": 8.4}, "school_scores": {"spirit": {"fuyi": 52.2, "tiaohou": 49.6, "geju": 55.5}, "wealth": {"fuyi": 46.4, "tiaohou": 50.8, "geju": 53.4}, "fame": {"fuyi": 59.9, "tiaohou": 54.0, "geju": 51.5}}, "interactions": [{"type": "通关", "wuxing": "木", "magnitude": "中"}, {"type": "伤官见官", "magnitude": "高"}], "transition": false, "is_disputed": false, "disputed_dimensions": [], "mangpai_events": [{"key": "yangren_chong", "name": "羊刃逢冲", "intensity": "中", "canonical_event": "突发性事件多发——意外、争执、强烈情绪爆发，或主动做出激烈的决定", "evidence": "日干庚的羊刃=酉，流年支=卯（酉卯相冲）", "school": "盲派民间口诀", "falsifiability": "如果该年没有任何突发性事件 / 强烈情绪爆发 / 激烈决定，这条就是错的"}], "mangpai_adjust": {"spirit": -4.0, "wealth": 0.0, "fame": 0.0}, "spirit_cumulative": 81.6, "wealth_cumulative": 56.6, "fame_cumulative": 76.0, "sigma": {"spirit": 8.42, "wealth": 8.78, "fame": 9.23}}, {"age": 42, "year": 2024, "ganzhi": "甲辰", "dayun": "己酉", "spirit_yearly": 52.4, "wealth_yearly": 50.8, "fame_yearly": 56.7, "confidence": {"spirit": "high", "wealth": "mid", "fame": "high"}, "divergence": {"spirit": 5.2, "wealth": 17.5, "fame": 7.5}, "school_scores": {"spirit": {"fuyi": 50.3, "tiaohou": 51.3, "geju": 55.5}, "wealth": {"fuyi": 39.2, "tiaohou": 50.8, "geju": 56.7}, "fame": {"fuyi": 54.6, "tiaohou": 54.0, "geju": 61.5}}, "interactions": [{"type": "通关", "wuxing": "木", "magnitude": "中"}, {"type": "官库被冲开", "pillar": "壬戌", "magnitude": "中"}], "transition": false, "is_disputed": false, "disputed_dimensions": [], "mangpai_events": [], "mangpai_adjust": {"spirit": 0.0, "wealth": 0.0, "fame": 0.0}, "spirit_cumulative": 88.3, "wealth_cumulative": 58.3, "fame_cumulative": 77.9, "sigma": {"spirit": 8.19, "wealth": 12.19, "fame": 8.94}}, {"age": 43, "year": 2025, "ganzhi": "乙巳", "dayun": "己酉", "spirit_yearly": 49.3, "wealth_yearly": 52.5, "fame_yearly": 56.2, "confidence": {"spirit": "high", "wealth": "mid", "fame": "high"}, "divergence": {"spirit": 5.0, "wealth": 15.6, "fame": 4.1}, "school_scores": {"spirit": {"fuyi": 50.5, "tiaohou": 53.8, "geju": 55.5}, "wealth": {"fuyi": 41.1, "tiaohou": 52.5, "geju": 56.7}, "fame": {"fuyi": 58.1, "tiaohou": 54.0, "geju": 56.5}}, "interactions": [{"type": "通关", "wuxing": "木", "magnitude": "中"}], "transition": false, "is_disputed": false, "disputed_dimensions": [], "mangpai_events": [{"key": "guan_sha_hun_za", "name": "官杀混杂", "intensity": "中", "canonical_event": "身份 / 职业 / 婚姻同时承受多重压力，左右为难、不易决断；女命常应婚姻波折", "evidence": "原局有正官无七杀，流年地支巳主气=七杀 → 补出七杀 ", "school": "《滴天髓》《盲派命理》通用", "falsifiability": "如果该年并无『被多重身份 / 责任挤压』的明显感受，这条就是错的"}], "mangpai_adjust": {"spirit": -4.0, "wealth": 0.0, "fame": 0.0}, "spirit_cumulative": 87.8, "wealth_cumulative": 70.8, "fame_cumulative": 79.4, "sigma": {"spirit": 7.19, "wealth": 10.23, "fame": 6.93}}, {"age": 44, "year": 2026, "ganzhi": "丙午", "dayun": "己酉", "spirit_yearly": 47.6, "wealth_yearly": 50.8, "fame_yearly": 57.4, "confidence": {"spirit": "high", "wealth": "mid", "fame": "high"}, "divergence": {"spirit": 6.3, "wealth": 17.8, "fame": 9.5}, "school_scores": {"spirit": {"fuyi": 50.0, "tiaohou": 55.5, "geju": 49.2}, "wealth": {"fuyi": 34.7, "tiaohou": 52.5, "geju": 50.8}, "fame": {"fuyi": 63.5, "tiaohou": 54.8, "geju": 54.0}}, "interactions": [{"type": "相穿", "with": "月柱", "magnitude": "低"}], "transition": false, "is_disputed": false, "disputed_dimensions": [], "mangpai_events": [{"key": "guan_sha_hun_za", "name": "官杀混杂", "intensity": "中", "canonical_event": "身份 / 职业 / 婚姻同时承受多重压力，左右为难、不易决断；女命常应婚姻波折", "evidence": "原局有正官无七杀，流年天干丙=七杀 → 补出七杀 ", "school": "《滴天髓》《盲派命理》通用", "falsifiability": "如果该年并无『被多重身份 / 责任挤压』的明显感受，这条就是错的"}], "mangpai_adjust": {"spirit": -4.0, "wealth": 0.0, "fame": 0.0}, "spirit_cumulative": 83.9, "wealth_cumulative": 71.4, "fame_cumulative": 81.7, "sigma": {"spirit": 7.56, "wealth": 10.87, "fame": 8.48}}, {"age": 45, "year": 2027, "ganzhi": "丁未", "dayun": "己酉", "spirit_yearly": 50.2, "wealth_yearly": 48.3, "fame_yearly": 56.4, "confidence": {"spirit": "high", "wealth": "mid", "fame": "high"}, "divergence": {"spirit": 5.9, "wealth": 18.6, "fame": 4.0}, "school_scores": {"spirit": {"fuyi": 50.5, "tiaohou": 53.0, "geju": 47.1}, "wealth": {"fuyi": 32.2, "tiaohou": 50.8, "geju": 48.3}, "fame": {"fuyi": 58.8, "tiaohou": 54.8, "geju": 55.7}}, "interactions": [{"type": "反吟", "with": "月柱", "magnitude": "高"}], "transition": false, "is_disputed": false, "disputed_dimensions": [], "mangpai_events": [], "mangpai_adjust": {"spirit": 0.0, "wealth": 0.0, "fame": 0.0}, "spirit_cumulative": 85.9, "wealth_cumulative": 55.9, "fame_cumulative": 83.1, "sigma": {"spirit": 7.45, "wealth": 11.1, "fame": 6.9}}, {"age": 46, "year": 2028, "ganzhi": "戊申", "dayun": "己酉", "spirit_yearly": 51.1, "wealth_yearly": 50.8, "fame_yearly": 53.7, "confidence": {"spirit": "high", "wealth": "mid", "fame": "high"}, "divergence": {"spirit": 0.5, "wealth": 19.6, "fame": 1.0}, "school_scores": {"spirit": {"fuyi": 50.8, "tiaohou": 51.3, "geju": 51.3}, "wealth": {"fuyi": 31.2, "tiaohou": 50.8, "geju": 50.8}, "fame": {"fuyi": 53.0, "tiaohou": 54.0, "geju": 54.0}}, "interactions": [], "transition": false, "is_disputed": false, "disputed_dimensions": [], "mangpai_events": [], "mangpai_adjust": {"spirit": 0.0, "wealth": 0.0, "fame": 0.0}, "spirit_cumulative": 89.5, "wealth_cumulative": 57.7, "fame_cumulative": 82.6, "sigma": {"spirit": 5.12, "wealth": 9.9, "fame": 5.25}}, {"age": 47, "year": 2029, "ganzhi": "己酉", "dayun": "己酉", "spirit_yearly": 50.2, "wealth_yearly": 50.5, "fame_yearly": 52.9, "confidence": {"spirit": "high", "wealth": "low", "fame": "high"}, "divergence": {"spirit": 2.1, "wealth": 21.5, "fame": 0.4}, "school_scores": {"spirit": {"fuyi": 50.4, "tiaohou": 51.3, "geju": 49.2}, "wealth": {"fuyi": 29.3, "tiaohou": 50.8, "geju": 50.8}, "fame": {"fuyi": 54.4, "tiaohou": 54.0, "geju": 54.0}}, "interactions": [{"type": "相穿", "with": "年柱", "magnitude": "低"}], "transition": true, "is_disputed": true, "disputed_dimensions": ["wealth"], "mangpai_events": [], "mangpai_adjust": {"spirit": 0.0, "wealth": 0.0, "fame": 0.0}, "spirit_cumulative": 90.6, "wealth_cumulative": 57.3, "fame_cumulative": 81.6, "sigma": {"spirit": 6.35, "wealth": 11.93, "fame": 5.86}}, {"age": 48, "year": 2030, "ganzhi": "庚戌", "dayun": "戊申", "spirit_yearly": 50.7, "wealth_yearly": 50.6, "fame_yearly": 52.0, "confidence": {"spirit": "high", "wealth": "mid", "fame": "high"}, "divergence": {"spirit": 0.7, "wealth": 16.4, "fame": 3.6}, "school_scores": {"spirit": {"fuyi": 50.6, "tiaohou": 51.3, "geju": 51.3}, "wealth": {"fuyi": 34.4, "tiaohou": 50.8, "geju": 50.8}, "fame": {"fuyi": 50.4, "tiaohou": 54.0, "geju": 54.0}}, "interactions": [], "transition": true, "is_disputed": false, "disputed_dimensions": [], "mangpai_events": [], "mangpai_adjust": {"spirit": 0.0, "wealth": 0.0, "fame": 0.0}, "spirit_cumulative": 92.7, "wealth_cumulative": 57.4, "fame_cumulative": 80.0, "sigma": {"spirit": 5.17, "wealth": 9.1, "fame": 5.9}}, {"age": 49, "year": 2031, "ganzhi": "辛亥", "dayun": "戊申", "spirit_yearly": 51.0, "wealth_yearly": 50.8, "fame_yearly": 54.3, "confidence": {"spirit": "high", "wealth": "mid", "fame": "high"}, "divergence": {"spirit": 3.3, "wealth": 12.4, "fame": 0.8}, "school_scores": {"spirit": {"fuyi": 52.5, "tiaohou": 49.2, "geju": 51.3}, "wealth": {"fuyi": 38.4, "tiaohou": 50.8, "geju": 50.8}, "fame": {"fuyi": 54.8, "tiaohou": 54.0, "geju": 54.0}}, "interactions": [], "transition": false, "is_disputed": false, "disputed_dimensions": [], "mangpai_events": [], "mangpai_adjust": {"spirit": 0.0, "wealth": 0.0, "fame": 0.0}, "spirit_cumulative": 95.0, "wealth_cumulative": 59.1, "fame_cumulative": 80.1, "sigma": {"spirit": 5.83, "wealth": 8.1, "fame": 5.2}}, {"age": 50, "year": 2032, "ganzhi": "壬子", "dayun": "戊申", "spirit_yearly": 48.8, "wealth_yearly": 48.0, "fame_yearly": 56.0, "confidence": {"spirit": "high", "wealth": "high", "fame": "high"}, "divergence": {"spirit": 3.5, "wealth": 6.8, "fame": 6.0}, "school_scores": {"spirit": {"fuyi": 51.0, "tiaohou": 47.5, "geju": 47.9}, "wealth": {"fuyi": 44.0, "tiaohou": 50.8, "geju": 49.2}, "fame": {"fuyi": 60.0, "tiaohou": 54.0, "geju": 54.0}}, "interactions": [{"type": "冲日柱", "magnitude": "高"}], "transition": false, "is_disputed": false, "disputed_dimensions": [], "mangpai_events": [], "mangpai_adjust": {"spirit": 0.0, "wealth": 0.0, "fame": 0.0}, "spirit_cumulative": 92.5, "wealth_cumulative": 42.6, "fame_cumulative": 81.3, "sigma": {"spirit": 6.76, "wealth": 7.7, "fame": 7.47}}, {"age": 51, "year": 2033, "ganzhi": "癸丑", "dayun": "戊申", "spirit_yearly": 44.8, "wealth_yearly": 50.8, "fame_yearly": 53.3, "confidence": {"spirit": "high", "wealth": "mid", "fame": "high"}, "divergence": {"spirit": 3.3, "wealth": 12.3, "fame": 8.0}, "school_scores": {"spirit": {"fuyi": 50.0, "tiaohou": 49.6, "geju": 46.7}, "wealth": {"fuyi": 38.5, "tiaohou": 50.8, "geju": 50.8}, "fame": {"fuyi": 56.9, "tiaohou": 54.0, "geju": 48.9}}, "interactions": [{"type": "伏吟", "with": "月柱", "magnitude": "中"}, {"type": "相穿", "with": "日柱", "magnitude": "低"}, {"type": "伤官见官", "magnitude": "高"}], "transition": false, "is_disputed": false, "disputed_dimensions": [], "mangpai_events": [{"key": "fuyin_yingqi", "name": "伏吟应期", "intensity": "中", "canonical_event": "旧事重演 / 必须直面同一类课题；情绪上多内省、纠结、'怎么又是这个'", "evidence": "流年癸丑 与 月柱伏吟", "school": "盲派应期模型", "falsifiability": "如果该年并未出现重复性的旧事 / 旧关系 / 旧课题再现，这条就是错的"}], "mangpai_adjust": {"spirit": -4.0, "wealth": 0.0, "fame": 0.0}, "spirit_cumulative": 82.3, "wealth_cumulative": 45.5, "fame_cumulative": 80.6, "sigma": {"spirit": 8.45, "wealth": 11.71, "fame": 10.15}}, {"age": 52, "year": 2034, "ganzhi": "甲寅", "dayun": "戊申", "spirit_yearly": 46.1, "wealth_yearly": 54.3, "fame_yearly": 54.9, "confidence": {"spirit": "high", "wealth": "high", "fame": "high"}, "divergence": {"spirit": 4.2, "wealth": 5.9, "fame": 2.5}, "school_scores": {"spirit": {"fuyi": 55.5, "tiaohou": 51.3, "geju": 55.5}, "wealth": {"fuyi": 55.3, "tiaohou": 50.8, "geju": 56.7}, "fame": {"fuyi": 54.3, "tiaohou": 54.0, "geju": 56.5}}, "interactions": [{"type": "通关", "wuxing": "木", "magnitude": "中"}], "transition": false, "is_disputed": false, "disputed_dimensions": [], "mangpai_events": [{"key": "lu_chong", "name": "禄被冲", "intensity": "重", "canonical_event": "移居 / 工作变动 / 关键关系切换，或身体上有意外（轻则磕碰，重则大病大手术）", "evidence": "日干庚的禄位=申，流年支=寅（申寅相冲）", "school": "段建业《盲派命理》", "falsifiability": "如果该年既无明显的居所 / 职业切换，又无身体上的强变动，这条就是错的"}], "mangpai_adjust": {"spirit": -8.0, "wealth": 0.0, "fame": 0.0}, "spirit_cumulative": 76.2, "wealth_cumulative": 70.3, "fame_cumulative": 81.1, "sigma": {"spirit": 6.96, "wealth": 7.45, "fame": 6.47}}, {"age": 53, "year": 2035, "ganzhi": "乙卯", "dayun": "戊申", "spirit_yearly": 50.1, "wealth_yearly": 53.7, "fame_yearly": 54.9, "confidence": {"spirit": "high", "wealth": "high", "fame": "high"}, "divergence": {"spirit": 4.2, "wealth": 5.9, "fame": 2.5}, "school_scores": {"spirit": {"fuyi": 55.5, "tiaohou": 51.3, "geju": 55.5}, "wealth": {"fuyi": 53.7, "tiaohou": 50.8, "geju": 56.7}, "fame": {"fuyi": 54.3, "tiaohou": 54.0, "geju": 56.5}}, "interactions": [{"type": "通关", "wuxing": "木", "magnitude": "中"}], "transition": false, "is_disputed": false, "disputed_dimensions": [], "mangpai_events": [{"key": "yangren_chong", "name": "羊刃逢冲", "intensity": "中", "canonical_event": "突发性事件多发——意外、争执、强烈情绪爆发，或主动做出激烈的决定", "evidence": "日干庚的羊刃=酉，流年支=卯（酉卯相冲）", "school": "盲派民间口诀", "falsifiability": "如果该年没有任何突发性事件 / 强烈情绪爆发 / 激烈决定，这条就是错的"}], "mangpai_adjust": {"spirit": -4.0, "wealth": 0.0, "fame": 0.0}, "spirit_cumulative": 79.2, "wealth_cumulative": 89.8, "fame_cumulative": 81.6, "sigma": {"spirit": 6.96, "wealth": 7.45, "fame": 6.47}}, {"age": 54, "year": 2036, "ganzhi": "丙辰", "dayun": "戊申", "spirit_yearly": 45.3, "wealth_yearly": 48.3, "fame_yearly": 57.0, "confidence": {"spirit": "high", "wealth": "mid", "fame": "high"}, "divergence": {"spirit": 5.9, "wealth": 15.0, "fame": 5.9}, "school_scores": {"spirit": {"fuyi": 47.9, "tiaohou": 53.0, "geju": 47.1}, "wealth": {"fuyi": 35.8, "tiaohou": 50.8, "geju": 48.3}, "fame": {"fuyi": 55.6, "tiaohou": 54.8, "geju": 60.7}}, "interactions": [{"type": "官库被冲开", "pillar": "壬戌", "magnitude": "中"}, {"type": "反吟", "with": "年柱", "magnitude": "高"}], "transition": false, "is_disputed": false, "disputed_dimensions": [], "mangpai_events": [{"key": "guan_sha_hun_za", "name": "官杀混杂", "intensity": "中", "canonical_event": "身份 / 职业 / 婚姻同时承受多重压力，左右为难、不易决断；女命常应婚姻波折", "evidence": "原局有正官无七杀，流年天干丙=七杀 → 补出七杀 ", "school": "《滴天髓》《盲派命理》通用", "falsifiability": "如果该年并无『被多重身份 / 责任挤压』的明显感受，这条就是错的"}], "mangpai_adjust": {"spirit": -4.0, "wealth": 0.0, "fame": 0.0}, "spirit_cumulative": 72.1, "wealth_cumulative": 72.8, "fame_cumulative": 83.5, "sigma": {"spirit": 8.42, "wealth": 11.38, "fame": 8.42}}, {"age": 55, "year": 2037, "ganzhi": "丁巳", "dayun": "戊申", "spirit_yearly": 48.3, "wealth_yearly": 50.8, "fame_yearly": 55.6, "confidence": {"spirit": "high", "wealth": "mid", "fame": "high"}, "divergence": {"spirit": 5.4, "wealth": 14.2, "fame": 3.9}, "school_scores": {"spirit": {"fuyi": 50.1, "tiaohou": 55.5, "geju": 51.3}, "wealth": {"fuyi": 38.3, "tiaohou": 52.5, "geju": 50.8}, "fame": {"fuyi": 57.9, "tiaohou": 54.8, "geju": 54.0}}, "interactions": [], "transition": false, "is_disputed": false, "disputed_dimensions": [], "mangpai_events": [{"key": "guan_sha_hun_za", "name": "官杀混杂", "intensity": "中", "canonical_event": "身份 / 职业 / 婚姻同时承受多重压力，左右为难、不易决断；女命常应婚姻波折", "evidence": "原局有正官无七杀，流年地支巳主气=七杀 → 补出七杀 ", "school": "《滴天髓》《盲派命理》通用", "falsifiability": "如果该年并无『被多重身份 / 责任挤压』的明显感受，这条就是错的"}], "mangpai_adjust": {"spirit": -4.0, "wealth": 0.0, "fame": 0.0}, "spirit_cumulative": 72.0, "wealth_cumulative": 73.3, "fame_cumulative": 84.3, "sigma": {"spirit": 6.35, "wealth": 8.55, "fame": 5.98}}, {"age": 56, "year": 2038, "ganzhi": "戊午", "dayun": "戊申", "spirit_yearly": 51.2, "wealth_yearly": 50.8, "fame_yearly": 54.7, "confidence": {"spirit": "high", "wealth": "mid", "fame": "high"}, "divergence": {"spirit": 4.6, "wealth": 15.9, "fame": 2.0}, "school_scores": {"spirit": {"fuyi": 50.6, "tiaohou": 53.8, "geju": 49.2}, "wealth": {"fuyi": 36.6, "tiaohou": 52.5, "geju": 50.8}, "fame": {"fuyi": 56.0, "tiaohou": 54.0, "geju": 54.0}}, "interactions": [{"type": "相穿", "with": "月柱", "magnitude": "低"}], "transition": false, "is_disputed": false, "disputed_dimensions": [], "mangpai_events": [], "mangpai_adjust": {"spirit": 0.0, "wealth": 0.0, "fame": 0.0}, "spirit_cumulative": 77.8, "wealth_cumulative": 73.7, "fame_cumulative": 84.4, "sigma": {"spirit": 7.07, "wealth": 10.32, "fame": 6.32}}, {"age": 57, "year": 2039, "ganzhi": "己未", "dayun": "戊申", "spirit_yearly": 49.6, "wealth_yearly": 48.8, "fame_yearly": 53.2, "confidence": {"spirit": "high", "wealth": "mid", "fame": "high"}, "divergence": {"spirit": 4.2, "wealth": 16.7, "fame": 1.8}, "school_scores": {"spirit": {"fuyi": 50.1, "tiaohou": 51.3, "geju": 47.1}, "wealth": {"fuyi": 34.1, "tiaohou": 50.8, "geju": 48.3}, "fame": {"fuyi": 53.9, "tiaohou": 54.0, "geju": 55.7}}, "interactions": [{"type": "反吟", "with": "月柱", "magnitude": "高"}], "transition": true, "is_disputed": false, "disputed_dimensions": [], "mangpai_events": [], "mangpai_adjust": {"spirit": 0.0, "wealth": 0.0, "fame": 0.0}, "spirit_cumulative": 79.6, "wealth_cumulative": 61.2, "fame_cumulative": 83.5, "sigma": {"spirit": 6.96, "wealth": 10.55, "fame": 6.27}}, {"age": 58, "year": 2040, "ganzhi": "庚申", "dayun": "丁未", "spirit_yearly": 52.8, "wealth_yearly": 50.6, "fame_yearly": 57.5, "confidence": {"spirit": "high", "wealth": "mid", "fame": "high"}, "divergence": {"spirit": 4.3, "wealth": 12.1, "fame": 6.4}, "school_scores": {"spirit": {"fuyi": 55.6, "tiaohou": 55.1, "geju": 51.3}, "wealth": {"fuyi": 38.7, "tiaohou": 50.8, "geju": 50.8}, "fame": {"fuyi": 62.9, "tiaohou": 56.5, "geju": 62.9}}, "interactions": [], "transition": true, "is_disputed": false, "disputed_dimensions": [], "mangpai_events": [], "mangpai_adjust": {"spirit": 0.0, "wealth": 0.0, "fame": 0.0}, "spirit_cumulative": 87.5, "wealth_cumulative": 61.1, "fame_cumulative": 85.7, "sigma": {"spirit": 6.08, "wealth": 8.03, "fame": 6.6}}, {"age": 59, "year": 2041, "ganzhi": "辛酉", "dayun": "丁未", "spirit_yearly": 52.5, "wealth_yearly": 50.8, "fame_yearly": 60.8, "confidence": {"spirit": "high", "wealth": "mid", "fame": "high"}, "divergence": {"spirit": 5.9, "wealth": 15.3, "fame": 6.4}, "school_scores": {"spirit": {"fuyi": 53.2, "tiaohou": 55.1, "geju": 49.2}, "wealth": {"fuyi": 35.5, "tiaohou": 50.8, "geju": 50.8}, "fame": {"fuyi": 62.9, "tiaohou": 56.5, "geju": 62.9}}, "interactions": [{"type": "相穿", "with": "年柱", "magnitude": "低"}], "transition": false, "is_disputed": false, "disputed_dimensions": [], "mangpai_events": [], "mangpai_adjust": {"spirit": 0.0, "wealth": 0.0, "fame": 0.0}, "spirit_cumulative": 93.6, "wealth_cumulative": 62.4, "fame_cumulative": 90.0, "sigma": {"spirit": 7.45, "wealth": 10.15, "fame": 7.59}}, {"age": 60, "year": 2042, "ganzhi": "壬戌", "dayun": "丁未", "spirit_yearly": 47.1, "wealth_yearly": 47.7, "fame_yearly": 62.0, "confidence": {"spirit": "high", "wealth": "high", "fame": "high"}, "divergence": {"spirit": 4.7, "wealth": 9.4, "fame": 10.0}, "school_scores": {"spirit": {"fuyi": 51.1, "tiaohou": 53.5, "geju": 48.8}, "wealth": {"fuyi": 41.4, "tiaohou": 50.8, "geju": 50.8}, "fame": {"fuyi": 66.5, "tiaohou": 56.5, "geju": 62.9}}, "interactions": [{"type": "伏吟", "with": "年柱", "magnitude": "中"}], "transition": false, "is_disputed": false, "disputed_dimensions": [], "mangpai_events": [{"key": "fuyin_yingqi", "name": "伏吟应期", "intensity": "中", "canonical_event": "旧事重演 / 必须直面同一类课题；情绪上多内省、纠结、'怎么又是这个'", "evidence": "流年壬戌 与 年柱伏吟", "school": "盲派应期模型", "falsifiability": "如果该年并未出现重复性的旧事 / 旧关系 / 旧课题再现，这条就是错的"}], "mangpai_adjust": {"spirit": -4.0, "wealth": 0.0, "fame": 0.0}, "spirit_cumulative": 87.9, "wealth_cumulative": 43.6, "fame_cumulative": 95.0, "sigma": {"spirit": 7.1, "wealth": 8.45, "fame": 8.62}}], "turning_points_future": [{"year": 2026, "age": 44, "ganzhi": "丙午", "dayun": "己酉", "trigger": "相穿·月柱", "dimension": "spirit", "direction": "flat", "magnitude": "低", "confidence": "high", "yearly_value": 47.6}, {"year": 2027, "age": 45, "ganzhi": "丁未", "dayun": "己酉", "trigger": "反吟·月柱", "dimension": "spirit", "direction": "flat", "magnitude": "高", "confidence": "high", "yearly_value": 50.2}, {"year": 2029, "age": 47, "ganzhi": "己酉", "dayun": "己酉", "trigger": "相穿·年柱", "dimension": "spirit", "direction": "flat", "magnitude": "低", "confidence": "high", "yearly_value": 50.2}, {"year": 2032, "age": 50, "ganzhi": "壬子", "dayun": "戊申", "trigger": "冲日柱", "dimension": "spirit", "direction": "flat", "magnitude": "高", "confidence": "mid", "yearly_value": 48.8}, {"year": 2033, "age": 51, "ganzhi": "癸丑", "dayun": "戊申", "trigger": "伤官见官", "dimension": "fame", "direction": "flat", "magnitude": "高", "confidence": "mid", "yearly_value": 53.3}, {"year": 2033, "age": 51, "ganzhi": "癸丑", "dayun": "戊申", "trigger": "伏吟·月柱", "dimension": "spirit", "direction": "down", "magnitude": "中", "confidence": "mid", "yearly_value": 44.8}, {"year": 2033, "age": 51, "ganzhi": "癸丑", "dayun": "戊申", "trigger": "相穿·日柱", "dimension": "spirit", "direction": "down", "magnitude": "低", "confidence": "mid", "yearly_value": 44.8}, {"year": 2034, "age": 52, "ganzhi": "甲寅", "dayun": "戊申", "trigger": "通关·木", "dimension": "spirit", "direction": "flat", "magnitude": "中", "confidence": "low", "yearly_value": 46.1}, {"year": 2035, "age": 53, "ganzhi": "乙卯", "dayun": "戊申", "trigger": "通关·木", "dimension": "spirit", "direction": "flat", "magnitude": "中", "confidence": "low", "yearly_value": 50.1}, {"year": 2036, "age": 54, "ganzhi": "丙辰", "dayun": "戊申", "trigger": "官库被冲开", "dimension": "fame", "direction": "up", "magnitude": "中", "confidence": "low", "yearly_value": 57.0}, {"year": 2036, "age": 54, "ganzhi": "丙辰", "dayun": "戊申", "trigger": "反吟·年柱", "dimension": "spirit", "direction": "flat", "magnitude": "高", "confidence": "low", "yearly_value": 45.3}], "disputes": [{"year": 1983, "age": 1, "ganzhi": "癸亥", "dayun": "起运前", "dimension": "fame", "spread": 24.6, "final_value": 53.4, "per_school": {"fuyi": 73.5, "tiaohou": 54.0, "geju": 48.9}, "leader_school": "fuyi", "leader_value": 73.5, "laggard_school": "geju", "laggard_value": 48.9, "mid_school": "tiaohou", "mid_value": 54.0, "interactions": [{"type": "伤官见官", "magnitude": "高"}], "interpretation_hints": ["扶抑派 ↔ 格局派 分歧：用神 / 忌神判定 与 原局格局规则给出反向信号；常见于格局成局但用神受冲、或用神到位但格局已破。"]}, {"year": 1990, "age": 8, "ganzhi": "庚午", "dayun": "壬子", "dimension": "fame", "spread": 24.5, "final_value": 52.4, "per_school": {"fuyi": 78.5, "tiaohou": 54.0, "geju": 54.0}, "leader_school": "fuyi", "leader_value": 78.5, "laggard_school": "geju", "laggard_value": 54.0, "mid_school": "tiaohou", "mid_value": 54.0, "interactions": [{"type": "伏吟", "with": "日柱", "magnitude": "中"}, {"type": "相穿", "with": "月柱", "magnitude": "低"}], "interpretation_hints": ["扶抑派 ↔ 格局派 分歧：用神 / 忌神判定 与 原局格局规则给出反向信号；常见于格局成局但用神受冲、或用神到位但格局已破。", "年内出现伏吟，传统派别对其吉凶判断历来不一（旧事重演 vs 内省深化），这是分歧主因之一。"]}, {"year": 1991, "age": 9, "ganzhi": "辛未", "dayun": "壬子", "dimension": "fame", "spread": 21.0, "final_value": 54.8, "per_school": {"fuyi": 75.0, "tiaohou": 54.0, "geju": 55.7}, "leader_school": "fuyi", "leader_value": 75.0, "laggard_school": "tiaohou", "laggard_value": 54.0, "mid_school": "geju", "mid_value": 55.7, "interactions": [{"type": "反吟", "with": "时柱", "magnitude": "高"}], "interpretation_hints": ["调候派 ↔ 扶抑派 分歧：寒暖燥湿调和的需求与扶抑日主的需求在该年指向不同五行。", "年内出现反吟（天克地冲），格局派偏向「剧变多事」，扶抑派看用神是否被冲，调候派看是否调和。"]}, {"year": 1992, "age": 10, "ganzhi": "壬申", "dayun": "壬子", "dimension": "fame", "spread": 22.3, "final_value": 53.4, "per_school": {"fuyi": 76.3, "tiaohou": 54.0, "geju": 54.0}, "leader_school": "fuyi", "leader_value": 76.3, "laggard_school": "geju", "laggard_value": 54.0, "mid_school": "tiaohou", "mid_value": 54.0, "interactions": [], "interpretation_hints": ["扶抑派 ↔ 格局派 分歧：用神 / 忌神判定 与 原局格局规则给出反向信号；常见于格局成局但用神受冲、或用神到位但格局已破。"]}, {"year": 1993, "age": 11, "ganzhi": "癸酉", "dayun": "壬子", "dimension": "fame", "spread": 28.7, "final_value": 53.4, "per_school": {"fuyi": 77.6, "tiaohou": 54.0, "geju": 48.9}, "leader_school": "fuyi", "leader_value": 77.6, "laggard_school": "geju", "laggard_value": 48.9, "mid_school": "tiaohou", "mid_value": 54.0, "interactions": [{"type": "相穿", "with": "年柱", "magnitude": "低"}, {"type": "伤官见官", "magnitude": "高"}], "interpretation_hints": ["扶抑派 ↔ 格局派 分歧：用神 / 忌神判定 与 原局格局规则给出反向信号；常见于格局成局但用神受冲、或用神到位但格局已破。"]}, {"year": 1994, "age": 12, "ganzhi": "甲戌", "dayun": "壬子", "dimension": "fame", "spread": 20.9, "final_value": 55.5, "per_school": {"fuyi": 74.9, "tiaohou": 54.0, "geju": 56.5}, "leader_school": "fuyi", "leader_value": 74.9, "laggard_school": "tiaohou", "laggard_value": 54.0, "mid_school": "geju", "mid_value": 56.5, "interactions": [{"type": "通关", "wuxing": "木", "magnitude": "中"}], "interpretation_hints": ["调候派 ↔ 扶抑派 分歧：寒暖燥湿调和的需求与扶抑日主的需求在该年指向不同五行。", "年内出现通关元素，扶抑派与格局派同时看好，调候派若与所需季节方向冲突则不认同。"]}, {"year": 1995, "age": 13, "ganzhi": "乙亥", "dayun": "壬子", "dimension": "fame", "spread": 25.2, "final_value": 55.5, "per_school": {"fuyi": 79.2, "tiaohou": 54.0, "geju": 56.5}, "leader_school": "fuyi", "leader_value": 79.2, "laggard_school": "tiaohou", "laggard_value": 54.0, "mid_school": "geju", "mid_value": 56.5, "interactions": [{"type": "通关", "wuxing": "木", "magnitude": "中"}], "interpretation_hints": ["调候派 ↔ 扶抑派 分歧：寒暖燥湿调和的需求与扶抑日主的需求在该年指向不同五行。", "年内出现通关元素，扶抑派与格局派同时看好，调候派若与所需季节方向冲突则不认同。"]}, {"year": 1995, "age": 13, "ganzhi": "乙亥", "dayun": "壬子", "dimension": "wealth", "spread": 22.7, "final_value": 53.6, "per_school": {"fuyi": 71.0, "tiaohou": 48.3, "geju": 54.2}, "leader_school": "fuyi", "leader_value": 71.0, "laggard_school": "tiaohou", "laggard_value": 48.3, "mid_school": "geju", "mid_value": 54.2, "interactions": [{"type": "通关", "wuxing": "木", "magnitude": "中"}], "interpretation_hints": ["调候派 ↔ 扶抑派 分歧：寒暖燥湿调和的需求与扶抑日主的需求在该年指向不同五行。", "年内出现通关元素，扶抑派与格局派同时看好，调候派若与所需季节方向冲突则不认同。"]}, {"year": 1996, "age": 14, "ganzhi": "丙子", "dayun": "壬子", "dimension": "fame", "spread": 29.8, "final_value": 54.8, "per_school": {"fuyi": 84.6, "tiaohou": 54.8, "geju": 55.7}, "leader_school": "fuyi", "leader_value": 84.6, "laggard_school": "tiaohou", "laggard_value": 54.8, "mid_school": "geju", "mid_value": 55.7, "interactions": [{"type": "反吟", "with": "日柱", "magnitude": "高"}, {"type": "冲日柱", "magnitude": "高"}], "interpretation_hints": ["调候派 ↔ 扶抑派 分歧：寒暖燥湿调和的需求与扶抑日主的需求在该年指向不同五行。", "年内出现反吟（天克地冲），格局派偏向「剧变多事」，扶抑派看用神是否被冲，调候派看是否调和。"]}, {"year": 1996, "age": 14, "ganzhi": "丙子", "dayun": "壬子", "dimension": "wealth", "spread": 21.4, "final_value": 48.6, "per_school": {"fuyi": 65.5, "tiaohou": 48.3, "geju": 44.1}, "leader_school": "fuyi", "leader_value": 65.5, "laggard_school": "geju", "laggard_value": 44.1, "mid_school": "tiaohou", "mid_value": 48.3, "interactions": [{"type": "反吟", "with": "日柱", "magnitude": "高"}, {"type": "冲日柱", "magnitude": "高"}], "interpretation_hints": ["扶抑派 ↔ 格局派 分歧：用神 / 忌神判定 与 原局格局规则给出反向信号；常见于格局成局但用神受冲、或用神到位但格局已破。", "年内出现反吟（天克地冲），格局派偏向「剧变多事」，扶抑派看用神是否被冲，调候派看是否调和。"]}, {"year": 1997, "age": 15, "ganzhi": "丁丑", "dayun": "壬子", "dimension": "fame", "spread": 25.1, "final_value": 54.1, "per_school": {"fuyi": 79.1, "tiaohou": 54.8, "geju": 54.0}, "leader_school": "fuyi", "leader_value": 79.1, "laggard_school": "geju", "laggard_value": 54.0, "mid_school": "tiaohou", "mid_value": 54.8, "interactions": [{"type": "伏吟", "with": "时柱", "magnitude": "中"}, {"type": "相穿", "with": "日柱", "magnitude": "低"}], "interpretation_hints": ["扶抑派 ↔ 格局派 分歧：用神 / 忌神判定 与 原局格局规则给出反向信号；常见于格局成局但用神受冲、或用神到位但格局已破。", "年内出现伏吟，传统派别对其吉凶判断历来不一（旧事重演 vs 内省深化），这是分歧主因之一。"]}, {"year": 1998, "age": 16, "ganzhi": "戊寅", "dayun": "壬子", "dimension": "fame", "spread": 21.8, "final_value": 55.5, "per_school": {"fuyi": 75.8, "tiaohou": 54.0, "geju": 56.5}, "leader_school": "fuyi", "leader_value": 75.8, "laggard_school": "tiaohou", "laggard_value": 54.0, "mid_school": "geju", "mid_value": 56.5, "interactions": [{"type": "通关", "wuxing": "木", "magnitude": "中"}], "interpretation_hints": ["调候派 ↔ 扶抑派 分歧：寒暖燥湿调和的需求与扶抑日主的需求在该年指向不同五行。", "年内出现通关元素，扶抑派与格局派同时看好，调候派若与所需季节方向冲突则不认同。"]}, {"year": 1998, "age": 16, "ganzhi": "戊寅", "dayun": "壬子", "dimension": "wealth", "spread": 21.8, "final_value": 50.7, "per_school": {"fuyi": 70.1, "tiaohou": 48.3, "geju": 50.8}, "leader_school": "fuyi", "leader_value": 70.1, "laggard_school": "tiaohou", "laggard_value": 48.3, "mid_school": "geju", "mid_value": 50.8, "interactions": [{"type": "通关", "wuxing": "木", "magnitude": "中"}], "interpretation_hints": ["调候派 ↔ 扶抑派 分歧：寒暖燥湿调和的需求与扶抑日主的需求在该年指向不同五行。", "年内出现通关元素，扶抑派与格局派同时看好，调候派若与所需季节方向冲突则不认同。"]}, {"year": 1999, "age": 17, "ganzhi": "己卯", "dayun": "壬子", "dimension": "fame", "spread": 23.1, "final_value": 53.9, "per_school": {"fuyi": 77.1, "tiaohou": 54.0, "geju": 56.5}, "leader_school": "fuyi", "leader_value": 77.1, "laggard_school": "tiaohou", "laggard_value": 54.0, "mid_school": "geju", "mid_value": 56.5, "interactions": [{"type": "通关", "wuxing": "木", "magnitude": "中"}], "interpretation_hints": ["调候派 ↔ 扶抑派 分歧：寒暖燥湿调和的需求与扶抑日主的需求在该年指向不同五行。", "年内出现通关元素，扶抑派与格局派同时看好，调候派若与所需季节方向冲突则不认同。"]}, {"year": 1999, "age": 17, "ganzhi": "己卯", "dayun": "壬子", "dimension": "wealth", "spread": 20.9, "final_value": 50.5, "per_school": {"fuyi": 69.2, "tiaohou": 48.3, "geju": 50.8}, "leader_school": "fuyi", "leader_value": 69.2, "laggard_school": "tiaohou", "laggard_value": 48.3, "mid_school": "geju", "mid_value": 50.8, "interactions": [{"type": "通关", "wuxing": "木", "magnitude": "中"}], "interpretation_hints": ["调候派 ↔ 扶抑派 分歧：寒暖燥湿调和的需求与扶抑日主的需求在该年指向不同五行。", "年内出现通关元素，扶抑派与格局派同时看好，调候派若与所需季节方向冲突则不认同。"]}, {"year": 2021, "age": 39, "ganzhi": "辛丑", "dayun": "己酉", "dimension": "wealth", "spread": 21.3, "final_value": 50.7, "per_school": {"fuyi": 29.5, "tiaohou": 50.8, "geju": 50.8}, "leader_school": "tiaohou", "leader_value": 50.8, "laggard_school": "fuyi", "laggard_value": 29.5, "mid_school": "geju", "mid_value": 50.8, "interactions": [{"type": "相穿", "with": "日柱", "magnitude": "低"}], "interpretation_hints": ["调候派 ↔ 扶抑派 分歧：寒暖燥湿调和的需求与扶抑日主的需求在该年指向不同五行。"]}, {"year": 2029, "age": 47, "ganzhi": "己酉", "dayun": "己酉", "dimension": "wealth", "spread": 21.5, "final_value": 50.5, "per_school": {"fuyi": 29.3, "tiaohou": 50.8, "geju": 50.8}, "leader_school": "tiaohou", "leader_value": 50.8, "laggard_school": "fuyi", "laggard_value": 29.3, "mid_school": "geju", "mid_value": 50.8, "interactions": [{"type": "相穿", "with": "年柱", "magnitude": "低"}], "interpretation_hints": ["调候派 ↔ 扶抑派 分歧：寒暖燥湿调和的需求与扶抑日主的需求在该年指向不同五行。"]}], "school_labels": {"fuyi": "扶抑派", "tiaohou": "调候派", "geju": "格局派"}, "mangpai_enabled": true, "mangpai_static_markers": [], "mangpai_school_position": "mangpai (盲派) — 不进 25% 打分融合，仅做应事断 + 烈度修正"};
+window.__BAZI_CURVES__ = {"version": 3, "weights": {"alpha": 0.3, "beta": 0.4, "gamma": 0.3}, "lambdas": {"spirit": 0.85, "wealth": 0.92, "fame": 0.96, "emotion": 0.88}, "age_start": 0, "age_end": 60, "forecast_from_year": 2032, "forecast_window": 10, "dispute_threshold": 20.0, "baseline": {"spirit": 54.5, "wealth": 52.8, "fame": 63.6, "emotion": 55.8}, "pillars_str": "壬戌 癸丑 庚午 丁丑", "day_master": "庚", "strength": {"score": 28.0, "label": "强", "in_season": true, "same": 2.1, "sheng": 7.6, "xie": 3.5, "ke": 0, "kewo": 3.6}, "yongshen": {"yongshen": "木", "xishen": "水", "jishen": "水", "tongguan": "木", "season": "冬", "day_master_wuxing": "金", "climate": {"干头分": -2.0, "地支分": -2.5, "总分": -2.2, "label": "偏湿", "干头主导": false, "details": {"干头": "壬-3.0+癸-4.0+庚+2.0+丁+3.0", "地支": "戌+1.5+丑-4.0+午+3.0+丑-3.0", "解读": "偏湿 · 地支主导 → 隐性偏湿，体感不一定明显"}}, "_reverse_check": {"usability": "无", "note": "⚠ 用神 木 在原局完全不见 → 不应作为用神，命局不取此五行", "透干": false, "通月令": false, "藏地支": false}}, "geju": {"primary": null, "secondary": [], "yongshen_override": null, "rejected": [], "notes": "无明确格局", "has_yin_protect": true, "has_yin_浮": false, "_diag": {"cai_透干": false, "cai_通月令": false, "yin_透干": false, "yin_通月令": true, "guan_透干": true, "sg_透干": true}}, "phase": {"id": "day_master_dominant", "label": "默认 · 日主主导", "is_provisional": true, "is_inverted": false, "default_phase_was": "day_master_dominant", "confidence": "high", "decision_probability": 0.9}, "shensha": {"tianyi_guiren": {"target_zhi": ["丑", "未"], "in_chart": ["丑", "丑"], "found": true}, "wenchang": {"target_zhi": ["亥"], "in_chart": [], "found": false}, "yima": {"target_zhi": ["申"], "in_chart": [], "found": false}, "taohua": {"target_zhi": ["卯"], "in_chart": [], "found": false}, "huagai": {"target_zhi": ["戌"], "in_chart": ["戌"], "found": true}, "guchen": {"target_zhi": ["亥"], "in_chart": [], "found": false}, "guasu": {"target_zhi": ["未"], "in_chart": [], "found": false}, "kongwang": {"target_zhi": ["亥", "戌"], "in_chart": ["戌"], "found": true}}, "birth_year": 1982, "gender": "F", "orientation": "hetero", "relationship_mode": {"primary_mode": "nurture_oriented", "label": "被照护型 / 偏好支持性关系", "secondary_traits": {"spouse_strength": 3.6, "bijie": 2.1, "shishang": 3.5, "yin": 7.6, "has_peach": true}, "note": "命局只反映关系结构 / 能量模式，不预设对方性别 / 是否结婚 / 是否生育。这些是你的现代选择，不在命局之内。"}, "qiyun_age": 8, "dayun_segments": [{"label": "壬子", "start_age": 8, "end_age": 17, "start_year": 1990, "end_year": 1999}, {"label": "辛亥", "start_age": 18, "end_age": 27, "start_year": 2000, "end_year": 2009}, {"label": "庚戌", "start_age": 28, "end_age": 37, "start_year": 2010, "end_year": 2019}, {"label": "己酉", "start_age": 38, "end_age": 47, "start_year": 2020, "end_year": 2029}, {"label": "戊申", "start_age": 48, "end_age": 57, "start_year": 2030, "end_year": 2039}, {"label": "丁未", "start_age": 58, "end_age": 60, "start_year": 2040, "end_year": 2042}], "points": [{"age": 0, "year": 1982, "ganzhi": "壬戌", "dayun": "起运前", "spirit_yearly": 48.5, "wealth_yearly": 49.6, "fame_yearly": 53.8, "emotion_yearly": 52.5, "confidence": {"spirit": "high", "wealth": "high", "fame": "mid", "emotion": "high"}, "divergence": {"spirit": 2.9, "wealth": 3.5, "fame": 14.7, "emotion": 0.0}, "school_scores": {"spirit": {"fuyi": 49.4, "tiaohou": 46.5, "geju": 48.8}, "wealth": {"fuyi": 47.3, "tiaohou": 50.8, "geju": 50.8}, "fame": {"fuyi": 68.8, "tiaohou": 54.1, "geju": 54.1}}, "interactions": [{"type": "伏吟", "with": "年柱", "magnitude": "中"}], "transition": false, "is_disputed": false, "disputed_dimensions": [], "mangpai_events": [], "mangpai_adjust": {"spirit": 0.0, "wealth": 0.0, "fame": 0.0}, "shensha_triggered": ["华盖", "空亡"], "shensha_adjust": {"spirit": 0.3, "wealth": 0.0, "fame": -0.3, "emotion": 0.0}, "spirit_cumulative": 49.6, "wealth_cumulative": 48.9, "fame_cumulative": 10.0, "emotion_cumulative": 49.2, "sigma": {"spirit": 6.58, "wealth": 6.76, "fame": 9.98, "emotion": 5.5}}, {"age": 1, "year": 1983, "ganzhi": "癸亥", "dayun": "起运前", "spirit_yearly": 46.6, "wealth_yearly": 50.0, "fame_yearly": 54.3, "emotion_yearly": 52.5, "confidence": {"spirit": "high", "wealth": "high", "fame": "mid", "emotion": "high"}, "divergence": {"spirit": 5.8, "wealth": 2.5, "fame": 17.0, "emotion": 0.0}, "school_scores": {"spirit": {"fuyi": 44.3, "tiaohou": 44.4, "geju": 50.1}, "wealth": {"fuyi": 48.3, "tiaohou": 50.8, "geju": 50.8}, "fame": {"fuyi": 69.4, "tiaohou": 54.1, "geju": 52.4}}, "interactions": [{"type": "伤官见官·印化护身", "magnitude": "中"}], "transition": false, "is_disputed": false, "disputed_dimensions": [], "mangpai_events": [], "mangpai_adjust": {"spirit": 0.0, "wealth": 0.0, "fame": 0.0}, "shensha_triggered": ["文昌贵人", "孤辰", "空亡"], "shensha_adjust": {"spirit": 0.3, "wealth": 0.0, "fame": 0.2, "emotion": 0.0}, "spirit_cumulative": 44.5, "wealth_cumulative": 48.9, "fame_cumulative": 12.3, "emotion_cumulative": 52.6, "sigma": {"spirit": 7.42, "wealth": 6.47, "fame": 10.64, "emotion": 5.5}}, {"age": 2, "year": 1984, "ganzhi": "甲子", "dayun": "起运前", "spirit_yearly": 47.2, "wealth_yearly": 52.8, "fame_yearly": 58.3, "emotion_yearly": 49.9, "confidence": {"spirit": "high", "wealth": "high", "fame": "mid", "emotion": "high"}, "divergence": {"spirit": 1.9, "wealth": 4.4, "fame": 15.8, "emotion": 0.0}, "school_scores": {"spirit": {"fuyi": 47.4, "tiaohou": 46.1, "geju": 48.0}, "wealth": {"fuyi": 55.2, "tiaohou": 50.8, "geju": 52.5}, "fame": {"fuyi": 69.9, "tiaohou": 54.1, "geju": 58.3}}, "interactions": [{"type": "通关", "wuxing": "木", "magnitude": "中"}, {"type": "反吟", "with": "日柱", "magnitude": "高"}, {"type": "冲日柱", "magnitude": "高"}], "transition": false, "is_disputed": false, "disputed_dimensions": [], "mangpai_events": [], "mangpai_adjust": {"spirit": 0.0, "wealth": 0.0, "fame": 0.0}, "shensha_triggered": [], "shensha_adjust": {"spirit": 0.0, "wealth": 0.0, "fame": 0.0, "emotion": 0.0}, "spirit_cumulative": 41.2, "wealth_cumulative": 59.1, "fame_cumulative": 16.8, "emotion_cumulative": 51.6, "sigma": {"spirit": 7.94, "wealth": 8.84, "fame": 12.98, "emotion": 6.5}}, {"age": 3, "year": 1985, "ganzhi": "乙丑", "dayun": "起运前", "spirit_yearly": 52.1, "wealth_yearly": 53.6, "fame_yearly": 57.1, "emotion_yearly": 52.5, "confidence": {"spirit": "high", "wealth": "high", "fame": "mid", "emotion": "high"}, "divergence": {"spirit": 6.3, "wealth": 5.9, "fame": 16.5, "emotion": 0.0}, "school_scores": {"spirit": {"fuyi": 54.5, "tiaohou": 48.2, "geju": 53.5}, "wealth": {"fuyi": 53.4, "tiaohou": 50.8, "geju": 56.7}, "fame": {"fuyi": 70.6, "tiaohou": 54.1, "geju": 56.6}}, "interactions": [{"type": "通关", "wuxing": "木", "magnitude": "中"}, {"type": "相穿", "with": "日柱", "magnitude": "低"}], "transition": false, "is_disputed": false, "disputed_dimensions": [], "mangpai_events": [], "mangpai_adjust": {"spirit": 0.0, "wealth": 0.0, "fame": 0.0}, "shensha_triggered": ["天乙贵人"], "shensha_adjust": {"spirit": 0.0, "wealth": 0.0, "fame": 0.5, "emotion": 0.0}, "spirit_cumulative": 46.1, "wealth_cumulative": 71.3, "fame_cumulative": 20.4, "emotion_cumulative": 54.7, "sigma": {"spirit": 8.55, "wealth": 8.42, "fame": 11.86, "emotion": 6.0}}, {"age": 4, "year": 1986, "ganzhi": "丙寅", "dayun": "起运前", "spirit_yearly": 52.7, "wealth_yearly": 53.7, "fame_yearly": 56.6, "emotion_yearly": 55.1, "confidence": {"spirit": "high", "wealth": "high", "fame": "mid", "emotion": "high"}, "divergence": {"spirit": 5.8, "wealth": 6.1, "fame": 17.1, "emotion": 0.0}, "school_scores": {"spirit": {"fuyi": 52.7, "tiaohou": 49.8, "geju": 55.6}, "wealth": {"fuyi": 56.9, "tiaohou": 50.8, "geju": 53.4}, "fame": {"fuyi": 72.0, "tiaohou": 54.9, "geju": 56.6}}, "interactions": [{"type": "通关", "wuxing": "木", "magnitude": "中"}], "transition": false, "is_disputed": false, "disputed_dimensions": [], "mangpai_events": [], "mangpai_adjust": {"spirit": 0.0, "wealth": 0.0, "fame": 0.0}, "shensha_triggered": [], "shensha_adjust": {"spirit": 0.0, "wealth": 0.0, "fame": 0.0, "emotion": 0.0}, "spirit_cumulative": 51.2, "wealth_cumulative": 82.8, "fame_cumulative": 23.6, "emotion_cumulative": 61.5, "sigma": {"spirit": 7.42, "wealth": 7.5, "fame": 10.67, "emotion": 5.5}}, {"age": 5, "year": 1987, "ganzhi": "丁卯", "dayun": "起运前", "spirit_yearly": 52.8, "wealth_yearly": 53.4, "fame_yearly": 56.6, "emotion_yearly": 56.9, "confidence": {"spirit": "high", "wealth": "high", "fame": "mid", "emotion": "high"}, "divergence": {"spirit": 5.8, "wealth": 5.2, "fame": 16.0, "emotion": 0.0}, "school_scores": {"spirit": {"fuyi": 53.0, "tiaohou": 49.8, "geju": 55.6}, "wealth": {"fuyi": 56.0, "tiaohou": 50.8, "geju": 53.4}, "fame": {"fuyi": 70.9, "tiaohou": 54.9, "geju": 56.6}}, "interactions": [{"type": "通关", "wuxing": "木", "magnitude": "中"}], "transition": false, "is_disputed": false, "disputed_dimensions": [], "mangpai_events": [], "mangpai_adjust": {"spirit": 0.0, "wealth": 0.0, "fame": 0.0}, "shensha_triggered": ["桃花"], "shensha_adjust": {"spirit": 0.0, "wealth": 0.0, "fame": 0.0, "emotion": 0.5}, "spirit_cumulative": 55.7, "wealth_cumulative": 92.3, "fame_cumulative": 26.6, "emotion_cumulative": 70.3, "sigma": {"spirit": 7.42, "wealth": 7.24, "fame": 10.35, "emotion": 5.5}}, {"age": 6, "year": 1988, "ganzhi": "戊辰", "dayun": "起运前", "spirit_yearly": 49.2, "wealth_yearly": 48.7, "fame_yearly": 60.8, "emotion_yearly": 52.5, "confidence": {"spirit": "high", "wealth": "high", "fame": "mid", "emotion": "high"}, "divergence": {"spirit": 5.1, "wealth": 3.8, "fame": 15.0, "emotion": 0.0}, "school_scores": {"spirit": {"fuyi": 52.3, "tiaohou": 48.2, "geju": 47.2}, "wealth": {"fuyi": 47.0, "tiaohou": 50.8, "geju": 48.3}, "fame": {"fuyi": 69.1, "tiaohou": 54.1, "geju": 60.8}}, "interactions": [{"type": "官库被冲开", "pillar": "壬戌", "magnitude": "中"}, {"type": "反吟", "with": "年柱", "magnitude": "高"}], "transition": false, "is_disputed": false, "disputed_dimensions": [], "mangpai_events": [], "mangpai_adjust": {"spirit": 0.0, "wealth": 0.0, "fame": 0.0}, "shensha_triggered": [], "shensha_adjust": {"spirit": 0.0, "wealth": 0.0, "fame": 0.0, "emotion": 0.0}, "spirit_cumulative": 54.0, "wealth_cumulative": 84.3, "fame_cumulative": 31.9, "emotion_cumulative": 71.2, "sigma": {"spirit": 8.16, "wealth": 7.73, "fame": 11.38, "emotion": 6.0}}, {"age": 7, "year": 1989, "ganzhi": "己巳", "dayun": "起运前", "spirit_yearly": 51.3, "wealth_yearly": 50.1, "fame_yearly": 54.1, "emotion_yearly": 55.1, "confidence": {"spirit": "high", "wealth": "high", "fame": "mid", "emotion": "high"}, "divergence": {"spirit": 1.0, "wealth": 5.5, "fame": 19.8, "emotion": 0.0}, "school_scores": {"spirit": {"fuyi": 51.7, "tiaohou": 50.7, "geju": 51.4}, "wealth": {"fuyi": 47.0, "tiaohou": 52.5, "geju": 50.8}, "fame": {"fuyi": 73.9, "tiaohou": 54.1, "geju": 54.1}}, "interactions": [], "transition": false, "is_disputed": false, "disputed_dimensions": [], "mangpai_events": [], "mangpai_adjust": {"spirit": 0.0, "wealth": 0.0, "fame": 0.0}, "shensha_triggered": [], "shensha_adjust": {"spirit": 0.0, "wealth": 0.0, "fame": 0.0, "emotion": 0.0}, "spirit_cumulative": 55.7, "wealth_cumulative": 82.0, "fame_cumulative": 33.2, "emotion_cumulative": 76.0, "sigma": {"spirit": 5.25, "wealth": 6.38, "fame": 9.95, "emotion": 5.0}}, {"age": 8, "year": 1990, "ganzhi": "庚午", "dayun": "壬子", "spirit_yearly": 46.4, "wealth_yearly": 50.0, "fame_yearly": 52.9, "emotion_yearly": 47.5, "confidence": {"spirit": "high", "wealth": "high", "fame": "mid", "emotion": "high"}, "divergence": {"spirit": 5.9, "wealth": 3.2, "fame": 16.8, "emotion": 0.0}, "school_scores": {"spirit": {"fuyi": 47.5, "tiaohou": 45.6, "geju": 41.6}, "wealth": {"fuyi": 51.5, "tiaohou": 50.0, "geju": 48.3}, "fame": {"fuyi": 70.9, "tiaohou": 54.1, "geju": 54.1}}, "interactions": [{"type": "伏吟", "with": "日柱", "magnitude": "中"}, {"type": "相穿", "with": "月柱", "magnitude": "低"}], "transition": true, "is_disputed": false, "disputed_dimensions": [], "mangpai_events": [], "mangpai_adjust": {"spirit": 0.0, "wealth": 0.0, "fame": 0.0}, "shensha_triggered": [], "shensha_adjust": {"spirit": 0.0, "wealth": 0.0, "fame": 0.0, "emotion": 0.0}, "spirit_cumulative": 49.5, "wealth_cumulative": 79.3, "fame_cumulative": 33.8, "emotion_cumulative": 68.4, "sigma": {"spirit": 8.42, "wealth": 7.54, "fame": 11.96, "emotion": 6.0}}, {"age": 9, "year": 1991, "ganzhi": "辛未", "dayun": "壬子", "spirit_yearly": 44.5, "wealth_yearly": 48.1, "fame_yearly": 56.2, "emotion_yearly": 45.7, "confidence": {"spirit": "high", "wealth": "high", "fame": "mid", "emotion": "high"}, "divergence": {"spirit": 6.4, "wealth": 4.4, "fame": 15.9, "emotion": 0.0}, "school_scores": {"spirit": {"fuyi": 48.4, "tiaohou": 43.0, "geju": 42.0}, "wealth": {"fuyi": 50.2, "tiaohou": 48.3, "geju": 45.8}, "fame": {"fuyi": 70.0, "tiaohou": 54.1, "geju": 55.7}}, "interactions": [{"type": "反吟", "with": "时柱", "magnitude": "高"}], "transition": false, "is_disputed": false, "disputed_dimensions": [], "mangpai_events": [], "mangpai_adjust": {"spirit": 0.0, "wealth": 0.0, "fame": 0.0}, "shensha_triggered": ["天乙贵人", "寡宿"], "shensha_adjust": {"spirit": 0.0, "wealth": 0.0, "fame": 0.5, "emotion": 0.0}, "spirit_cumulative": 41.1, "wealth_cumulative": 70.2, "fame_cumulative": 36.2, "emotion_cumulative": 59.0, "sigma": {"spirit": 7.59, "wealth": 7.01, "fame": 10.32, "emotion": 5.5}}, {"age": 10, "year": 1992, "ganzhi": "壬申", "dayun": "壬子", "spirit_yearly": 44.3, "wealth_yearly": 49.3, "fame_yearly": 54.1, "emotion_yearly": 42.5, "confidence": {"spirit": "high", "wealth": "high", "fame": "mid", "emotion": "high"}, "divergence": {"spirit": 4.8, "wealth": 3.1, "fame": 12.9, "emotion": 0.0}, "school_scores": {"spirit": {"fuyi": 45.3, "tiaohou": 41.4, "geju": 46.2}, "wealth": {"fuyi": 51.4, "tiaohou": 48.3, "geju": 48.3}, "fame": {"fuyi": 67.0, "tiaohou": 54.1, "geju": 54.1}}, "interactions": [], "transition": false, "is_disputed": false, "disputed_dimensions": [], "mangpai_events": [], "mangpai_adjust": {"spirit": 0.0, "wealth": 0.0, "fame": 0.0}, "shensha_triggered": ["驿马"], "shensha_adjust": {"spirit": 0.0, "wealth": 0.0, "fame": 0.0, "emotion": 0.0}, "spirit_cumulative": 33.7, "wealth_cumulative": 66.2, "fame_cumulative": 37.4, "emotion_cumulative": 45.7, "sigma": {"spirit": 8.06, "wealth": 7.51, "fame": 10.69, "emotion": 6.5}}, {"age": 11, "year": 1993, "ganzhi": "癸酉", "dayun": "壬子", "spirit_yearly": 42.3, "wealth_yearly": 48.9, "fame_yearly": 54.1, "emotion_yearly": 43.8, "confidence": {"spirit": "high", "wealth": "high", "fame": "mid", "emotion": "high"}, "divergence": {"spirit": 1.5, "wealth": 1.9, "fame": 16.0, "emotion": 0.0}, "school_scores": {"spirit": {"fuyi": 42.5, "tiaohou": 41.4, "geju": 42.9}, "wealth": {"fuyi": 50.2, "tiaohou": 48.3, "geju": 48.3}, "fame": {"fuyi": 68.4, "tiaohou": 54.1, "geju": 52.4}}, "interactions": [{"type": "相穿", "with": "年柱", "magnitude": "低"}, {"type": "伤官见官·印化护身", "magnitude": "中"}], "transition": false, "is_disputed": false, "disputed_dimensions": [], "mangpai_events": [], "mangpai_adjust": {"spirit": 0.0, "wealth": 0.0, "fame": 0.0}, "shensha_triggered": [], "shensha_adjust": {"spirit": 0.0, "wealth": 0.0, "fame": 0.0, "emotion": 0.0}, "spirit_cumulative": 24.2, "wealth_cumulative": 61.1, "fame_cumulative": 38.5, "emotion_cumulative": 36.0, "sigma": {"spirit": 6.99, "wealth": 7.12, "fame": 11.7, "emotion": 6.0}}, {"age": 12, "year": 1994, "ganzhi": "甲戌", "dayun": "壬子", "spirit_yearly": 47.6, "wealth_yearly": 54.2, "fame_yearly": 56.3, "emotion_yearly": 44.4, "confidence": {"spirit": "high", "wealth": "mid", "fame": "mid", "emotion": "high"}, "divergence": {"spirit": 7.4, "wealth": 11.6, "fame": 15.7, "emotion": 0.0}, "school_scores": {"spirit": {"fuyi": 48.5, "tiaohou": 43.0, "geju": 50.4}, "wealth": {"fuyi": 59.9, "tiaohou": 48.3, "geju": 54.2}, "fame": {"fuyi": 69.8, "tiaohou": 54.1, "geju": 56.6}}, "interactions": [{"type": "通关", "wuxing": "木", "magnitude": "中"}], "transition": false, "is_disputed": false, "disputed_dimensions": [], "mangpai_events": [], "mangpai_adjust": {"spirit": 0.0, "wealth": 0.0, "fame": 0.0}, "shensha_triggered": ["华盖", "空亡"], "shensha_adjust": {"spirit": 0.3, "wealth": 0.0, "fame": -0.3, "emotion": 0.0}, "spirit_cumulative": 24.6, "wealth_cumulative": 75.2, "fame_cumulative": 40.8, "emotion_cumulative": 28.5, "sigma": {"spirit": 7.88, "wealth": 9.08, "fame": 10.26, "emotion": 5.5}}, {"age": 13, "year": 1995, "ganzhi": "乙亥", "dayun": "壬子", "spirit_yearly": 45.6, "wealth_yearly": 54.2, "fame_yearly": 56.8, "emotion_yearly": 44.4, "confidence": {"spirit": "high", "wealth": "mid", "fame": "mid", "emotion": "high"}, "divergence": {"spirit": 9.5, "wealth": 11.2, "fame": 15.0, "emotion": 0.0}, "school_scores": {"spirit": {"fuyi": 44.7, "tiaohou": 40.9, "geju": 50.4}, "wealth": {"fuyi": 59.5, "tiaohou": 48.3, "geju": 54.2}, "fame": {"fuyi": 69.1, "tiaohou": 54.1, "geju": 56.6}}, "interactions": [{"type": "通关", "wuxing": "木", "magnitude": "中"}], "transition": false, "is_disputed": false, "disputed_dimensions": [], "mangpai_events": [], "mangpai_adjust": {"spirit": 0.0, "wealth": 0.0, "fame": 0.0}, "shensha_triggered": ["文昌贵人", "孤辰", "空亡"], "shensha_adjust": {"spirit": 0.3, "wealth": 0.0, "fame": 0.2, "emotion": 0.0}, "spirit_cumulative": 21.8, "wealth_cumulative": 88.2, "fame_cumulative": 43.3, "emotion_cumulative": 21.9, "sigma": {"spirit": 8.48, "wealth": 8.97, "fame": 10.06, "emotion": 5.5}}, {"age": 14, "year": 1996, "ganzhi": "丙子", "dayun": "壬子", "spirit_yearly": 40.9, "wealth_yearly": 48.8, "fame_yearly": 55.7, "emotion_yearly": 44.4, "confidence": {"spirit": "high", "wealth": "high", "fame": "mid", "emotion": "high"}, "divergence": {"spirit": 3.9, "wealth": 10.0, "fame": 19.6, "emotion": 0.0}, "school_scores": {"spirit": {"fuyi": 41.3, "tiaohou": 42.6, "geju": 38.7}, "wealth": {"fuyi": 54.1, "tiaohou": 48.3, "geju": 44.1}, "fame": {"fuyi": 74.5, "tiaohou": 54.9, "geju": 55.7}}, "interactions": [{"type": "反吟", "with": "日柱", "magnitude": "高"}, {"type": "冲日柱", "magnitude": "高"}], "transition": false, "is_disputed": false, "disputed_dimensions": [], "mangpai_events": [], "mangpai_adjust": {"spirit": 0.0, "wealth": 0.0, "fame": 0.0}, "shensha_triggered": [], "shensha_adjust": {"spirit": 0.0, "wealth": 0.0, "fame": 0.0, "emotion": 0.0}, "spirit_cumulative": 11.9, "wealth_cumulative": 81.0, "fame_cumulative": 45.0, "emotion_cumulative": 16.1, "sigma": {"spirit": 7.77, "wealth": 9.75, "fame": 12.87, "emotion": 6.0}}, {"age": 15, "year": 1997, "ganzhi": "丁丑", "dayun": "壬子", "spirit_yearly": 45.0, "wealth_yearly": 49.8, "fame_yearly": 55.4, "emotion_yearly": 47.0, "confidence": {"spirit": "high", "wealth": "high", "fame": "mid", "emotion": "high"}, "divergence": {"spirit": 7.1, "wealth": 4.6, "fame": 19.9, "emotion": 0.0}, "school_scores": {"spirit": {"fuyi": 48.7, "tiaohou": 44.7, "geju": 41.6}, "wealth": {"fuyi": 52.9, "tiaohou": 48.3, "geju": 48.3}, "fame": {"fuyi": 74.0, "tiaohou": 54.9, "geju": 54.1}}, "interactions": [{"type": "伏吟", "with": "时柱", "magnitude": "中"}, {"type": "相穿", "with": "日柱", "magnitude": "低"}], "transition": false, "is_disputed": false, "disputed_dimensions": [], "mangpai_events": [], "mangpai_adjust": {"spirit": 0.0, "wealth": 0.0, "fame": 0.0}, "shensha_triggered": ["天乙贵人"], "shensha_adjust": {"spirit": 0.0, "wealth": 0.0, "fame": 0.5, "emotion": 0.0}, "spirit_cumulative": 10.0, "wealth_cumulative": 77.9, "fame_cumulative": 46.5, "emotion_cumulative": 15.0, "sigma": {"spirit": 8.81, "wealth": 8.0, "fame": 12.97, "emotion": 6.0}}, {"age": 16, "year": 1998, "ganzhi": "戊寅", "dayun": "壬子", "spirit_yearly": 47.4, "wealth_yearly": 50.8, "fame_yearly": 56.6, "emotion_yearly": 44.4, "confidence": {"spirit": "high", "wealth": "mid", "fame": "mid", "emotion": "high"}, "divergence": {"spirit": 7.4, "wealth": 14.5, "fame": 15.8, "emotion": 0.0}, "school_scores": {"spirit": {"fuyi": 48.7, "tiaohou": 43.0, "geju": 50.4}, "wealth": {"fuyi": 62.8, "tiaohou": 48.3, "geju": 50.8}, "fame": {"fuyi": 69.9, "tiaohou": 54.1, "geju": 56.6}}, "interactions": [{"type": "通关", "wuxing": "木", "magnitude": "中"}], "transition": false, "is_disputed": false, "disputed_dimensions": [], "mangpai_events": [], "mangpai_adjust": {"spirit": 0.0, "wealth": 0.0, "fame": 0.0}, "shensha_triggered": [], "shensha_adjust": {"spirit": 0.0, "wealth": 0.0, "fame": 0.0, "emotion": 0.0}, "spirit_cumulative": 12.1, "wealth_cumulative": 78.6, "fame_cumulative": 48.7, "emotion_cumulative": 10.0, "sigma": {"spirit": 7.88, "wealth": 9.92, "fame": 10.29, "emotion": 5.5}}, {"age": 17, "year": 1999, "ganzhi": "己卯", "dayun": "壬子", "spirit_yearly": 48.4, "wealth_yearly": 50.6, "fame_yearly": 54.6, "emotion_yearly": 47.5, "confidence": {"spirit": "high", "wealth": "mid", "fame": "mid", "emotion": "high"}, "divergence": {"spirit": 7.4, "wealth": 13.6, "fame": 17.1, "emotion": 0.0}, "school_scores": {"spirit": {"fuyi": 49.7, "tiaohou": 43.0, "geju": 50.4}, "wealth": {"fuyi": 61.9, "tiaohou": 48.3, "geju": 50.8}, "fame": {"fuyi": 71.2, "tiaohou": 54.1, "geju": 56.6}}, "interactions": [{"type": "通关", "wuxing": "木", "magnitude": "中"}], "transition": true, "is_disputed": false, "disputed_dimensions": [], "mangpai_events": [], "mangpai_adjust": {"spirit": 0.0, "wealth": 0.0, "fame": 0.0}, "shensha_triggered": ["桃花"], "shensha_adjust": {"spirit": 0.0, "wealth": 0.0, "fame": 0.0, "emotion": 0.5}, "spirit_cumulative": 15.6, "wealth_cumulative": 78.3, "fame_cumulative": 49.6, "emotion_cumulative": 10.4, "sigma": {"spirit": 7.88, "wealth": 9.66, "fame": 10.67, "emotion": 5.5}}, {"age": 18, "year": 2000, "ganzhi": "庚辰", "dayun": "辛亥", "spirit_yearly": 50.0, "wealth_yearly": 47.6, "fame_yearly": 55.2, "emotion_yearly": 47.9, "confidence": {"spirit": "high", "wealth": "high", "fame": "high", "emotion": "high"}, "divergence": {"spirit": 5.2, "wealth": 10.0, "fame": 5.0, "emotion": 0.0}, "school_scores": {"spirit": {"fuyi": 51.0, "tiaohou": 46.2, "geju": 51.4}, "wealth": {"fuyi": 40.8, "tiaohou": 48.3, "geju": 50.8}, "fame": {"fuyi": 58.1, "tiaohou": 54.1, "geju": 59.1}}, "interactions": [{"type": "官库被冲开", "pillar": "壬戌", "magnitude": "中"}], "transition": true, "is_disputed": false, "disputed_dimensions": [], "mangpai_events": [], "mangpai_adjust": {"spirit": 0.0, "wealth": 0.0, "fame": 0.0}, "shensha_triggered": ["文昌贵人", "孤辰", "空亡"], "shensha_adjust": {"spirit": 0.3, "wealth": 0.0, "fame": 0.2, "emotion": 0.0}, "spirit_cumulative": 21.0, "wealth_cumulative": 67.7, "fame_cumulative": 50.8, "emotion_cumulative": 11.3, "sigma": {"spirit": 7.24, "wealth": 8.62, "fame": 7.19, "emotion": 5.5}}, {"age": 19, "year": 2001, "ganzhi": "辛巳", "dayun": "辛亥", "spirit_yearly": 49.8, "wealth_yearly": 50.0, "fame_yearly": 56.8, "emotion_yearly": 49.6, "confidence": {"spirit": "high", "wealth": "mid", "fame": "high", "emotion": "high"}, "divergence": {"spirit": 3.0, "wealth": 11.4, "fame": 7.5, "emotion": 0.0}, "school_scores": {"spirit": {"fuyi": 48.4, "tiaohou": 48.8, "geju": 51.4}, "wealth": {"fuyi": 39.4, "tiaohou": 50.0, "geju": 50.8}, "fame": {"fuyi": 61.6, "tiaohou": 54.1, "geju": 54.1}}, "interactions": [], "transition": false, "is_disputed": false, "disputed_dimensions": [], "mangpai_events": [], "mangpai_adjust": {"spirit": 0.0, "wealth": 0.0, "fame": 0.0}, "shensha_triggered": ["文昌贵人", "孤辰", "空亡"], "shensha_adjust": {"spirit": 0.3, "wealth": 0.0, "fame": 0.2, "emotion": 0.0}, "spirit_cumulative": 25.4, "wealth_cumulative": 66.3, "fame_cumulative": 52.9, "emotion_cumulative": 14.7, "sigma": {"spirit": 5.75, "wealth": 7.85, "fame": 6.88, "emotion": 5.0}}, {"age": 20, "year": 2002, "ganzhi": "壬午", "dayun": "辛亥", "spirit_yearly": 48.2, "wealth_yearly": 47.8, "fame_yearly": 57.1, "emotion_yearly": 52.8, "confidence": {"spirit": "high", "wealth": "high", "fame": "high", "emotion": "high"}, "divergence": {"spirit": 2.2, "wealth": 8.3, "fame": 8.5, "emotion": 0.0}, "school_scores": {"spirit": {"fuyi": 47.3, "tiaohou": 47.1, "geju": 49.3}, "wealth": {"fuyi": 42.5, "tiaohou": 50.0, "geju": 50.8}, "fame": {"fuyi": 62.6, "tiaohou": 54.1, "geju": 54.1}}, "interactions": [{"type": "相穿", "with": "月柱", "magnitude": "低"}], "transition": false, "is_disputed": false, "disputed_dimensions": [], "mangpai_events": [], "mangpai_adjust": {"spirit": 0.0, "wealth": 0.0, "fame": 0.0}, "shensha_triggered": ["文昌贵人", "孤辰", "空亡"], "shensha_adjust": {"spirit": 0.3, "wealth": 0.0, "fame": 0.2, "emotion": 0.0}, "spirit_cumulative": 26.5, "wealth_cumulative": 57.0, "fame_cumulative": 55.1, "emotion_cumulative": 22.7, "sigma": {"spirit": 6.38, "wealth": 8.14, "fame": 8.19, "emotion": 5.5}}, {"age": 21, "year": 2003, "ganzhi": "癸未", "dayun": "辛亥", "spirit_yearly": 46.4, "wealth_yearly": 46.6, "fame_yearly": 57.8, "emotion_yearly": 52.2, "confidence": {"spirit": "high", "wealth": "high", "fame": "high", "emotion": "high"}, "divergence": {"spirit": 3.2, "wealth": 5.2, "fame": 8.9, "emotion": 0.0}, "school_scores": {"spirit": {"fuyi": 47.8, "tiaohou": 44.6, "geju": 45.9}, "wealth": {"fuyi": 43.1, "tiaohou": 48.3, "geju": 48.3}, "fame": {"fuyi": 63.0, "tiaohou": 54.1, "geju": 54.1}}, "interactions": [{"type": "反吟", "with": "时柱", "magnitude": "高"}, {"type": "伤官见官·印化护身", "magnitude": "中"}], "transition": false, "is_disputed": false, "disputed_dimensions": [], "mangpai_events": [], "mangpai_adjust": {"spirit": 0.0, "wealth": 0.0, "fame": 0.0}, "shensha_triggered": ["天乙贵人", "文昌贵人", "孤辰", "寡宿", "空亡"], "shensha_adjust": {"spirit": 0.3, "wealth": 0.0, "fame": 0.7, "emotion": 0.0}, "spirit_cumulative": 24.6, "wealth_cumulative": 44.2, "fame_cumulative": 57.5, "emotion_cumulative": 28.8, "sigma": {"spirit": 7.54, "wealth": 8.19, "fame": 9.39, "emotion": 6.0}}, {"age": 22, "year": 2004, "ganzhi": "甲申", "dayun": "辛亥", "spirit_yearly": 51.5, "wealth_yearly": 50.8, "fame_yearly": 56.1, "emotion_yearly": 47.0, "confidence": {"spirit": "high", "wealth": "high", "fame": "high", "emotion": "high"}, "divergence": {"spirit": 9.4, "wealth": 9.4, "fame": 2.9, "emotion": 0.0}, "school_scores": {"spirit": {"fuyi": 51.9, "tiaohou": 46.2, "geju": 55.6}, "wealth": {"fuyi": 47.3, "tiaohou": 48.3, "geju": 56.7}, "fame": {"fuyi": 57.0, "tiaohou": 54.1, "geju": 56.6}}, "interactions": [{"type": "通关", "wuxing": "木", "magnitude": "中"}], "transition": false, "is_disputed": false, "disputed_dimensions": [], "mangpai_events": [], "mangpai_adjust": {"spirit": 0.0, "wealth": 0.0, "fame": 0.0}, "shensha_triggered": ["文昌贵人", "驿马", "孤辰", "空亡"], "shensha_adjust": {"spirit": 0.3, "wealth": 0.0, "fame": 0.2, "emotion": 0.0}, "spirit_cumulative": 31.1, "wealth_cumulative": 47.4, "fame_cumulative": 59.0, "emotion_cumulative": 26.1, "sigma": {"spirit": 10.99, "wealth": 10.99, "fame": 8.56, "emotion": 7.15}}, {"age": 23, "year": 2005, "ganzhi": "乙酉", "dayun": "辛亥", "spirit_yearly": 50.4, "wealth_yearly": 48.3, "fame_yearly": 56.1, "emotion_yearly": 48.3, "confidence": {"spirit": "high", "wealth": "mid", "fame": "high", "emotion": "high"}, "divergence": {"spirit": 7.3, "wealth": 11.9, "fame": 2.9, "emotion": 0.0}, "school_scores": {"spirit": {"fuyi": 50.5, "tiaohou": 46.2, "geju": 53.5}, "wealth": {"fuyi": 44.8, "tiaohou": 48.3, "geju": 56.7}, "fame": {"fuyi": 57.0, "tiaohou": 54.1, "geju": 56.6}}, "interactions": [{"type": "通关", "wuxing": "木", "magnitude": "中"}, {"type": "相穿", "with": "年柱", "magnitude": "低"}], "transition": false, "is_disputed": false, "disputed_dimensions": [], "mangpai_events": [], "mangpai_adjust": {"spirit": 0.0, "wealth": 0.0, "fame": 0.0}, "shensha_triggered": ["文昌贵人", "孤辰", "空亡"], "shensha_adjust": {"spirit": 0.3, "wealth": 0.0, "fame": 0.2, "emotion": 0.0}, "spirit_cumulative": 34.8, "wealth_cumulative": 41.6, "fame_cumulative": 60.3, "emotion_cumulative": 25.7, "sigma": {"spirit": 8.87, "wealth": 10.37, "fame": 7.44, "emotion": 6.0}}, {"age": 24, "year": 2006, "ganzhi": "丙戌", "dayun": "辛亥", "spirit_yearly": 50.3, "wealth_yearly": 47.1, "fame_yearly": 57.6, "emotion_yearly": 51.5, "confidence": {"spirit": "high", "wealth": "high", "fame": "high", "emotion": "high"}, "divergence": {"spirit": 3.5, "wealth": 8.7, "fame": 9.2, "emotion": 0.0}, "school_scores": {"spirit": {"fuyi": 49.9, "tiaohou": 47.9, "geju": 51.4}, "wealth": {"fuyi": 42.1, "tiaohou": 48.3, "geju": 50.8}, "fame": {"fuyi": 63.3, "tiaohou": 54.9, "geju": 54.1}}, "interactions": [], "transition": false, "is_disputed": false, "disputed_dimensions": [], "mangpai_events": [], "mangpai_adjust": {"spirit": 0.0, "wealth": 0.0, "fame": 0.0}, "shensha_triggered": ["文昌贵人", "华盖", "孤辰", "空亡"], "shensha_adjust": {"spirit": 0.6, "wealth": 0.0, "fame": 0.2, "emotion": 0.0}, "spirit_cumulative": 37.9, "wealth_cumulative": 31.8, "fame_cumulative": 62.5, "emotion_cumulative": 30.4, "sigma": {"spirit": 5.88, "wealth": 7.18, "fame": 7.3, "emotion": 5.0}}, {"age": 25, "year": 2007, "ganzhi": "丁亥", "dayun": "辛亥", "spirit_yearly": 48.2, "wealth_yearly": 47.2, "fame_yearly": 57.0, "emotion_yearly": 51.5, "confidence": {"spirit": "high", "wealth": "high", "fame": "high", "emotion": "high"}, "divergence": {"spirit": 5.6, "wealth": 8.4, "fame": 7.4, "emotion": 0.0}, "school_scores": {"spirit": {"fuyi": 46.5, "tiaohou": 45.8, "geju": 51.4}, "wealth": {"fuyi": 42.4, "tiaohou": 48.3, "geju": 50.8}, "fame": {"fuyi": 61.5, "tiaohou": 54.9, "geju": 54.1}}, "interactions": [], "transition": false, "is_disputed": false, "disputed_dimensions": [], "mangpai_events": [], "mangpai_adjust": {"spirit": 0.0, "wealth": 0.0, "fame": 0.0}, "shensha_triggered": ["文昌贵人", "孤辰", "空亡"], "shensha_adjust": {"spirit": 0.3, "wealth": 0.0, "fame": 0.2, "emotion": 0.0}, "spirit_cumulative": 37.2, "wealth_cumulative": 23.2, "fame_cumulative": 64.2, "emotion_cumulative": 34.6, "sigma": {"spirit": 6.4, "wealth": 7.1, "fame": 6.85, "emotion": 5.0}}, {"age": 26, "year": 2008, "ganzhi": "戊子", "dayun": "辛亥", "spirit_yearly": 46.0, "wealth_yearly": 46.9, "fame_yearly": 56.7, "emotion_yearly": 46.3, "confidence": {"spirit": "high", "wealth": "high", "fame": "high", "emotion": "high"}, "divergence": {"spirit": 3.9, "wealth": 5.9, "fame": 7.2, "emotion": 0.0}, "school_scores": {"spirit": {"fuyi": 44.9, "tiaohou": 44.1, "geju": 48.0}, "wealth": {"fuyi": 43.3, "tiaohou": 48.3, "geju": 49.2}, "fame": {"fuyi": 61.3, "tiaohou": 54.1, "geju": 54.1}}, "interactions": [{"type": "冲日柱", "magnitude": "高"}], "transition": false, "is_disputed": false, "disputed_dimensions": [], "mangpai_events": [], "mangpai_adjust": {"spirit": 0.0, "wealth": 0.0, "fame": 0.0}, "shensha_triggered": ["文昌贵人", "孤辰", "空亡"], "shensha_adjust": {"spirit": 0.3, "wealth": 0.0, "fame": 0.2, "emotion": 0.0}, "spirit_cumulative": 33.0, "wealth_cumulative": 14.5, "fame_cumulative": 65.7, "emotion_cumulative": 30.2, "sigma": {"spirit": 6.87, "wealth": 7.45, "fame": 7.82, "emotion": 5.5}}, {"age": 27, "year": 2009, "ganzhi": "己丑", "dayun": "辛亥", "spirit_yearly": 49.9, "wealth_yearly": 47.9, "fame_yearly": 55.7, "emotion_yearly": 49.2, "confidence": {"spirit": "high", "wealth": "high", "fame": "high", "emotion": "high"}, "divergence": {"spirit": 6.8, "wealth": 8.7, "fame": 9.2, "emotion": 0.0}, "school_scores": {"spirit": {"fuyi": 53.0, "tiaohou": 46.2, "geju": 49.3}, "wealth": {"fuyi": 42.1, "tiaohou": 48.3, "geju": 50.8}, "fame": {"fuyi": 63.3, "tiaohou": 54.1, "geju": 54.1}}, "interactions": [{"type": "相穿", "with": "日柱", "magnitude": "低"}], "transition": true, "is_disputed": false, "disputed_dimensions": [], "mangpai_events": [], "mangpai_adjust": {"spirit": 0.0, "wealth": 0.0, "fame": 0.0}, "shensha_triggered": ["天乙贵人", "文昌贵人", "孤辰", "空亡"], "shensha_adjust": {"spirit": 0.3, "wealth": 0.0, "fame": 0.7, "emotion": 0.0}, "spirit_cumulative": 35.8, "wealth_cumulative": 10.0, "fame_cumulative": 66.6, "emotion_cumulative": 30.8, "sigma": {"spirit": 7.7, "wealth": 8.25, "fame": 8.39, "emotion": 5.5}}, {"age": 28, "year": 2010, "ganzhi": "庚寅", "dayun": "庚戌", "spirit_yearly": 54.2, "wealth_yearly": 52.6, "fame_yearly": 55.0, "emotion_yearly": 47.9, "confidence": {"spirit": "mid", "wealth": "high", "fame": "high", "emotion": "high"}, "divergence": {"spirit": 13.7, "wealth": 6.0, "fame": 7.9, "emotion": 0.0}, "school_scores": {"spirit": {"fuyi": 65.1, "tiaohou": 51.4, "geju": 55.6}, "wealth": {"fuyi": 56.8, "tiaohou": 50.8, "geju": 53.4}, "fame": {"fuyi": 62.0, "tiaohou": 54.1, "geju": 56.6}}, "interactions": [{"type": "通关", "wuxing": "木", "magnitude": "中"}], "transition": true, "is_disputed": false, "disputed_dimensions": [], "mangpai_events": [], "mangpai_adjust": {"spirit": 0.0, "wealth": 0.0, "fame": 0.0}, "shensha_triggered": ["华盖", "空亡"], "shensha_adjust": {"spirit": 0.3, "wealth": 0.0, "fame": -0.3, "emotion": 0.0}, "spirit_cumulative": 44.9, "wealth_cumulative": 22.4, "fame_cumulative": 67.0, "emotion_cumulative": 29.3, "sigma": {"spirit": 9.69, "wealth": 7.47, "fame": 8.02, "emotion": 5.5}}, {"age": 29, "year": 2011, "ganzhi": "辛卯", "dayun": "庚戌", "spirit_yearly": 55.9, "wealth_yearly": 52.9, "fame_yearly": 57.3, "emotion_yearly": 48.8, "confidence": {"spirit": "mid", "wealth": "high", "fame": "high", "emotion": "high"}, "divergence": {"spirit": 12.6, "wealth": 3.8, "fame": 7.9, "emotion": 0.0}, "school_scores": {"spirit": {"fuyi": 64.0, "tiaohou": 51.4, "geju": 55.6}, "wealth": {"fuyi": 54.6, "tiaohou": 50.8, "geju": 53.4}, "fame": {"fuyi": 62.0, "tiaohou": 54.1, "geju": 56.6}}, "interactions": [{"type": "通关", "wuxing": "木", "magnitude": "中"}], "transition": false, "is_disputed": false, "disputed_dimensions": [], "mangpai_events": [], "mangpai_adjust": {"spirit": 0.0, "wealth": 0.0, "fame": 0.0}, "shensha_triggered": ["桃花", "华盖", "空亡"], "shensha_adjust": {"spirit": 0.3, "wealth": 0.0, "fame": -0.3, "emotion": 0.5}, "spirit_cumulative": 55.3, "wealth_cumulative": 35.0, "fame_cumulative": 68.7, "emotion_cumulative": 29.3, "sigma": {"spirit": 9.37, "wealth": 6.84, "fame": 8.02, "emotion": 5.5}}, {"age": 30, "year": 2012, "ganzhi": "壬辰", "dayun": "庚戌", "spirit_yearly": 51.7, "wealth_yearly": 50.1, "fame_yearly": 58.7, "emotion_yearly": 48.9, "confidence": {"spirit": "mid", "wealth": "high", "fame": "high", "emotion": "high"}, "divergence": {"spirit": 11.1, "wealth": 2.2, "fame": 9.8, "emotion": 0.0}, "school_scores": {"spirit": {"fuyi": 60.8, "tiaohou": 49.7, "geju": 51.4}, "wealth": {"fuyi": 48.6, "tiaohou": 50.8, "geju": 50.8}, "fame": {"fuyi": 63.9, "tiaohou": 54.1, "geju": 59.1}}, "interactions": [{"type": "官库被冲开", "pillar": "壬戌", "magnitude": "中"}], "transition": false, "is_disputed": false, "disputed_dimensions": [], "mangpai_events": [], "mangpai_adjust": {"spirit": 0.0, "wealth": 0.0, "fame": 0.0}, "shensha_triggered": ["华盖", "空亡"], "shensha_adjust": {"spirit": 0.3, "wealth": 0.0, "fame": -0.3, "emotion": 0.0}, "spirit_cumulative": 57.4, "wealth_cumulative": 36.5, "fame_cumulative": 71.1, "emotion_cumulative": 29.5, "sigma": {"spirit": 8.94, "wealth": 6.38, "fame": 8.57, "emotion": 5.5}}, {"age": 31, "year": 2013, "ganzhi": "癸巳", "dayun": "庚戌", "spirit_yearly": 53.7, "wealth_yearly": 50.9, "fame_yearly": 53.8, "emotion_yearly": 51.5, "confidence": {"spirit": "high", "wealth": "high", "fame": "mid", "emotion": "high"}, "divergence": {"spirit": 7.8, "wealth": 3.2, "fame": 16.3, "emotion": 0.0}, "school_scores": {"spirit": {"fuyi": 57.9, "tiaohou": 52.2, "geju": 50.1}, "wealth": {"fuyi": 49.3, "tiaohou": 52.5, "geju": 50.8}, "fame": {"fuyi": 68.7, "tiaohou": 54.1, "geju": 52.4}}, "interactions": [{"type": "伤官见官·印化护身", "magnitude": "中"}], "transition": false, "is_disputed": false, "disputed_dimensions": [], "mangpai_events": [], "mangpai_adjust": {"spirit": 0.0, "wealth": 0.0, "fame": 0.0}, "shensha_triggered": ["华盖", "空亡"], "shensha_adjust": {"spirit": 0.3, "wealth": 0.0, "fame": -0.3, "emotion": 0.0}, "spirit_cumulative": 62.5, "wealth_cumulative": 40.7, "fame_cumulative": 70.7, "emotion_cumulative": 33.8, "sigma": {"spirit": 7.99, "wealth": 6.67, "fame": 10.44, "emotion": 5.5}}, {"age": 32, "year": 2014, "ganzhi": "甲午", "dayun": "庚戌", "spirit_yearly": 54.2, "wealth_yearly": 54.8, "fame_yearly": 56.3, "emotion_yearly": 52.8, "confidence": {"spirit": "mid", "wealth": "high", "fame": "mid", "emotion": "high"}, "divergence": {"spirit": 10.5, "wealth": 4.2, "fame": 12.6, "emotion": 0.0}, "school_scores": {"spirit": {"fuyi": 64.0, "tiaohou": 53.9, "geju": 53.5}, "wealth": {"fuyi": 55.3, "tiaohou": 52.5, "geju": 56.7}, "fame": {"fuyi": 66.7, "tiaohou": 54.1, "geju": 56.6}}, "interactions": [{"type": "通关", "wuxing": "木", "magnitude": "中"}, {"type": "相穿", "with": "月柱", "magnitude": "低"}], "transition": false, "is_disputed": false, "disputed_dimensions": [], "mangpai_events": [], "mangpai_adjust": {"spirit": 0.0, "wealth": 0.0, "fame": 0.0}, "shensha_triggered": ["华盖", "空亡"], "shensha_adjust": {"spirit": 0.3, "wealth": 0.0, "fame": -0.3, "emotion": 0.0}, "spirit_cumulative": 67.5, "wealth_cumulative": 58.7, "fame_cumulative": 71.7, "emotion_cumulative": 39.5, "sigma": {"spirit": 9.91, "wealth": 7.87, "fame": 10.59, "emotion": 6.0}}, {"age": 33, "year": 2015, "ganzhi": "乙未", "dayun": "庚戌", "spirit_yearly": 55.9, "wealth_yearly": 54.1, "fame_yearly": 56.8, "emotion_yearly": 52.2, "confidence": {"spirit": "mid", "wealth": "high", "fame": "mid", "emotion": "high"}, "divergence": {"spirit": 14.5, "wealth": 5.9, "fame": 11.6, "emotion": 0.0}, "school_scores": {"spirit": {"fuyi": 65.9, "tiaohou": 51.4, "geju": 55.6}, "wealth": {"fuyi": 54.7, "tiaohou": 50.8, "geju": 56.7}, "fame": {"fuyi": 65.7, "tiaohou": 54.1, "geju": 56.6}}, "interactions": [{"type": "通关", "wuxing": "木", "magnitude": "中"}], "transition": false, "is_disputed": false, "disputed_dimensions": [], "mangpai_events": [], "mangpai_adjust": {"spirit": 0.0, "wealth": 0.0, "fame": 0.0}, "shensha_triggered": ["天乙贵人", "华盖", "寡宿", "空亡"], "shensha_adjust": {"spirit": 0.3, "wealth": 0.0, "fame": 0.2, "emotion": 0.0}, "spirit_cumulative": 74.5, "wealth_cumulative": 72.5, "fame_cumulative": 73.0, "emotion_cumulative": 43.6, "sigma": {"spirit": 9.92, "wealth": 7.45, "fame": 9.08, "emotion": 5.5}}, {"age": 34, "year": 2016, "ganzhi": "丙申", "dayun": "庚戌", "spirit_yearly": 53.3, "wealth_yearly": 49.3, "fame_yearly": 54.6, "emotion_yearly": 49.6, "confidence": {"spirit": "mid", "wealth": "high", "fame": "mid", "emotion": "high"}, "divergence": {"spirit": 12.1, "wealth": 4.4, "fame": 10.6, "emotion": 0.0}, "school_scores": {"spirit": {"fuyi": 63.5, "tiaohou": 53.0, "geju": 51.4}, "wealth": {"fuyi": 46.4, "tiaohou": 50.8, "geju": 50.8}, "fame": {"fuyi": 64.7, "tiaohou": 54.9, "geju": 54.1}}, "interactions": [], "transition": false, "is_disputed": false, "disputed_dimensions": [], "mangpai_events": [], "mangpai_adjust": {"spirit": 0.0, "wealth": 0.0, "fame": 0.0}, "shensha_triggered": ["驿马", "华盖", "空亡"], "shensha_adjust": {"spirit": 0.3, "wealth": 0.0, "fame": -0.3, "emotion": 0.0}, "spirit_cumulative": 76.3, "wealth_cumulative": 68.3, "fame_cumulative": 72.9, "emotion_cumulative": 43.1, "sigma": {"spirit": 10.43, "wealth": 7.93, "fame": 9.95, "emotion": 6.5}}, {"age": 35, "year": 2017, "ganzhi": "丁酉", "dayun": "庚戌", "spirit_yearly": 53.3, "wealth_yearly": 48.7, "fame_yearly": 57.2, "emotion_yearly": 50.9, "confidence": {"spirit": "mid", "wealth": "high", "fame": "high", "emotion": "high"}, "divergence": {"spirit": 13.1, "wealth": 6.2, "fame": 9.4, "emotion": 0.0}, "school_scores": {"spirit": {"fuyi": 62.4, "tiaohou": 53.0, "geju": 49.3}, "wealth": {"fuyi": 44.6, "tiaohou": 50.8, "geju": 50.8}, "fame": {"fuyi": 63.5, "tiaohou": 54.9, "geju": 54.1}}, "interactions": [{"type": "相穿", "with": "年柱", "magnitude": "低"}], "transition": false, "is_disputed": false, "disputed_dimensions": [], "mangpai_events": [], "mangpai_adjust": {"spirit": 0.0, "wealth": 0.0, "fame": 0.0}, "shensha_triggered": ["华盖", "空亡"], "shensha_adjust": {"spirit": 0.3, "wealth": 0.0, "fame": -0.3, "emotion": 0.0}, "spirit_cumulative": 77.9, "wealth_cumulative": 62.4, "fame_cumulative": 74.3, "emotion_cumulative": 44.7, "sigma": {"spirit": 9.52, "wealth": 7.53, "fame": 8.45, "emotion": 5.5}}, {"age": 36, "year": 2018, "ganzhi": "戊戌", "dayun": "庚戌", "spirit_yearly": 51.7, "wealth_yearly": 50.0, "fame_yearly": 53.8, "emotion_yearly": 48.9, "confidence": {"spirit": "mid", "wealth": "high", "fame": "mid", "emotion": "high"}, "divergence": {"spirit": 12.3, "wealth": 2.5, "fame": 10.1, "emotion": 0.0}, "school_scores": {"spirit": {"fuyi": 63.7, "tiaohou": 51.4, "geju": 51.4}, "wealth": {"fuyi": 48.3, "tiaohou": 50.8, "geju": 50.8}, "fame": {"fuyi": 64.2, "tiaohou": 54.1, "geju": 54.1}}, "interactions": [], "transition": false, "is_disputed": false, "disputed_dimensions": [], "mangpai_events": [], "mangpai_adjust": {"spirit": 0.0, "wealth": 0.0, "fame": 0.0}, "shensha_triggered": ["华盖", "空亡"], "shensha_adjust": {"spirit": 0.3, "wealth": 0.0, "fame": -0.3, "emotion": 0.0}, "spirit_cumulative": 76.7, "wealth_cumulative": 61.3, "fame_cumulative": 73.8, "emotion_cumulative": 43.1, "sigma": {"spirit": 8.07, "wealth": 5.62, "fame": 7.52, "emotion": 5.0}}, {"age": 37, "year": 2019, "ganzhi": "己亥", "dayun": "庚戌", "spirit_yearly": 51.6, "wealth_yearly": 50.0, "fame_yearly": 53.1, "emotion_yearly": 49.2, "confidence": {"spirit": "mid", "wealth": "high", "fame": "mid", "emotion": "high"}, "divergence": {"spirit": 11.6, "wealth": 2.3, "fame": 10.8, "emotion": 0.0}, "school_scores": {"spirit": {"fuyi": 60.9, "tiaohou": 49.3, "geju": 51.4}, "wealth": {"fuyi": 48.5, "tiaohou": 50.8, "geju": 50.8}, "fame": {"fuyi": 64.9, "tiaohou": 54.1, "geju": 54.1}}, "interactions": [], "transition": true, "is_disputed": false, "disputed_dimensions": [], "mangpai_events": [], "mangpai_adjust": {"spirit": 0.0, "wealth": 0.0, "fame": 0.0}, "shensha_triggered": ["文昌贵人", "华盖", "孤辰", "空亡"], "shensha_adjust": {"spirit": 0.6, "wealth": 0.0, "fame": 0.2, "emotion": 0.0}, "spirit_cumulative": 75.5, "wealth_cumulative": 60.5, "fame_cumulative": 72.9, "emotion_cumulative": 42.2, "sigma": {"spirit": 7.9, "wealth": 5.58, "fame": 7.7, "emotion": 5.0}}, {"age": 38, "year": 2020, "ganzhi": "庚子", "dayun": "己酉", "spirit_yearly": 51.2, "wealth_yearly": 48.5, "fame_yearly": 52.9, "emotion_yearly": 46.7, "confidence": {"spirit": "high", "wealth": "high", "fame": "mid", "emotion": "high"}, "divergence": {"spirit": 9.8, "wealth": 7.3, "fame": 10.3, "emotion": 0.0}, "school_scores": {"spirit": {"fuyi": 57.8, "tiaohou": 49.3, "geju": 48.0}, "wealth": {"fuyi": 43.5, "tiaohou": 50.8, "geju": 49.2}, "fame": {"fuyi": 64.4, "tiaohou": 54.1, "geju": 54.1}}, "interactions": [{"type": "冲日柱", "magnitude": "高"}], "transition": true, "is_disputed": false, "disputed_dimensions": [], "mangpai_events": [], "mangpai_adjust": {"spirit": 0.0, "wealth": 0.0, "fame": 0.0}, "shensha_triggered": [], "shensha_adjust": {"spirit": 0.0, "wealth": 0.0, "fame": 0.0, "emotion": 0.0}, "spirit_cumulative": 73.8, "wealth_cumulative": 54.3, "fame_cumulative": 71.9, "emotion_cumulative": 37.5, "sigma": {"spirit": 8.57, "wealth": 7.85, "fame": 8.71, "emotion": 5.5}}, {"age": 39, "year": 2021, "ganzhi": "辛丑", "dayun": "己酉", "spirit_yearly": 51.4, "wealth_yearly": 47.5, "fame_yearly": 54.6, "emotion_yearly": 47.9, "confidence": {"spirit": "mid", "wealth": "high", "fame": "mid", "emotion": "high"}, "divergence": {"spirit": 14.6, "wealth": 9.8, "fame": 11.0, "emotion": 0.0}, "school_scores": {"spirit": {"fuyi": 63.9, "tiaohou": 51.4, "geju": 49.3}, "wealth": {"fuyi": 41.0, "tiaohou": 50.8, "geju": 50.8}, "fame": {"fuyi": 65.1, "tiaohou": 54.1, "geju": 54.1}}, "interactions": [{"type": "相穿", "with": "日柱", "magnitude": "低"}], "transition": false, "is_disputed": false, "disputed_dimensions": [], "mangpai_events": [], "mangpai_adjust": {"spirit": 0.0, "wealth": 0.0, "fame": 0.0}, "shensha_triggered": ["天乙贵人"], "shensha_adjust": {"spirit": 0.0, "wealth": 0.0, "fame": 0.5, "emotion": 0.0}, "spirit_cumulative": 72.7, "wealth_cumulative": 45.1, "fame_cumulative": 71.9, "emotion_cumulative": 35.1, "sigma": {"spirit": 9.95, "wealth": 8.57, "fame": 8.91, "emotion": 5.5}}, {"age": 40, "year": 2022, "ganzhi": "壬寅", "dayun": "己酉", "spirit_yearly": 55.6, "wealth_yearly": 52.7, "fame_yearly": 56.6, "emotion_yearly": 49.8, "confidence": {"spirit": "mid", "wealth": "high", "fame": "mid", "emotion": "high"}, "divergence": {"spirit": 11.7, "wealth": 3.1, "fame": 10.6, "emotion": 0.0}, "school_scores": {"spirit": {"fuyi": 61.4, "tiaohou": 49.7, "geju": 55.6}, "wealth": {"fuyi": 53.9, "tiaohou": 50.8, "geju": 53.4}, "fame": {"fuyi": 64.7, "tiaohou": 54.1, "geju": 56.6}}, "interactions": [{"type": "通关", "wuxing": "木", "magnitude": "中"}], "transition": false, "is_disputed": false, "disputed_dimensions": [], "mangpai_events": [], "mangpai_adjust": {"spirit": 0.0, "wealth": 0.0, "fame": 0.0}, "shensha_triggered": [], "shensha_adjust": {"spirit": 0.0, "wealth": 0.0, "fame": 0.0, "emotion": 0.0}, "spirit_cumulative": 78.5, "wealth_cumulative": 55.2, "fame_cumulative": 73.0, "emotion_cumulative": 36.1, "sigma": {"spirit": 9.11, "wealth": 6.64, "fame": 8.8, "emotion": 5.5}}, {"age": 41, "year": 2023, "ganzhi": "癸卯", "dayun": "己酉", "spirit_yearly": 54.3, "wealth_yearly": 52.6, "fame_yearly": 54.9, "emotion_yearly": 51.6, "confidence": {"spirit": "mid", "wealth": "high", "fame": "mid", "emotion": "high"}, "divergence": {"spirit": 10.3, "wealth": 2.9, "fame": 11.9, "emotion": 0.0}, "school_scores": {"spirit": {"fuyi": 60.0, "tiaohou": 49.7, "geju": 54.3}, "wealth": {"fuyi": 53.7, "tiaohou": 50.8, "geju": 53.4}, "fame": {"fuyi": 66.0, "tiaohou": 54.1, "geju": 54.9}}, "interactions": [{"type": "通关", "wuxing": "木", "magnitude": "中"}, {"type": "伤官见官·印化护身", "magnitude": "中"}], "transition": false, "is_disputed": false, "disputed_dimensions": [], "mangpai_events": [], "mangpai_adjust": {"spirit": 0.0, "wealth": 0.0, "fame": 0.0}, "shensha_triggered": ["桃花"], "shensha_adjust": {"spirit": 0.0, "wealth": 0.0, "fame": 0.0, "emotion": 0.5}, "spirit_cumulative": 81.3, "wealth_cumulative": 64.2, "fame_cumulative": 73.1, "emotion_cumulative": 39.7, "sigma": {"spirit": 9.85, "wealth": 7.44, "fame": 10.37, "emotion": 6.0}}, {"age": 42, "year": 2024, "ganzhi": "甲辰", "dayun": "己酉", "spirit_yearly": 55.6, "wealth_yearly": 52.7, "fame_yearly": 61.6, "emotion_yearly": 49.8, "confidence": {"spirit": "mid", "wealth": "high", "fame": "mid", "emotion": "high"}, "divergence": {"spirit": 12.6, "wealth": 6.0, "fame": 10.8, "emotion": 0.0}, "school_scores": {"spirit": {"fuyi": 64.0, "tiaohou": 51.4, "geju": 55.6}, "wealth": {"fuyi": 50.7, "tiaohou": 50.8, "geju": 56.7}, "fame": {"fuyi": 64.9, "tiaohou": 54.1, "geju": 61.6}}, "interactions": [{"type": "通关", "wuxing": "木", "magnitude": "中"}, {"type": "官库被冲开", "pillar": "壬戌", "magnitude": "中"}], "transition": false, "is_disputed": false, "disputed_dimensions": [], "mangpai_events": [], "mangpai_adjust": {"spirit": 0.0, "wealth": 0.0, "fame": 0.0}, "shensha_triggered": [], "shensha_adjust": {"spirit": 0.0, "wealth": 0.0, "fame": 0.0, "emotion": 0.0}, "spirit_cumulative": 85.7, "wealth_cumulative": 72.8, "fame_cumulative": 77.0, "emotion_cumulative": 40.1, "sigma": {"spirit": 10.59, "wealth": 8.45, "fame": 10.01, "emotion": 6.0}}, {"age": 43, "year": 2025, "ganzhi": "乙巳", "dayun": "己酉", "spirit_yearly": 57.3, "wealth_yearly": 53.1, "fame_yearly": 56.6, "emotion_yearly": 52.4, "confidence": {"spirit": "high", "wealth": "high", "fame": "mid", "emotion": "high"}, "divergence": {"spirit": 8.5, "wealth": 6.6, "fame": 14.3, "emotion": 0.0}, "school_scores": {"spirit": {"fuyi": 62.4, "tiaohou": 53.9, "geju": 55.6}, "wealth": {"fuyi": 50.1, "tiaohou": 52.5, "geju": 56.7}, "fame": {"fuyi": 68.4, "tiaohou": 54.1, "geju": 56.6}}, "interactions": [{"type": "通关", "wuxing": "木", "magnitude": "中"}], "transition": false, "is_disputed": false, "disputed_dimensions": [], "mangpai_events": [], "mangpai_adjust": {"spirit": 0.0, "wealth": 0.0, "fame": 0.0}, "shensha_triggered": [], "shensha_adjust": {"spirit": 0.0, "wealth": 0.0, "fame": 0.0, "emotion": 0.0}, "spirit_cumulative": 92.2, "wealth_cumulative": 82.0, "fame_cumulative": 77.9, "emotion_cumulative": 44.4, "sigma": {"spirit": 8.19, "wealth": 7.65, "fame": 9.86, "emotion": 5.5}}, {"age": 44, "year": 2026, "ganzhi": "丙午", "dayun": "己酉", "spirit_yearly": 55.6, "wealth_yearly": 49.0, "fame_yearly": 54.9, "emotion_yearly": 56.3, "confidence": {"spirit": "mid", "wealth": "high", "fame": "mid", "emotion": "high"}, "divergence": {"spirit": 12.7, "wealth": 8.8, "fame": 17.1, "emotion": 0.0}, "school_scores": {"spirit": {"fuyi": 62.0, "tiaohou": 55.6, "geju": 49.3}, "wealth": {"fuyi": 43.7, "tiaohou": 52.5, "geju": 50.8}, "fame": {"fuyi": 71.2, "tiaohou": 54.9, "geju": 54.1}}, "interactions": [{"type": "相穿", "with": "月柱", "magnitude": "低"}], "transition": false, "is_disputed": false, "disputed_dimensions": [], "mangpai_events": [], "mangpai_adjust": {"spirit": 0.0, "wealth": 0.0, "fame": 0.0}, "shensha_triggered": [], "shensha_adjust": {"spirit": 0.0, "wealth": 0.0, "fame": 0.0, "emotion": 0.0}, "spirit_cumulative": 95.0, "wealth_cumulative": 75.9, "fame_cumulative": 77.9, "emotion_cumulative": 54.3, "sigma": {"spirit": 9.4, "wealth": 8.28, "fame": 10.67, "emotion": 5.5}}, {"age": 45, "year": 2027, "ganzhi": "丁未", "dayun": "己酉", "spirit_yearly": 53.0, "wealth_yearly": 47.6, "fame_yearly": 56.2, "emotion_yearly": 55.7, "confidence": {"spirit": "mid", "wealth": "high", "fame": "mid", "emotion": "high"}, "divergence": {"spirit": 17.0, "wealth": 7.1, "fame": 14.2, "emotion": 0.0}, "school_scores": {"spirit": {"fuyi": 64.2, "tiaohou": 53.0, "geju": 47.2}, "wealth": {"fuyi": 43.7, "tiaohou": 50.8, "geju": 48.3}, "fame": {"fuyi": 69.1, "tiaohou": 54.9, "geju": 55.7}}, "interactions": [{"type": "反吟", "with": "月柱", "magnitude": "高"}], "transition": false, "is_disputed": false, "disputed_dimensions": [], "mangpai_events": [], "mangpai_adjust": {"spirit": 0.0, "wealth": 0.0, "fame": 0.0}, "shensha_triggered": ["天乙贵人", "寡宿"], "shensha_adjust": {"spirit": 0.0, "wealth": 0.0, "fame": 0.5, "emotion": 0.0}, "spirit_cumulative": 93.3, "wealth_cumulative": 65.3, "fame_cumulative": 78.5, "emotion_cumulative": 62.0, "sigma": {"spirit": 10.64, "wealth": 7.79, "fame": 9.83, "emotion": 5.5}}, {"age": 46, "year": 2028, "ganzhi": "戊申", "dayun": "己酉", "spirit_yearly": 51.4, "wealth_yearly": 47.8, "fame_yearly": 56.9, "emotion_yearly": 47.9, "confidence": {"spirit": "mid", "wealth": "high", "fame": "high", "emotion": "high"}, "divergence": {"spirit": 12.2, "wealth": 9.0, "fame": 8.4, "emotion": 0.0}, "school_scores": {"spirit": {"fuyi": 63.6, "tiaohou": 51.4, "geju": 51.4}, "wealth": {"fuyi": 41.8, "tiaohou": 50.8, "geju": 50.8}, "fame": {"fuyi": 62.5, "tiaohou": 54.1, "geju": 54.1}}, "interactions": [], "transition": false, "is_disputed": false, "disputed_dimensions": [], "mangpai_events": [], "mangpai_adjust": {"spirit": 0.0, "wealth": 0.0, "fame": 0.0}, "shensha_triggered": ["驿马"], "shensha_adjust": {"spirit": 0.0, "wealth": 0.0, "fame": 0.0, "emotion": 0.0}, "spirit_cumulative": 89.3, "wealth_cumulative": 56.3, "fame_cumulative": 79.5, "emotion_cumulative": 56.7, "sigma": {"spirit": 10.46, "wealth": 9.43, "fame": 9.23, "emotion": 6.5}}, {"age": 47, "year": 2029, "ganzhi": "己酉", "dayun": "己酉", "spirit_yearly": 51.0, "wealth_yearly": 50.6, "fame_yearly": 55.1, "emotion_yearly": 49.4, "confidence": {"spirit": "mid", "wealth": "mid", "fame": "high", "emotion": "high"}, "divergence": {"spirit": 13.9, "wealth": 10.8, "fame": 9.7, "emotion": 0.0}, "school_scores": {"spirit": {"fuyi": 63.2, "tiaohou": 51.4, "geju": 49.3}, "wealth": {"fuyi": 40.0, "tiaohou": 50.8, "geju": 50.8}, "fame": {"fuyi": 63.8, "tiaohou": 54.1, "geju": 54.1}}, "interactions": [{"type": "相穿", "with": "年柱", "magnitude": "低"}], "transition": true, "is_disputed": false, "disputed_dimensions": [], "mangpai_events": [], "mangpai_adjust": {"spirit": 0.0, "wealth": 0.0, "fame": 0.0}, "shensha_triggered": [], "shensha_adjust": {"spirit": 0.0, "wealth": 0.0, "fame": 0.0, "emotion": 0.0}, "spirit_cumulative": 85.2, "wealth_cumulative": 57.8, "fame_cumulative": 79.5, "emotion_cumulative": 54.4, "sigma": {"spirit": 9.75, "wealth": 8.85, "fame": 8.54, "emotion": 5.5}}, {"age": 48, "year": 2030, "ganzhi": "庚戌", "dayun": "戊申", "spirit_yearly": 51.3, "wealth_yearly": 49.4, "fame_yearly": 54.1, "emotion_yearly": 46.6, "confidence": {"spirit": "mid", "wealth": "high", "fame": "high", "emotion": "high"}, "divergence": {"spirit": 12.9, "wealth": 4.9, "fame": 6.6, "emotion": 0.0}, "school_scores": {"spirit": {"fuyi": 64.3, "tiaohou": 51.4, "geju": 51.4}, "wealth": {"fuyi": 45.9, "tiaohou": 50.8, "geju": 50.8}, "fame": {"fuyi": 60.7, "tiaohou": 54.1, "geju": 54.1}}, "interactions": [], "transition": true, "is_disputed": false, "disputed_dimensions": [], "mangpai_events": [], "mangpai_adjust": {"spirit": 0.0, "wealth": 0.0, "fame": 0.0}, "shensha_triggered": ["驿马", "华盖", "空亡"], "shensha_adjust": {"spirit": 0.3, "wealth": 0.0, "fame": -0.3, "emotion": 0.0}, "spirit_cumulative": 82.3, "wealth_cumulative": 55.1, "fame_cumulative": 79.0, "emotion_cumulative": 48.1, "sigma": {"spirit": 10.69, "wealth": 8.09, "fame": 8.65, "emotion": 6.5}}, {"age": 49, "year": 2031, "ganzhi": "辛亥", "dayun": "戊申", "spirit_yearly": 51.7, "wealth_yearly": 48.8, "fame_yearly": 56.3, "emotion_yearly": 45.2, "confidence": {"spirit": "mid", "wealth": "high", "fame": "high", "emotion": "high"}, "divergence": {"spirit": 10.1, "wealth": 6.0, "fame": 5.9, "emotion": 0.0}, "school_scores": {"spirit": {"fuyi": 59.4, "tiaohou": 49.3, "geju": 51.4}, "wealth": {"fuyi": 44.8, "tiaohou": 50.8, "geju": 50.8}, "fame": {"fuyi": 60.0, "tiaohou": 54.1, "geju": 54.1}}, "interactions": [], "transition": false, "is_disputed": false, "disputed_dimensions": [], "mangpai_events": [], "mangpai_adjust": {"spirit": 0.0, "wealth": 0.0, "fame": 0.0}, "shensha_triggered": ["文昌贵人", "驿马", "孤辰", "空亡"], "shensha_adjust": {"spirit": 0.3, "wealth": 0.0, "fame": 0.2, "emotion": 0.0}, "spirit_cumulative": 80.4, "wealth_cumulative": 50.4, "fame_cumulative": 79.6, "emotion_cumulative": 40.3, "sigma": {"spirit": 9.78, "wealth": 8.45, "fame": 8.42, "emotion": 6.5}}, {"age": 50, "year": 2032, "ganzhi": "壬子", "dayun": "戊申", "spirit_yearly": 50.3, "wealth_yearly": 49.6, "fame_yearly": 57.2, "emotion_yearly": 44.5, "confidence": {"spirit": "high", "wealth": "high", "fame": "high", "emotion": "high"}, "divergence": {"spirit": 7.8, "wealth": 2.0, "fame": 9.4, "emotion": 0.0}, "school_scores": {"spirit": {"fuyi": 55.4, "tiaohou": 47.6, "geju": 48.0}, "wealth": {"fuyi": 48.8, "tiaohou": 50.8, "geju": 49.2}, "fame": {"fuyi": 63.5, "tiaohou": 54.1, "geju": 54.1}}, "interactions": [{"type": "冲日柱", "magnitude": "高"}], "transition": false, "is_disputed": false, "disputed_dimensions": [], "mangpai_events": [], "mangpai_adjust": {"spirit": 0.0, "wealth": 0.0, "fame": 0.0}, "shensha_triggered": ["驿马"], "shensha_adjust": {"spirit": 0.0, "wealth": 0.0, "fame": 0.0, "emotion": 0.0}, "spirit_cumulative": 76.7, "wealth_cumulative": 49.0, "fame_cumulative": 80.8, "emotion_cumulative": 32.4, "sigma": {"spirit": 10.39, "wealth": 8.22, "fame": 10.99, "emotion": 7.15}}, {"age": 51, "year": 2033, "ganzhi": "癸丑", "dayun": "戊申", "spirit_yearly": 49.7, "wealth_yearly": 50.0, "fame_yearly": 54.6, "emotion_yearly": 47.1, "confidence": {"spirit": "mid", "wealth": "high", "fame": "mid", "emotion": "high"}, "divergence": {"spirit": 15.6, "wealth": 2.5, "fame": 13.2, "emotion": 0.0}, "school_scores": {"spirit": {"fuyi": 61.1, "tiaohou": 49.7, "geju": 45.5}, "wealth": {"fuyi": 48.3, "tiaohou": 50.8, "geju": 50.8}, "fame": {"fuyi": 65.6, "tiaohou": 54.1, "geju": 52.4}}, "interactions": [{"type": "伏吟", "with": "月柱", "magnitude": "中"}, {"type": "相穿", "with": "日柱", "magnitude": "低"}, {"type": "伤官见官·印化护身", "magnitude": "中"}], "transition": false, "is_disputed": false, "disputed_dimensions": [], "mangpai_events": [], "mangpai_adjust": {"spirit": 0.0, "wealth": 0.0, "fame": 0.0}, "shensha_triggered": ["天乙贵人", "驿马"], "shensha_adjust": {"spirit": 0.0, "wealth": 0.0, "fame": 0.5, "emotion": 0.0}, "spirit_cumulative": 72.5, "wealth_cumulative": 49.0, "fame_cumulative": 80.4, "emotion_cumulative": 29.5, "sigma": {"spirit": 16.78, "wealth": 10.6, "fame": 15.65, "emotion": 8.45}}, {"age": 52, "year": 2034, "ganzhi": "甲寅", "dayun": "戊申", "spirit_yearly": 55.6, "wealth_yearly": 56.7, "fame_yearly": 57.6, "emotion_yearly": 47.1, "confidence": {"spirit": "mid", "wealth": "mid", "fame": "high", "emotion": "high"}, "divergence": {"spirit": 14.4, "wealth": 13.4, "fame": 8.0, "emotion": 0.0}, "school_scores": {"spirit": {"fuyi": 65.8, "tiaohou": 51.4, "geju": 55.6}, "wealth": {"fuyi": 64.2, "tiaohou": 50.8, "geju": 56.7}, "fame": {"fuyi": 62.1, "tiaohou": 54.1, "geju": 56.6}}, "interactions": [{"type": "通关", "wuxing": "木", "magnitude": "中"}], "transition": false, "is_disputed": false, "disputed_dimensions": [], "mangpai_events": [], "mangpai_adjust": {"spirit": 0.0, "wealth": 0.0, "fame": 0.0}, "shensha_triggered": ["驿马"], "shensha_adjust": {"spirit": 0.0, "wealth": 0.0, "fame": 0.0, "emotion": 0.0}, "spirit_cumulative": 78.2, "wealth_cumulative": 72.9, "fame_cumulative": 81.8, "emotion_cumulative": 27.0, "sigma": {"spirit": 12.86, "wealth": 12.48, "fame": 10.46, "emotion": 7.15}}, {"age": 53, "year": 2035, "ganzhi": "乙卯", "dayun": "戊申", "spirit_yearly": 55.6, "wealth_yearly": 56.7, "fame_yearly": 57.6, "emotion_yearly": 48.9, "confidence": {"spirit": "mid", "wealth": "mid", "fame": "high", "emotion": "high"}, "divergence": {"spirit": 14.4, "wealth": 11.8, "fame": 8.0, "emotion": 0.0}, "school_scores": {"spirit": {"fuyi": 65.8, "tiaohou": 51.4, "geju": 55.6}, "wealth": {"fuyi": 62.6, "tiaohou": 50.8, "geju": 56.7}, "fame": {"fuyi": 62.1, "tiaohou": 54.1, "geju": 56.6}}, "interactions": [{"type": "通关", "wuxing": "木", "magnitude": "中"}], "transition": false, "is_disputed": false, "disputed_dimensions": [], "mangpai_events": [], "mangpai_adjust": {"spirit": 0.0, "wealth": 0.0, "fame": 0.0}, "shensha_triggered": ["驿马", "桃花"], "shensha_adjust": {"spirit": 0.0, "wealth": 0.0, "fame": 0.0, "emotion": 0.5}, "spirit_cumulative": 83.1, "wealth_cumulative": 95.0, "fame_cumulative": 83.1, "emotion_cumulative": 27.5, "sigma": {"spirit": 12.86, "wealth": 11.89, "fame": 10.46, "emotion": 7.15}}, {"age": 54, "year": 2036, "ganzhi": "丙辰", "dayun": "戊申", "spirit_yearly": 53.0, "wealth_yearly": 48.8, "fame_yearly": 60.8, "emotion_yearly": 49.7, "confidence": {"spirit": "mid", "wealth": "high", "fame": "mid", "emotion": "high"}, "divergence": {"spirit": 16.1, "wealth": 3.5, "fame": 11.0, "emotion": 0.0}, "school_scores": {"spirit": {"fuyi": 63.3, "tiaohou": 53.0, "geju": 47.2}, "wealth": {"fuyi": 47.3, "tiaohou": 50.8, "geju": 48.3}, "fame": {"fuyi": 65.9, "tiaohou": 54.9, "geju": 60.8}}, "interactions": [{"type": "官库被冲开", "pillar": "壬戌", "magnitude": "中"}, {"type": "反吟", "with": "年柱", "magnitude": "高"}], "transition": false, "is_disputed": false, "disputed_dimensions": [], "mangpai_events": [], "mangpai_adjust": {"spirit": 0.0, "wealth": 0.0, "fame": 0.0}, "shensha_triggered": ["驿马"], "shensha_adjust": {"spirit": 0.0, "wealth": 0.0, "fame": 0.0, "emotion": 0.0}, "spirit_cumulative": 83.2, "wealth_cumulative": 87.1, "fame_cumulative": 86.1, "emotion_cumulative": 29.2, "sigma": {"spirit": 15.25, "wealth": 9.93, "fame": 13.1, "emotion": 7.8}}, {"age": 55, "year": 2037, "ganzhi": "丁巳", "dayun": "戊申", "spirit_yearly": 55.6, "wealth_yearly": 50.2, "fame_yearly": 54.9, "emotion_yearly": 52.3, "confidence": {"spirit": "mid", "wealth": "high", "fame": "mid", "emotion": "high"}, "divergence": {"spirit": 10.6, "wealth": 5.2, "fame": 14.1, "emotion": 0.0}, "school_scores": {"spirit": {"fuyi": 62.0, "tiaohou": 55.6, "geju": 51.4}, "wealth": {"fuyi": 47.3, "tiaohou": 52.5, "geju": 50.8}, "fame": {"fuyi": 68.2, "tiaohou": 54.9, "geju": 54.1}}, "interactions": [], "transition": false, "is_disputed": false, "disputed_dimensions": [], "mangpai_events": [], "mangpai_adjust": {"spirit": 0.0, "wealth": 0.0, "fame": 0.0}, "shensha_triggered": ["驿马"], "shensha_adjust": {"spirit": 0.0, "wealth": 0.0, "fame": 0.0, "emotion": 0.0}, "spirit_cumulative": 87.4, "wealth_cumulative": 84.9, "fame_cumulative": 85.7, "emotion_cumulative": 34.7, "sigma": {"spirit": 9.95, "wealth": 8.19, "fame": 11.08, "emotion": 6.5}}, {"age": 56, "year": 2038, "ganzhi": "戊午", "dayun": "戊申", "spirit_yearly": 53.9, "wealth_yearly": 50.2, "fame_yearly": 54.1, "emotion_yearly": 51.0, "confidence": {"spirit": "mid", "wealth": "high", "fame": "mid", "emotion": "high"}, "divergence": {"spirit": 14.2, "wealth": 5.2, "fame": 11.4, "emotion": 0.0}, "school_scores": {"spirit": {"fuyi": 63.5, "tiaohou": 53.9, "geju": 49.3}, "wealth": {"fuyi": 47.3, "tiaohou": 52.5, "geju": 50.8}, "fame": {"fuyi": 65.5, "tiaohou": 54.1, "geju": 54.1}}, "interactions": [{"type": "相穿", "with": "月柱", "magnitude": "低"}], "transition": false, "is_disputed": false, "disputed_dimensions": [], "mangpai_events": [], "mangpai_adjust": {"spirit": 0.0, "wealth": 0.0, "fame": 0.0}, "shensha_triggered": ["驿马"], "shensha_adjust": {"spirit": 0.0, "wealth": 0.0, "fame": 0.0, "emotion": 0.0}, "spirit_cumulative": 88.2, "wealth_cumulative": 82.8, "fame_cumulative": 84.9, "emotion_cumulative": 37.6, "sigma": {"spirit": 12.78, "wealth": 9.42, "fame": 11.74, "emotion": 7.15}}, {"age": 57, "year": 2039, "ganzhi": "己未", "dayun": "戊申", "spirit_yearly": 51.0, "wealth_yearly": 49.2, "fame_yearly": 54.5, "emotion_yearly": 50.3, "confidence": {"spirit": "mid", "wealth": "high", "fame": "mid", "emotion": "high"}, "divergence": {"spirit": 19.1, "wealth": 3.5, "fame": 11.8, "emotion": 0.0}, "school_scores": {"spirit": {"fuyi": 66.3, "tiaohou": 51.4, "geju": 47.2}, "wealth": {"fuyi": 47.3, "tiaohou": 50.8, "geju": 48.3}, "fame": {"fuyi": 65.9, "tiaohou": 54.1, "geju": 55.7}}, "interactions": [{"type": "反吟", "with": "月柱", "magnitude": "高"}], "transition": true, "is_disputed": false, "disputed_dimensions": [], "mangpai_events": [], "mangpai_adjust": {"spirit": 0.0, "wealth": 0.0, "fame": 0.0}, "shensha_triggered": ["天乙贵人", "驿马", "寡宿"], "shensha_adjust": {"spirit": 0.0, "wealth": 0.0, "fame": 0.5, "emotion": 0.0}, "spirit_cumulative": 84.3, "wealth_cumulative": 77.2, "fame_cumulative": 84.3, "emotion_cumulative": 38.9, "sigma": {"spirit": 14.61, "wealth": 8.78, "fame": 11.89, "emotion": 7.15}}, {"age": 58, "year": 2040, "ganzhi": "庚申", "dayun": "丁未", "spirit_yearly": 53.6, "wealth_yearly": 49.8, "fame_yearly": 59.6, "emotion_yearly": 59.2, "confidence": {"spirit": "mid", "wealth": "high", "fame": "mid", "emotion": "high"}, "divergence": {"spirit": 14.5, "wealth": 3.2, "fame": 14.1, "emotion": 0.0}, "school_scores": {"spirit": {"fuyi": 65.9, "tiaohou": 55.2, "geju": 51.4}, "wealth": {"fuyi": 47.6, "tiaohou": 50.8, "geju": 50.8}, "fame": {"fuyi": 70.7, "tiaohou": 56.6, "geju": 63.0}}, "interactions": [], "transition": true, "is_disputed": false, "disputed_dimensions": [], "mangpai_events": [], "mangpai_adjust": {"spirit": 0.0, "wealth": 0.0, "fame": 0.0}, "shensha_triggered": ["天乙贵人", "驿马", "寡宿"], "shensha_adjust": {"spirit": 0.0, "wealth": 0.0, "fame": 0.5, "emotion": 0.0}, "spirit_cumulative": 85.2, "wealth_cumulative": 74.4, "fame_cumulative": 86.6, "emotion_cumulative": 53.9, "sigma": {"spirit": 11.21, "wealth": 7.54, "fame": 11.08, "emotion": 6.5}}, {"age": 59, "year": 2041, "ganzhi": "辛酉", "dayun": "丁未", "spirit_yearly": 55.2, "wealth_yearly": 48.7, "fame_yearly": 63.5, "emotion_yearly": 64.5, "confidence": {"spirit": "mid", "wealth": "high", "fame": "mid", "emotion": "high"}, "divergence": {"spirit": 14.2, "wealth": 6.3, "fame": 14.1, "emotion": 0.0}, "school_scores": {"spirit": {"fuyi": 63.5, "tiaohou": 55.2, "geju": 49.3}, "wealth": {"fuyi": 44.5, "tiaohou": 50.8, "geju": 50.8}, "fame": {"fuyi": 70.7, "tiaohou": 56.6, "geju": 63.0}}, "interactions": [{"type": "相穿", "with": "年柱", "magnitude": "低"}], "transition": false, "is_disputed": false, "disputed_dimensions": [], "mangpai_events": [], "mangpai_adjust": {"spirit": 0.0, "wealth": 0.0, "fame": 0.0}, "shensha_triggered": ["天乙贵人", "寡宿"], "shensha_adjust": {"spirit": 0.0, "wealth": 0.0, "fame": 0.5, "emotion": 0.0}, "spirit_cumulative": 88.4, "wealth_cumulative": 67.8, "fame_cumulative": 91.0, "emotion_cumulative": 75.2, "sigma": {"spirit": 9.83, "wealth": 7.56, "fame": 9.8, "emotion": 5.5}}, {"age": 60, "year": 2042, "ganzhi": "壬戌", "dayun": "丁未", "spirit_yearly": 53.8, "wealth_yearly": 50.9, "fame_yearly": 63.2, "emotion_yearly": 65.1, "confidence": {"spirit": "mid", "wealth": "high", "fame": "mid", "emotion": "high"}, "divergence": {"spirit": 13.4, "wealth": 0.4, "fame": 18.6, "emotion": 0.0}, "school_scores": {"spirit": {"fuyi": 62.2, "tiaohou": 53.5, "geju": 48.8}, "wealth": {"fuyi": 51.2, "tiaohou": 50.8, "geju": 50.8}, "fame": {"fuyi": 75.2, "tiaohou": 56.6, "geju": 63.0}}, "interactions": [{"type": "伏吟", "with": "年柱", "magnitude": "中"}], "transition": false, "is_disputed": false, "disputed_dimensions": [], "mangpai_events": [], "mangpai_adjust": {"spirit": 0.0, "wealth": 0.0, "fame": 0.0}, "shensha_triggered": ["天乙贵人", "华盖", "寡宿", "空亡"], "shensha_adjust": {"spirit": 0.3, "wealth": 0.0, "fame": 0.2, "emotion": 0.0}, "spirit_cumulative": 89.0, "wealth_cumulative": 69.8, "fame_cumulative": 95.0, "emotion_cumulative": 95.0, "sigma": {"spirit": 9.6, "wealth": 5.86, "fame": 11.1, "emotion": 5.5}}], "turning_points_future": [{"year": 2032, "age": 50, "ganzhi": "壬子", "dayun": "戊申", "trigger": "冲日柱", "dimension": "spirit", "direction": "flat", "magnitude": "高", "confidence": "high", "yearly_value": 50.3}, {"year": 2033, "age": 51, "ganzhi": "癸丑", "dayun": "戊申", "trigger": "伤官见官·印化护身", "dimension": "fame", "direction": "flat", "magnitude": "中", "confidence": "mid", "yearly_value": 54.6}, {"year": 2033, "age": 51, "ganzhi": "癸丑", "dayun": "戊申", "trigger": "伏吟·月柱", "dimension": "spirit", "direction": "flat", "magnitude": "中", "confidence": "mid", "yearly_value": 49.7}, {"year": 2033, "age": 51, "ganzhi": "癸丑", "dayun": "戊申", "trigger": "相穿·日柱", "dimension": "spirit", "direction": "flat", "magnitude": "低", "confidence": "mid", "yearly_value": 49.7}, {"year": 2034, "age": 52, "ganzhi": "甲寅", "dayun": "戊申", "trigger": "通关·木", "dimension": "spirit", "direction": "up", "magnitude": "中", "confidence": "mid", "yearly_value": 55.6}, {"year": 2035, "age": 53, "ganzhi": "乙卯", "dayun": "戊申", "trigger": "通关·木", "dimension": "spirit", "direction": "up", "magnitude": "中", "confidence": "mid", "yearly_value": 55.6}, {"year": 2036, "age": 54, "ganzhi": "丙辰", "dayun": "戊申", "trigger": "官库被冲开", "dimension": "fame", "direction": "up", "magnitude": "中", "confidence": "mid", "yearly_value": 60.8}, {"year": 2036, "age": 54, "ganzhi": "丙辰", "dayun": "戊申", "trigger": "反吟·年柱", "dimension": "spirit", "direction": "flat", "magnitude": "高", "confidence": "mid", "yearly_value": 53.0}, {"year": 2038, "age": 56, "ganzhi": "戊午", "dayun": "戊申", "trigger": "相穿·月柱", "dimension": "spirit", "direction": "flat", "magnitude": "低", "confidence": "mid", "yearly_value": 53.9}, {"year": 2039, "age": 57, "ganzhi": "己未", "dayun": "戊申", "trigger": "反吟·月柱", "dimension": "spirit", "direction": "flat", "magnitude": "高", "confidence": "mid", "yearly_value": 51.0}, {"year": 2041, "age": 59, "ganzhi": "辛酉", "dayun": "丁未", "trigger": "相穿·年柱", "dimension": "spirit", "direction": "up", "magnitude": "低", "confidence": "low", "yearly_value": 55.2}, {"year": 2042, "age": 60, "ganzhi": "壬戌", "dayun": "丁未", "trigger": "伏吟·年柱", "dimension": "spirit", "direction": "flat", "magnitude": "中", "confidence": "low", "yearly_value": 53.8}], "disputes": [], "school_labels": {"fuyi": "扶抑派", "tiaohou": "调候派", "geju": "格局派"}, "mangpai_enabled": false, "mangpai_static_markers": [], "mangpai_school_position": "mangpai disabled — pass --mangpai mangpai.json to enable", "structural_corrections_applied": []};
 window.__BAZI_TITLE__ = "\u516b\u5b57\u4eba\u751f\u66f2\u7ebf\u56fe\uff08\u58ec\u620c \u7678\u4e11 \u5e9a\u5348 \u4e01\u4e11\uff09";
-window.__BAZI_ANALYSIS__ = {"overall": "## 命局基本盘\n\n本命 **庚金日主**，生于丑月（冬末土旺前缘），年柱壬戌、月柱癸丑、日柱庚午、时柱丁丑——典型 **官印相生格** 兼 **食伤泄秀** 双层结构。\n\n- **强弱**：得月令丑土生身 + 时支丑、年支戌共三土印星，强度 +28（明显偏强）。\n- **用神**：木（财——疏土、引官、给过厚的印性土松绑）。\n- **喜神**：火（正官——丁火透干，是命局已有的\"出口\"）。\n- **忌神**：土（印星已成壅塞，再加土则更闭）。\n- **通关**：木（甲木通关印与日主，让土生的能量能下沉到财/事业层面）。\n- **格局清浊**：清中有浊——官印相生干净，但印星过多导致\"光被糊住\"，需要中年大运走木火之地才能彻底打开。\n\n## 三条曲线整体形状\n\n- **精神曲线**：童年（0-17 岁壬子大运）水大运冲日支午官，命主早期偏内向、压抑感强；18-37 岁辛亥/庚戌大运比劫帮身但泄气不畅，仍属\"在系统内做事\"的稳态；**38-57 岁己酉/戊申大运**进入金气最旺段，反而印旺过头需谨慎；58 岁后丁未、丙午大运回到火地，正官得力——**晚年比中年舒展**。\n- **财富曲线**：用神是木，命局原局无木——一生财都靠流年/大运补出。35-55 岁段每逢甲乙寅卯流年是财的兑现期；55 岁前后随戊申大运（金旺、土更厚）短期承压；60 岁后丁未大运官得位、财运反弹。\n- **名声曲线**：起点偏高（壬癸食伤透干 + 丁火正官得位），20-45 岁稳态高位但弹性小；47-57 岁戊申大运因偏印再透、易遇官杀混杂应期而震荡（详见 2036 拐点）；60 岁后趋稳。\n\n## 累积曲线解读\n\n- 0-25 岁累积线 < 当年线：这是\"还在交学费\"的阶段，看不见的损耗在涨。\n- 25-50 岁累积线与当年线接近：当下投入与长期回报基本同步。\n- **50 岁后累积线明显高于当年线**：进入\"复利兑现期\"——前面所有\"在系统内沉得住气\"的代价开始有回报。\n\n## 三大转折点（脚本提名）\n\n1. **2027 丁未（45 岁）** — 精神维度小高峰：丁火正官透出且与日柱庚午暗合，主\"在公开身份上得到一个明确位置\"。\n2. **2032 壬子（50 岁）** — 精神维度高位震荡：壬子流年与日柱庚午有伏吟之外的暗动；同时 **岁运并临**（流年壬与年柱壬同），主\"必须重新审视一直以来的位置\"。\n3. **2036 丙辰（54 岁）** — 精神维度低谷：丙火七杀流年 + 辰戌冲触发 **官杀混杂应期**——女命常应婚姻 / 重要关系层面的压力。\n\n## 命主定位\n\n**「在系统内长跑、晚程开花的稳定型守护者」**\n\n- 适合：需要长期承担、规则清晰、可被认证的工作（教育、专业服务、技术 / 学术体系内、需要资历积累的岗位）\n- 不适合：纯创业型 / 高频短打型（频繁切换赛道会激发印星的\"自我怀疑\"）\n- 长板：耐压、能在结构里做出内容、对身份的认真感\n- 短板：起步偏慢、易陷入\"我是不是不够好\"的内耗、对外部认可需求高\n- 代偿建议：每 5 年要主动接触一次\"完全陌生的领域\"，刻意打破印星筑起来的\"安全屋\"——这才是真正的解局。\n", "turning_points": {"2027": "**2027 丁未（45 岁，己酉大运）**\n\n> 三派融合分：精神 ~58 / 财富 ~52 / 名声 ~63｜置信度 mid｜偏离基线 +6\n> 该年无盲派事件触发——属\"小高峰平台期\"。\n\n【职业】丁火正官透出 + 与日干庚遥合（丁壬合的预热），主\"在外部身份上得到一个清晰的定位\"——可能是职级、头衔、某个公开角色被正式赋予。建议 Q2 之前主动争取，不要被动等待。\n\n【关系】未土印星临干，主\"被照顾感\"上行；女命该年主长辈 / 年长伴侣层面的关心增多，但要警惕\"过度被照顾\"反而让自己丧失边界。\n\n【财务】平年偏稳。未中藏丁己乙——己土印为忌但乙木财微出，可作小额尝试（投资 / 副业）但不宜重注。\n\n【健康】平年。但因印星再旺，建议在饮食上主动\"减负\"（少糖少淀粉），以免脾胃郁滞。\n\n【心理】主导情绪是\"终于被看见\"——是这一段大运里少有的高光感受。建议把它沉淀为长期身份的奠基，而不是一次性消费。\n\n【时空】居所层面无明显变动。但有可能涉及工作场所的小迁移（同城换办公室 / 团队重组）。\n\n**关键抉择 / 自处建议**：把这一年定位为\"在系统内拿身份\"的窗口，而不是\"出去单干\"的窗口——前者顺势，后者逆势。\n", "2032": "**2032 壬子（50 岁，戊申大运）**\n\n> 三派融合分：精神 ~56 / 财富 ~48 / 名声 ~60｜置信度 mid｜偏离基线 +5（精神）\n> 该年无重盲派事件，但 **岁运并临**（流年壬与年柱壬同气）+ 子午冲日支——是\"半个伏吟年\"。\n\n【职业】50 岁的\"中年回望年\"。壬水食神大量透出，外在表现是\"想表达 / 想公开输出 / 想做点不一样的\"。但子午冲日支也提示：**这种冲动的背后是对\"我前 25 年是不是值得\"的重新审视**。建议不要在本年做大的职业切换，而是把\"想表达的\"沉淀为长期项目（写作、记录、整理）。\n\n【关系】子午冲日支（夫妻宫），主婚姻 / 核心关系层面有\"温度感重新校准\"——可能是配偶 / 重要伙伴提出新需求，或者自己内心对关系状态有新评价。建议主动开启一次\"长对话\"，而不是回避。\n\n【财务】平年偏弱。戊申大运本身金旺土厚，财气受困；本年食神泄秀但无财星接气，多劳少获。建议守成，不冒险。\n\n【健康】子水冲午火（心 / 血液 / 视力），加上印星壅塞——本年要提前在 2031 末做一次完整体检，重点关注心血管 + 视力。\n\n【心理】**主导情绪是\"我活到一半，到底想要什么\"**——这是命局给的中年自省窗。不要急着回答，给自己 12-18 个月做酝酿。\n\n【时空】可能涉及短期出行 / 短居异地——子水主动、远行；这种位移本身就是\"重新看自己\"的方式。\n\n**关键抉择 / 自处建议**：把 2032 定位为\"听自己\"的年份，主动减少对外承诺，留出 30% 时间和心理带宽用于\"中年校准\"。\n", "2036": "**2036 丙辰（54 岁，戊申大运）**\n\n> 三派融合分：精神 ~42 / 财富 ~50 / 名声 ~58｜置信度 mid｜偏离基线 -8（精神）\n> 盲派烈度修正：spirit -4\n> 盲派应事：\n>   - 【中】官杀混杂应期：原局丁火正官在干，流年丙火七杀再透 → 官杀同现，**身份 / 婚姻同时承受多重压力**\n\n【职业】丙火七杀流年 + 辰戌冲（流年辰冲年支戌），主\"原本稳固的位置受外部冲击\"。可能是组织变动、上级更替、行业政策变化。**这一年不是开拓年，而是守阵年**——建议在 2035 末就把现有位置的\"护城河\"加固，不主动出新动作。\n\n【关系】**女命官杀混杂年最值得警惕的就是关系层**——丁火正官（既有的承诺 / 关系）+ 丙火七杀（新出现的吸引 / 压力）同现，常应\"必须在两者中做出选择\"。建议在年初就明确告诉自己：**这一年的所有\"心动\"都不要急着行动**，让它至少经过 6 个月的时间检验。\n\n【财务】辰戌冲库（戌为火土印库），可能涉及不动产 / 长期资产层面的被动调整。建议在 2035 末完成所有资产盘点，2036 不主动配置新资产。\n\n【健康】丙火七杀直冲日主，加上辰戌冲——本年是命局里最该\"压着用身体\"的年份。提前 6 个月开始规律体检 + 减压安排（瑜伽 / 冥想 / 慢运动）。\n\n【心理】**主导情绪是\"四面八方都在拉扯我\"**——同时承担多个身份、多个责任、多种期待。这一年不要试图\"全部满足\"，而要主动做减法。\n\n【时空】可能涉及搬家 / 长期居所变动——辰戌为土库相冲，居所层面常有结构性调整。\n\n**关键抉择 / 自处建议**：把这一年定位为\"主动收敛年\"——主动放弃 1-2 个角色 / 承诺 / 关系，腾出空间。最大的风险不是\"被冲击\"，而是\"想全部接住\"导致全面失守。\n"}, "disputes": {"1990": "## 三派分歧解读\n\n本年（庚午，8 岁，大运 壬子）**精神维度** 三派分歧大：扶抑派看跌（壬子大运水大冲午官 + 流年庚比肩助身、泄秀压力增）、调候派看升（冬末火气尚弱、午火能调候）、格局派看平（无明显格成 / 格破）。\n\n**最贴近的派别：调候派 + 盲派**\n\n论据：\n1. 本命庚金生丑月，月令湿土晦光，年支戌、时支丑两印再护身——**8 岁这年最缺的不是\"再补金\"，而是\"出口\"**。流年庚午中的午火正官恰好是这个出口。\n2. 扶抑派的\"水大冲官 → 精神跌\"过于机械——它没考虑到 8 岁的命主刚开始上学，外部对\"被规训 / 被赋予角色\"的需求与正官能量是同向的。\n3. 盲派识别到 **伏吟应期**（流年庚午与日柱庚午伏吟）——主\"少年期第一次清晰意识到自己是谁\"——这是一次心理结构上的\"自我登记\"事件，而不是简单的好或坏。\n4. 格局派看平有道理但偏保守——它只看格不看应期，错过了伏吟的具体心理意义。\n\n**综合推论**：这一年精神维度大概率有 **-2 到 +2 的小幅波动**（外在体验偏中性），但 **内在结构上是关键年**——是少年期第一次形成\"我是怎样的人\"的元认知。具体表现可能是：第一次在某件事上明确说\"我喜欢 / 我不喜欢\"；或者第一次因为某个评价（来自老师 / 长辈）而\"内化\"了某种自我标签（\"我是个安静的人\"/\"我擅长……\"）。\n\n建议在记忆里回想：8 岁那年是否有\"突然意识到自己和别人不一样\"的瞬间？是否在那一年开始形成某个延续至今的兴趣 / 习惯 / 自我认知？如果有 → 印证了调候派 + 盲派的判断；如果完全无印象 → 可能要回到生辰本身做复核。\n"}};
+window.__BAZI_ANALYSIS__ = {"overall": "", "turning_points": {}, "disputes": {}, "era_narratives": {}, "dayun_reviews": {}};
+window.__BAZI_ZEITGEIST__ = {};
+window.__BAZI_HAS_ZEITGEIST__ = false;
 </script>
 
 <script type="text/babel" data-presets="env,react">
 const CURVES = window.__BAZI_CURVES__;
 const TITLE = window.__BAZI_TITLE__;
-const ANALYSIS = window.__BAZI_ANALYSIS__ || { overall: "", turning_points: {}, disputes: {} };
+const ANALYSIS = window.__BAZI_ANALYSIS__ || {};
+const ZEITGEIST = window.__BAZI_ZEITGEIST__ || {};
+const HAS_ZEITGEIST = !!window.__BAZI_HAS_ZEITGEIST__;
 const DIM_LABEL = { spirit: "精神", wealth: "财富", fame: "名声" };
-const DIR_ARROW = { up: "↑", down: "↓", flat: "→" };
+
+const COLOR_SPIRIT = "#8B7BC7";
+const COLOR_WEALTH = "#4A9D7F";
+const COLOR_FAME   = "#D88E5C";
+
+const DAYUN_BAND_COLORS = ["#F5F2EA", "#EDF2F4", "#F0E7E7", "#E7F0EE", "#F3EFE8", "#EFEDE6"];
 
 function Markdown({ source }) {
   if (!source || !source.trim()) return null;
@@ -186,14 +239,58 @@ function Markdown({ source }) {
   return <div className="markdown" dangerouslySetInnerHTML={{ __html: html }} />;
 }
 
+const {
+  ResponsiveContainer, ComposedChart, Line, XAxis, YAxis,
+  CartesianGrid, ReferenceArea, ReferenceLine, Label, Tooltip,
+} = Recharts;
+
+/* === 5 年段趋势线：每 5 年取一段均值，对齐到段中心 === */
+function buildSegmentTrend(yearly) {
+  const SEG = 5;
+  const out = [];
+  for (let i = 0; i < yearly.length; i += SEG) {
+    const slice = yearly.slice(i, Math.min(i + SEG, yearly.length));
+    const ages  = slice.map(p => p.age);
+    const center = (ages[0] + ages[ages.length - 1]) / 2;
+    const mean = slice.reduce((s, p) => s + p.value, 0) / slice.length;
+    out.push({ age: center, value: Math.round(mean * 10) / 10 });
+  }
+  return out;
+}
+
+function buildSeries(curves) {
+  // 主线：每年一个点
+  const main = curves.points.map(p => ({
+    age: p.age, year: p.year, dayun: p.dayun,
+    spirit: p.spirit_yearly,
+    wealth: p.wealth_yearly,
+    fame:   p.fame_yearly,
+  }));
+  // 5 年段趋势
+  const spiritTrend = buildSegmentTrend(curves.points.map(p => ({age: p.age, value: p.spirit_yearly})));
+  const wealthTrend = buildSegmentTrend(curves.points.map(p => ({age: p.age, value: p.wealth_yearly})));
+  const fameTrend   = buildSegmentTrend(curves.points.map(p => ({age: p.age, value: p.fame_yearly})));
+  // 合并到主数据集（用 age 对齐，趋势数据点用单独字段）
+  const trendByAge = {};
+  spiritTrend.forEach(p => { trendByAge[p.age] = trendByAge[p.age] || {}; trendByAge[p.age].spirit_t = p.value; });
+  wealthTrend.forEach(p => { trendByAge[p.age] = trendByAge[p.age] || {}; trendByAge[p.age].wealth_t = p.value; });
+  fameTrend.forEach(p   => { trendByAge[p.age] = trendByAge[p.age] || {}; trendByAge[p.age].fame_t   = p.value; });
+
+  // 把趋势点（可能是非整数年龄）作为单独序列返回，避免 Recharts 数值轴对不齐
+  return {
+    main,
+    trend: { spirit: spiritTrend, wealth: wealthTrend, fame: fameTrend },
+  };
+}
+
 function MangpaiBlock({ events }) {
   if (!events || events.length === 0) return null;
   const intensityClass = (i) => ({ "重": "", "中": "mid", "轻": "light" }[i] || "");
   return (
-    <div className="tp-mp-events">
-      <div className="head">盲派应事（mangpai · 不进 25% 融合权重，仅作应事断 + 烈度修正）</div>
+    <div className="mp-events">
+      <div className="head">盲派应事（不进 25% 融合权重，仅作应事断 + 烈度修正）</div>
       {events.map((e, i) => (
-        <div className="tp-mp-event-item" key={i}>
+        <div className="mp-event-item" key={i}>
           <span className={"badge " + intensityClass(e.intensity)}>{e.intensity}</span>
           <b>{e.name}</b>（{e.school}）：{e.canonical_event}
           <div style={{ color: "#888", fontSize: 11, marginTop: 2, paddingLeft: 8 }}>
@@ -208,82 +305,151 @@ function MangpaiBlock({ events }) {
   );
 }
 
-const COLOR_SPIRIT = "#8B7BC7";
-const COLOR_WEALTH = "#4A9D7F";
-const COLOR_FAME = "#D88E5C";
-
-const {
-  ResponsiveContainer, ComposedChart, Line, Area, XAxis, YAxis,
-  CartesianGrid, Tooltip, ReferenceArea, ReferenceLine, Label,
-} = Recharts;
-
-const DAYUN_BAND_COLORS = ["#F5F2EA", "#EDF2F4", "#F0E7E7", "#E7F0EE", "#F3EFE8"];
-
-function buildSeries(curves) {
-  return curves.points.map(p => ({
-    age: p.age,
-    year: p.year,
-    spirit: p.spirit_yearly,
-    spirit_cum: p.spirit_cumulative,
-    wealth: p.wealth_yearly,
-    wealth_cum: p.wealth_cumulative,
-    fame: p.fame_yearly,
-    fame_cum: p.fame_cumulative,
-    spirit_lo: p.spirit_yearly - p.sigma.spirit,
-    spirit_hi: p.spirit_yearly + p.sigma.spirit,
-    wealth_lo: p.wealth_yearly - p.sigma.wealth,
-    wealth_hi: p.wealth_yearly + p.sigma.wealth,
-    fame_lo: p.fame_yearly - p.sigma.fame,
-    fame_hi: p.fame_yearly + p.sigma.fame,
-    spirit_band: [p.spirit_yearly - p.sigma.spirit, p.spirit_yearly + p.sigma.spirit],
-    wealth_band: [p.wealth_yearly - p.sigma.wealth, p.wealth_yearly + p.sigma.wealth],
-    fame_band:  [p.fame_yearly - p.sigma.fame,  p.fame_yearly + p.sigma.fame],
-    confLow: Object.values(p.confidence).filter(c => c === "low").length,
-    interactions: p.interactions,
-    dayun: p.dayun,
-  }));
-}
-
-function CustomTooltip({active, payload, label}) {
-  if (!active || !payload || !payload.length) return null;
-  const d = payload[0].payload;
-  return (
-    <div style={{background: "#fff", border: "1px solid #e5e5e5", borderRadius: 6, padding: "8px 10px", fontSize: 12, boxShadow: "0 2px 8px rgba(0,0,0,0.1)"}}>
-      <div style={{fontWeight: 600, marginBottom: 4}}>{d.age} 岁 · {d.year} · {d.dayun}</div>
-      <div style={{color: COLOR_SPIRIT}}>精神 {d.spirit.toFixed(1)} ／ 累积 {d.spirit_cum.toFixed(1)}</div>
-      <div style={{color: COLOR_WEALTH}}>财富 {d.wealth.toFixed(1)} ／ 累积 {d.wealth_cum.toFixed(1)}</div>
-      <div style={{color: COLOR_FAME}}>名声 {d.fame.toFixed(1)} ／ 累积 {d.fame_cum.toFixed(1)}</div>
-      {d.interactions && d.interactions.length > 0 && (
-        <div style={{marginTop: 4, color: "#666", fontSize: 11}}>
-          {d.interactions.map((i, idx) => <span key={idx}>· {i.type}{i.with ? "·"+i.with : ""}{i.wuxing ? "·"+i.wuxing : ""} </span>)}
-        </div>
-      )}
-      {d.confLow >= 2 && <div style={{marginTop: 4, color: "#999", fontSize: 11}}>派别分歧大，置信度低</div>}
-    </div>
-  );
-}
-
-const SCHOOL_LABELS = { fuyi: "扶抑派", tiaohou: "调候派", geju: "格局派" };
-const SCHOOL_COLORS = { fuyi: "#7B9FCB", tiaohou: "#88B98C", geju: "#D88E5C" };
-
 function App() {
-  const data = buildSeries(CURVES);
+  const series = buildSeries(CURVES);
+  const data = series.main;
   const ages = data.map(d => d.age);
   const minAge = Math.min(...ages);
   const maxAge = Math.max(...ages);
   const segments = CURVES.dayun_segments || [];
-  const turning = (CURVES.turning_points_future || []).filter(t => t.confidence !== "low");
-  const disputes = CURVES.disputes || [];
-  const disputeAges = Array.from(new Set(disputes.map(d => d.age))).sort((a, b) => a - b);
 
-  // 用 year 索引 points，便于 turning point 行展开时查盲派事件
+  // 把 5 年段趋势数据 inline 到 data（用 null 填空）
+  const trendByAge = { spirit: {}, wealth: {}, fame: {} };
+  ["spirit", "wealth", "fame"].forEach(k => {
+    series.trend[k].forEach(p => { trendByAge[k][p.age] = p.value; });
+  });
+  // 给 data 补 _t 字段（在主点上不一定有匹配，所以另用一个稀疏轴）
+  // 处理半整数年龄：扩展 data 包含趋势中点
+  const allAges = new Set(ages);
+  ["spirit", "wealth", "fame"].forEach(k =>
+    series.trend[k].forEach(p => allAges.add(p.age))
+  );
+  const sortedAges = Array.from(allAges).sort((a, b) => a - b);
+  const yearMap = {};
+  data.forEach(d => { yearMap[d.age] = d; });
+
+  const merged = sortedAges.map(a => {
+    const base = yearMap[a] || { age: a, year: null };
+    return {
+      ...base,
+      spirit_t: trendByAge.spirit[a] != null ? trendByAge.spirit[a] : null,
+      wealth_t: trendByAge.wealth[a] != null ? trendByAge.wealth[a] : null,
+      fame_t:   trendByAge.fame[a]   != null ? trendByAge.fame[a]   : null,
+    };
+  });
+
   const pointsByYear = {};
-  (CURVES.points || []).forEach(p => { pointsByYear[p.year] = p; });
+  const pointsByAge = {};
+  (CURVES.points || []).forEach(p => { pointsByYear[p.year] = p; pointsByAge[p.age] = p; });
 
-  // 全图盲派事件计数（图下小注）
+  // === Tooltip 组件（rich hover）===
+  const keyYearByYear = {};
+  (ANALYSIS.key_years || []).forEach(k => { keyYearByYear[k.year] = k; });
+
+  const RichTooltip = ({ active, payload, label }) => {
+    if (!active || !payload || payload.length === 0) return null;
+    const age = label;
+    const p = pointsByAge[age];
+    if (!p) {
+      // 趋势中点（无原始 point），简化显示
+      return (
+        <div style={{
+          background: "rgba(255,255,255,0.96)", border: "1px solid #ddd",
+          borderRadius: 6, padding: "8px 12px", fontSize: 12, color: "#444",
+          boxShadow: "0 2px 8px rgba(0,0,0,0.08)", maxWidth: 280
+        }}>
+          <div style={{fontWeight: 600, marginBottom: 4}}>{age} 岁（趋势中点）</div>
+          {payload.filter(e => e.value != null).map(e => (
+            <div key={e.dataKey} style={{display: "flex", justifyContent: "space-between", gap: 12}}>
+              <span style={{color: e.color}}>{
+                {spirit:"精神", wealth:"财富", fame:"名声",
+                 spirit_t:"精神·5年趋势", wealth_t:"财富·5年趋势", fame_t:"名声·5年趋势"}[e.dataKey] || e.dataKey
+              }</span>
+              <b>{e.value.toFixed(1)}</b>
+            </div>
+          ))}
+        </div>
+      );
+    }
+    const ky = keyYearByYear[p.year];
+    const mpEvents = (p.mangpai_events || []).filter(e => e.name);
+    const interactions = (p.interactions || []);
+    return (
+      <div style={{
+        background: "rgba(255,255,255,0.97)", border: "1px solid #c8d3e5",
+        borderRadius: 8, padding: "10px 14px", fontSize: 12, color: "#333",
+        boxShadow: "0 4px 16px rgba(0,0,0,0.12)", maxWidth: 360, lineHeight: 1.5
+      }}>
+        <div style={{fontWeight: 700, fontSize: 13, marginBottom: 6, color: "#3a5378",
+                     borderBottom: "1px solid #eee", paddingBottom: 4}}>
+          {p.year} 年 · {p.age} 岁 · {p.ganzhi} <span style={{color: "#888", fontWeight: 400}}>· 大运 {p.dayun}</span>
+        </div>
+        <div style={{display: "grid", gridTemplateColumns: "auto auto auto", gap: "2px 12px", marginBottom: 6}}>
+          <span style={{color: COLOR_SPIRIT}}>精神</span>
+          <span style={{textAlign:"right"}}><b>{p.spirit_yearly?.toFixed(1)}</b></span>
+          <span style={{color: "#888", fontSize: 11}}>趋势 {(trendByAge.spirit[age] ?? "—") !== "—" ? trendByAge.spirit[age].toFixed(1) : "—"}</span>
+          <span style={{color: COLOR_WEALTH}}>财富</span>
+          <span style={{textAlign:"right"}}><b>{p.wealth_yearly?.toFixed(1)}</b></span>
+          <span style={{color: "#888", fontSize: 11}}>趋势 {(trendByAge.wealth[age] ?? "—") !== "—" ? trendByAge.wealth[age].toFixed(1) : "—"}</span>
+          <span style={{color: COLOR_FAME}}>名声</span>
+          <span style={{textAlign:"right"}}><b>{p.fame_yearly?.toFixed(1)}</b></span>
+          <span style={{color: "#888", fontSize: 11}}>趋势 {(trendByAge.fame[age] ?? "—") !== "—" ? trendByAge.fame[age].toFixed(1) : "—"}</span>
+        </div>
+        {interactions.length > 0 && (
+          <div style={{marginTop: 4, color: "#7a6a3e", fontSize: 11}}>
+            <b>互动：</b>{interactions.map(it => `${it.type}·${it.with}(${it.magnitude})`).join("，")}
+          </div>
+        )}
+        {mpEvents.length > 0 && (
+          <div style={{marginTop: 4, color: "#6e8a4e", fontSize: 11}}>
+            <b>盲派：</b>{mpEvents.map(e => `${e.name}${e.intensity ? "·"+e.intensity : ""}`).join("，")}
+          </div>
+        )}
+        {p.is_disputed && (
+          <div style={{marginTop: 4, color: "#a85b3e", fontSize: 11}}>
+            ⚠ 三派争议年（极差 {p.dispute_detail?.spread?.toFixed(1) || "?"}）
+          </div>
+        )}
+        {ky && (
+          <div style={{
+            marginTop: 8, padding: "6px 8px",
+            background: ky.kind === "peak" ? "#eaf5ec" : ky.kind === "dip" ? "#fbeae5" : "#eef0f7",
+            borderRadius: 4, fontSize: 11, color: "#444"
+          }}>
+            <b style={{color: ky.kind === "peak" ? "#3d7a47" : ky.kind === "dip" ? "#9a4632" : "#4a5a85"}}>
+              {ky.kind === "peak" ? "★ 关键高峰" : ky.kind === "dip" ? "★ 关键低谷" : "★ 关键拐点"}：
+            </b>
+            {ky.headline}
+            <div style={{marginTop: 3, fontSize: 10, color: "#888"}}>
+              点击下方"关键年份评价"区段查看完整解析
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   const mpYearsCount = (CURVES.points || []).filter(p => (p.mangpai_events || []).length > 0).length;
   const mpHighCount = (CURVES.points || []).reduce((acc, p) =>
     acc + (p.mangpai_events || []).filter(e => e.intensity === "重").length, 0);
+
+  // 大运颜色 chip
+  const dayunColor = (i) => {
+    const palette = ["#7B9FCB", "#88B98C", "#D88E5C", "#A57AC9", "#D9A03F", "#5BA9A0"];
+    return palette[i % palette.length];
+  };
+
+  // 每个大运段对应的年份范围（用于 LLM analysis.dayun_review 索引）
+  const dayunReview = ANALYSIS.dayun_review || {};
+  // v7.5 新增：dayun_reviews（按 dayun_label → markdown，整体替代 dayun_review.body 的扩展版）
+  const dayunReviews = ANALYSIS.dayun_reviews || {};
+  const keyYears = ANALYSIS.key_years || [];   // [{year, age, ganzhi, dayun, kind: 'peak'|'dip'|'shift', headline, body}]
+  const lifeReview = ANALYSIS.life_review || {}; // {spirit, wealth, fame}
+
+  // v7.5 时代-民俗志：era_windows_used（来自 _zeitgeist_loader）+ era_narratives（LLM 写）
+  const eraWindows = (ZEITGEIST.era_windows_used || []);
+  const eraNarratives = ANALYSIS.era_narratives || {};
+  const dayunSegByYear = (yr) => segments.find(s => s.start_year <= yr && yr <= s.end_year);
 
   return (
     <>
@@ -295,18 +461,19 @@ function App() {
         · 出生 {CURVES.birth_year}
       </div>
 
+      {/* === 主图 === */}
       <div className="chart-wrap">
         <div className="legend-row">
           <span className="legend-item"><span className="legend-line" style={{borderTopColor: COLOR_SPIRIT}}></span>精神 · 当年</span>
-          <span className="legend-item"><span className="legend-line dashed" style={{borderTopColor: COLOR_SPIRIT}}></span>精神 · 累积</span>
+          <span className="legend-item"><span className="legend-line dashed" style={{borderTopColor: COLOR_SPIRIT}}></span>精神 · 5 年趋势</span>
           <span className="legend-item"><span className="legend-line" style={{borderTopColor: COLOR_WEALTH}}></span>财富 · 当年</span>
-          <span className="legend-item"><span className="legend-line dashed" style={{borderTopColor: COLOR_WEALTH}}></span>财富 · 累积</span>
+          <span className="legend-item"><span className="legend-line dashed" style={{borderTopColor: COLOR_WEALTH}}></span>财富 · 5 年趋势</span>
           <span className="legend-item"><span className="legend-line" style={{borderTopColor: COLOR_FAME}}></span>名声 · 当年</span>
-          <span className="legend-item"><span className="legend-line dashed" style={{borderTopColor: COLOR_FAME}}></span>名声 · 累积</span>
+          <span className="legend-item"><span className="legend-line dashed" style={{borderTopColor: COLOR_FAME}}></span>名声 · 5 年趋势</span>
         </div>
 
         <ResponsiveContainer width="100%" height={520}>
-          <ComposedChart data={data} margin={{top: 30, right: 30, left: 10, bottom: 10}}>
+          <ComposedChart data={merged} margin={{top: 30, right: 30, left: 10, bottom: 10}}>
             {segments.map((seg, i) => (
               <ReferenceArea
                 key={"seg-"+i}
@@ -316,217 +483,291 @@ function App() {
                 ifOverflow="extendDomain"
                 isFront={false}
               >
-                <Label value={seg.label} position="insideTop" fill="#888" fontSize={11} />
+                <Label value={`${seg.label} (${seg.start_age}-${seg.end_age}岁)`}
+                       position="insideTop" fill="#888" fontSize={11} />
               </ReferenceArea>
             ))}
 
             <CartesianGrid stroke="#eee" strokeDasharray="3 3" />
             <XAxis dataKey="age" type="number" domain={[minAge, maxAge]}
                    tickFormatter={(v) => v + "岁"} tick={{fontSize: 11, fill: "#666"}} />
-            <YAxis domain={[0, 100]} tick={{fontSize: 11, fill: "#666"}} />
-            <Tooltip content={<CustomTooltip />} />
+            <YAxis domain={[10, 90]} tick={{fontSize: 11, fill: "#666"}} />
+            {/* 基线 50 */}
+            <ReferenceLine y={50} stroke="#ccc" strokeDasharray="2 4" />
 
-            {/* 置信带 */}
-            <Area type="monotone" dataKey="spirit_band" stroke="none" fill={COLOR_SPIRIT} fillOpacity={0.10} />
-            <Area type="monotone" dataKey="wealth_band" stroke="none" fill={COLOR_WEALTH} fillOpacity={0.10} />
-            <Area type="monotone" dataKey="fame_band"  stroke="none" fill={COLOR_FAME}  fillOpacity={0.10} />
-
-            {/* 6 条线 */}
-            <Line type="monotone" dataKey="spirit"     stroke={COLOR_SPIRIT} strokeWidth={2.4} dot={false} isAnimationActive={false} />
-            <Line type="monotone" dataKey="spirit_cum" stroke={COLOR_SPIRIT} strokeWidth={1.6} dot={false} strokeDasharray="6 3" isAnimationActive={false} />
-            <Line type="monotone" dataKey="wealth"     stroke={COLOR_WEALTH} strokeWidth={2.4} dot={false} isAnimationActive={false} />
-            <Line type="monotone" dataKey="wealth_cum" stroke={COLOR_WEALTH} strokeWidth={1.6} dot={false} strokeDasharray="6 3" isAnimationActive={false} />
-            <Line type="monotone" dataKey="fame"       stroke={COLOR_FAME}   strokeWidth={2.4} dot={false} isAnimationActive={false} />
-            <Line type="monotone" dataKey="fame_cum"   stroke={COLOR_FAME}   strokeWidth={1.6} dot={false} strokeDasharray="6 3" isAnimationActive={false} />
-
-            {/* 关键拐点（高/中置信度） */}
-            {turning.slice(0, 12).map((t, i) => (
-              <ReferenceLine key={"t-"+i} x={t.age} stroke="#aaa" strokeDasharray="2 2" strokeOpacity={0.5}>
-                <Label value={t.trigger} position="top" fill="#666" fontSize={10} />
+            {/* === 关键年份竖线标记（peak/dip/shift） === */}
+            {keyYears.map((k, i) => (
+              <ReferenceLine key={"ky-"+i}
+                x={k.age}
+                stroke={k.kind === "peak" ? "#3d7a47" : k.kind === "dip" ? "#9a4632" : "#5a6a99"}
+                strokeDasharray="3 3" strokeOpacity={0.55} strokeWidth={1}>
+                <Label value={k.kind === "peak" ? "▲" : k.kind === "dip" ? "▼" : "◆"}
+                       position="top"
+                       fill={k.kind === "peak" ? "#3d7a47" : k.kind === "dip" ? "#9a4632" : "#5a6a99"}
+                       fontSize={11} offset={4} />
               </ReferenceLine>
             ))}
 
-            {/* 派别争议年份：黄色竖带 + ⚠ 标记 */}
-            {disputeAges.map((age, i) => (
-              <ReferenceArea
-                key={"d-"+i}
-                x1={age - 0.4} x2={age + 0.4}
-                fill="#E8B947" fillOpacity={0.18}
-                ifOverflow="extendDomain"
-                isFront={false}
-              >
-                <Label value="⚠" position="insideBottom" fill="#B07A26" fontSize={12} />
-              </ReferenceArea>
-            ))}
+            {/* === Hover Tooltip（年份 + 干支 + 大运 + 三维数 + 互动 + 盲派 + 关键年提示） === */}
+            <Tooltip content={<RichTooltip />} cursor={{stroke: "#bbb", strokeWidth: 1, strokeDasharray: "4 4"}} />
+
+            {/* === 5 年段趋势线（细虚线，背景） === */}
+            <Line type="monotone" dataKey="spirit_t" stroke={COLOR_SPIRIT}
+                  strokeWidth={1.5} strokeDasharray="5 4" strokeOpacity={0.55}
+                  dot={{ r: 2.5, fill: COLOR_SPIRIT, strokeOpacity: 0 }}
+                  connectNulls={true} isAnimationActive={false} />
+            <Line type="monotone" dataKey="wealth_t" stroke={COLOR_WEALTH}
+                  strokeWidth={1.5} strokeDasharray="5 4" strokeOpacity={0.55}
+                  dot={{ r: 2.5, fill: COLOR_WEALTH, strokeOpacity: 0 }}
+                  connectNulls={true} isAnimationActive={false} />
+            <Line type="monotone" dataKey="fame_t"   stroke={COLOR_FAME}
+                  strokeWidth={1.5} strokeDasharray="5 4" strokeOpacity={0.55}
+                  dot={{ r: 2.5, fill: COLOR_FAME, strokeOpacity: 0 }}
+                  connectNulls={true} isAnimationActive={false} />
+
+            {/* === 当年值（粗实线 + 圆点，主角） === */}
+            <Line type="monotone" dataKey="spirit" stroke={COLOR_SPIRIT}
+                  strokeWidth={2.6}
+                  dot={{ r: 2.8, fill: COLOR_SPIRIT, stroke: "#fff", strokeWidth: 1 }}
+                  connectNulls={true} isAnimationActive={false} />
+            <Line type="monotone" dataKey="wealth" stroke={COLOR_WEALTH}
+                  strokeWidth={2.6}
+                  dot={{ r: 2.8, fill: COLOR_WEALTH, stroke: "#fff", strokeWidth: 1 }}
+                  connectNulls={true} isAnimationActive={false} />
+            <Line type="monotone" dataKey="fame"   stroke={COLOR_FAME}
+                  strokeWidth={2.6}
+                  dot={{ r: 2.8, fill: COLOR_FAME, stroke: "#fff", strokeWidth: 1 }}
+                  connectNulls={true} isAnimationActive={false} />
           </ComposedChart>
         </ResponsiveContainer>
 
-        <div className="caveat">提示：实线 = 当年值；虚线 = 累积值（指数衰减加权）。浅色色带 = 大运分段。阴影 = 置信带 ±σ。⚠ 黄色竖带 = 三派分歧大、需要 LLM 辅助解读的年份。</div>
+        <div className="caveat">
+          <b>粗实线＝当年值</b>（看具体年的尖峰谷底）　|　
+          <b>淡虚线＝5 年段趋势</b>（每 5 年一段均值，描绘大运整体走势）　|　
+          基线 50（虚横线）：&gt;50 为该年偏吉，&lt;50 偏凶。
+        </div>
         {CURVES.mangpai_enabled && (
           <div className="mp-summary">
-            盲派启用：检测到 {mpYearsCount} 年触发盲派经典组合，其中 {mpHighCount} 条「重」烈度事件。
-            盲派不进 25% 融合权重，仅在三派融合后做 ±烈度档修正 + 应事断（详见每个拐点的展开行）。
+            盲派启用：{mpYearsCount} 年触发盲派经典组合（其中 {mpHighCount} 条「重」烈度），不进 25% 融合权重，仅做 ±烈度档修正。
           </div>
         )}
       </div>
 
+      {/* === P5: 历次校验记忆（仅在有 confirmed_facts 时显示） === */}
+      {ANALYSIS.confirmed_facts && Object.keys(ANALYSIS.confirmed_facts || {}).length > 0 && (
+        <details className="confirmed-facts">
+          <summary>
+            <b style={{color:"#5a6a85"}}>历次校验记忆</b>
+            <span style={{color:"#888", fontSize:11, marginLeft:8}}>
+              （上次跑同一八字时用户已确认 / 已纠正的事实，本次解读不再重复踩坑）
+            </span>
+          </summary>
+          <div style={{padding:"8px 12px", fontSize:12, lineHeight:1.7}}>
+            {(ANALYSIS.confirmed_facts.structural_corrections || []).length > 0 && (
+              <div style={{marginBottom:8}}>
+                <b style={{color:"#9a4632"}}>结构性纠错：</b>
+                <ul style={{margin:"4px 0 0 0", paddingLeft:18}}>
+                  {ANALYSIS.confirmed_facts.structural_corrections.map((s, i) => (
+                    <li key={i}>
+                      <b>{s.kind}</b>: {s.before} → {s.after}
+                      <span style={{color:"#888"}}> · {s.reason}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {(ANALYSIS.confirmed_facts.validations || []).length > 0 && (
+              <div style={{marginBottom:8}}>
+                <b style={{color:"#3a5378"}}>校验反馈（{ANALYSIS.confirmed_facts.validations.length} 条）：</b>
+                <ul style={{margin:"4px 0 0 0", paddingLeft:18}}>
+                  {ANALYSIS.confirmed_facts.validations.map((v, i) => (
+                    <li key={i}>
+                      [{v.round}] <b>{v.user_response === "对" ? "✓" : v.user_response === "不对" ? "✗" : "△"}</b>
+                      {" "}{v.trait_or_anchor}
+                      {v.user_note && <span style={{color:"#666"}}> — {v.user_note}</span>}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {(ANALYSIS.confirmed_facts.free_facts || []).length > 0 && (
+              <div>
+                <b style={{color:"#3d7a47"}}>已确认事实：</b>
+                <ul style={{margin:"4px 0 0 0", paddingLeft:18}}>
+                  {ANALYSIS.confirmed_facts.free_facts.map((f, i) => (
+                    <li key={i}>{f.fact} <span style={{color:"#aaa", fontSize:10}}>({f.added})</span></li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        </details>
+      )}
+
       {/* === 整图综合分析（默认展开） === */}
       <details className="overall-analysis" open>
-        <summary>整图综合分析（命局基本盘 + 三条曲线形状 + 累积解读 + 三大转折点 + 命主定位）</summary>
+        <summary>整图综合分析（命局基本盘 + 三条曲线形状 + 命主定位）</summary>
         {ANALYSIS.overall && ANALYSIS.overall.trim() ? (
           <Markdown source={ANALYSIS.overall} />
         ) : (
           <div className="placeholder">
-            （此处由 LLM 根据 references/multi_dim_xiangshu_protocol.md §4 写入综合分析。
-            未提供 analysis.json 时显示本提示。）
+            （此处由 LLM 根据 references/multi_dim_xiangshu_protocol.md §4 写入综合分析。）
           </div>
         )}
       </details>
 
-      {disputes.length > 0 && (
-        <div className="disputes">
-          <h2>⚠ 派别争议年份（共 {disputeAges.length} 年 / {disputes.length} 维度条目）</h2>
-          <div className="sub">
-            三派打分极差超过阈值（{CURVES.dispute_threshold}）的年份。
-            脚本只给原始数据 + 分歧线索，<b>具体推论必须由 LLM 结合命局综合判断</b>。
-            参见 <code>references/dispute_analysis_protocol.md</code>。
-          </div>
-          {disputes.map((d, i) => (
-            <div key={i} className="dispute-card">
-              <div className="dispute-head">
-                {d.year} · {d.age}岁 · {d.ganzhi} · 大运 {d.dayun} ·
-                <span className={"dim-"+d.dimension}> {DIM_LABEL[d.dimension]}维度</span>
-              </div>
-              <div className="dispute-bars">
-                {["fuyi", "tiaohou", "geju"].map(s => (
-                  <div className="dispute-bar" key={s}>
-                    <span className="name">{SCHOOL_LABELS[s]}</span>
-                    <div className="bar">
-                      <div className="fill" style={{
-                        width: d.per_school[s] + "%",
-                        background: SCHOOL_COLORS[s],
-                        opacity: s === d.leader_school ? 1 : (s === d.laggard_school ? 0.5 : 0.75),
-                      }} />
-                    </div>
-                    <span className="val">{d.per_school[s]}</span>
-                  </div>
-                ))}
-              </div>
-              <ul className="dispute-hints">
-                {d.interpretation_hints.map((h, j) => <li key={j}>{h}</li>)}
-                {d.interactions && d.interactions.length > 0 && (
-                  <li>该年互动事件：{d.interactions.map(it => it.type + (it.with ? "·"+it.with : "") + (it.wuxing ? "·"+it.wuxing : "")).join("，")}</li>
-                )}
-              </ul>
-              <details className="dispute-llm-details">
-                <summary>LLM 推论（点击展开 / 收起）</summary>
-                {ANALYSIS.disputes && ANALYSIS.disputes[String(d.year)] && ANALYSIS.disputes[String(d.year)].trim() ? (
-                  <Markdown source={ANALYSIS.disputes[String(d.year)]} />
-                ) : (
-                  <div className="placeholder">
-                    （此处由 LLM 按 references/dispute_analysis_protocol.md 写入：
-                    哪派最贴近 + 综合推论 + 论据。年份 key = "{d.year}"）
-                  </div>
-                )}
-              </details>
+      {/* === 一生三维度评价 === */}
+      <div className="card">
+        <h2>一生总评（三维度）</h2>
+        <div className="sub">三条曲线的整体走势 / 长板短板 / 各维度的人生策略建议</div>
+        <div className="life-grid">
+          {[
+            { key: "spirit", name: "精神舒畅度" },
+            { key: "wealth", name: "财富" },
+            { key: "fame",   name: "名声" },
+          ].map(d => (
+            <div key={d.key} className={"life-cell "+d.key}>
+              <div className="lc-head"><span className="lc-dot"></span>{d.name}</div>
+              {lifeReview[d.key] && lifeReview[d.key].trim() ? (
+                <Markdown source={lifeReview[d.key]} />
+              ) : (
+                <div className="placeholder">
+                  （此处由 LLM 写入一生 {d.name} 的整体评价。
+                  key = "{d.key}"）
+                </div>
+              )}
             </div>
           ))}
         </div>
+      </div>
+
+      {/* === v7.5 时代-民俗志解读层（仅在传入 zeitgeist 时显示） === */}
+      {HAS_ZEITGEIST && eraWindows.length > 0 && (
+        <div className="card">
+          <h2>时代-民俗志解读层（v7.5）</h2>
+          <div className="sub">
+            把每个 era_window（5-10 年区间）作为一段「时代镶嵌」叙事，
+            脚本只给骨架（id/label/span/keywords + 与大运的对齐情况），
+            具体「时代底色 / 标志性细节 / 命局节点 / 累计影响 / 证伪点」由 LLM 现场写
+          </div>
+          <div className="era-banner">
+            ⚠ 此层只用于「后事详写」（已发生段的精细化解读），不预测未来；
+            对未来段会自动转为「方向性提示」。详见 references/zeitgeist_protocol.md。
+          </div>
+          <div className="era-list">
+            {eraWindows.map((era, i) => {
+              const narrative = eraNarratives[era.id];
+              const span = era.span || [null, null];
+              return (
+                <details className="era-item" key={era.id || i} open={i === 0}>
+                  <summary>
+                    <span className="era-tag">{era.id}</span>
+                    <span>{era.label}</span>
+                    <span className="era-span">
+                      {span[0]}-{span[1]}　·　{era.decade_label || ""}
+                    </span>
+                    <span className="era-keywords">
+                      {(era.keywords || []).slice(0, 5).join(" · ")}
+                    </span>
+                  </summary>
+                  <div className="era-body">
+                    <div className="era-meta">
+                      <b>骨架：</b>{(era.keywords || []).join(" · ")}
+                    </div>
+                    {narrative && narrative.trim() ? (
+                      <Markdown source={narrative} />
+                    ) : (
+                      <div className="placeholder">
+                        （此处由 LLM 按 references/zeitgeist_protocol.md §3 写入「区间叙事」：
+                        ①时代底色（1-2 句不带身份名词的中性概括）　
+                        ②标志性细节（民俗志层 6 子层挑 ≥ 3 项 high/mid 置信）　
+                        ③命局给的几个具体节点（首选形态 + 备选形态）　
+                        ④累计影响（这一段如何沉淀到命主的人生轨迹）　
+                        ⑤整段证伪点。
+                        key = "{era.id}"。）
+                      </div>
+                    )}
+                  </div>
+                </details>
+              );
+            })}
+          </div>
+        </div>
       )}
 
-      {turning.length > 0 && (() => {
-        // 按年份合并：同一年的多维度收拢到一行，避免重复展示 mangpai
-        const byYear = {};
-        const yearOrder = [];
-        turning.slice(0, 30).forEach((t) => {
-          const y = t.year;
-          if (!byYear[y]) {
-            byYear[y] = { year: y, age: t.age, ganzhi: t.ganzhi, dayun: t.dayun, dims: [], triggers: new Set() };
-            yearOrder.push(y);
-          }
-          byYear[y].dims.push({ dimension: t.dimension, direction: t.direction, magnitude: t.magnitude, confidence: t.confidence });
-          if (t.trigger) byYear[y].triggers.add(t.trigger);
-        });
-        const grouped = yearOrder.slice(0, 12).map((y) => byYear[y]);
-        return (
-          <div className="turning">
-            <h2>未来 10 年关键拐点（按年份合并；点击行展开多维取象 + 盲派应事）</h2>
-            <table>
-              <thead>
-                <tr>
-                  <th></th>
-                  <th>年份</th><th>年龄</th><th>干支</th><th>大运</th>
-                  <th>受影响维度</th><th>触发条件</th>
-                </tr>
-              </thead>
-              <tbody>
-                {grouped.map((g, i) => {
-                  const pt = pointsByYear[g.year];
-                  const mpEvents = pt ? (pt.mangpai_events || []) : [];
-                  const tpAnalysisMd = ANALYSIS.turning_points && ANALYSIS.turning_points[String(g.year)];
-                  const hasMp = mpEvents.length > 0;
-                  const hasAnalysis = tpAnalysisMd && tpAnalysisMd.trim();
-                  // 同一维度内取最高置信度展示
-                  const dimsByKey = {};
-                  g.dims.forEach((d) => {
-                    const k = d.dimension;
-                    if (!dimsByKey[k] || (d.confidence === "high" && dimsByKey[k].confidence !== "high")) {
-                      dimsByKey[k] = d;
-                    }
-                  });
-                  const uniqDims = Object.values(dimsByKey);
-                  return (
-                    <React.Fragment key={i}>
-                      <tr>
-                        <td className="expand-cell" style={{ color: hasMp ? "#8b5a00" : "#ccc" }}>
-                          {hasMp ? "派" : "·"}
-                        </td>
-                        <td>{g.year}</td>
-                        <td>{g.age}</td>
-                        <td>{g.ganzhi}</td>
-                        <td>{g.dayun}</td>
-                        <td>
-                          {uniqDims.map((d, j) => (
-                            <span
-                              key={j}
-                              className={"dim-chip dim-"+d.dimension+" conf-"+d.confidence}
-                              title={"方向 "+DIR_ARROW[d.direction]+" · 置信 "+d.confidence}
-                            >
-                              {DIM_LABEL[d.dimension]} {DIR_ARROW[d.direction]}
-                            </span>
-                          ))}
-                        </td>
-                        <td className="tp-trigger">{Array.from(g.triggers).join("；") || "—"}</td>
-                      </tr>
-                      <tr className="tp-detail-row">
-                        <td colSpan={7}>
-                          <details open>
-                            <summary style={{cursor:"pointer", fontSize:12, color:"#666", padding:"2px 0"}}>
-                              ▾ {g.year} · {g.age}岁 多维取象（默认展开 / 点击收起）
-                            </summary>
-                            <MangpaiBlock events={mpEvents} />
-                            <div style={{marginTop:10}}>
-                              {hasAnalysis ? (
-                                <Markdown source={tpAnalysisMd} />
-                              ) : (
-                                <div className="tp-no-analysis">
-                                  （此处由 LLM 按 references/multi_dim_xiangshu_protocol.md §3.1 写入六维取象。
-                                  year key = "{g.year}"。
-                                  {hasMp ? "请引用上方盲派应事作为骨架。" : "该年无盲派事件，仅依三派结果展开。"}）
-                                </div>
-                              )}
-                            </div>
-                          </details>
-                        </td>
-                      </tr>
-                    </React.Fragment>
-                  );
-                })}
-              </tbody>
-            </table>
+      {/* === 大运评价 === */}
+      <div className="card">
+        <h2>大运评价（每 10 年一段）</h2>
+        <div className="sub">每个大运段对命主的整体影响评估，点开看详细推论</div>
+        <div className="dayun-list">
+          {segments.map((seg, i) => {
+            const r = dayunReview[seg.label] || {};
+            // v7.5: dayun_reviews[label] 是完整 markdown（按 dayun_review_template.md 6 块写法），优先于 r.body
+            const fullReview = dayunReviews[seg.label];
+            return (
+              <details className="dayun-item" key={i} open={i === 0}>
+                <summary>
+                  <span className="du-tag" style={{background: dayunColor(i)}}>{seg.label}</span>
+                  <span className="du-range">{seg.start_age}-{seg.end_age} 岁　{seg.start_year}-{seg.end_year}</span>
+                  <span className="du-summary">{r.headline || "—"}</span>
+                </summary>
+                <div className="du-body">
+                  {fullReview && fullReview.trim() ? (
+                    <Markdown source={fullReview} />
+                  ) : r.body && r.body.trim() ? (
+                    <Markdown source={r.body} />
+                  ) : (
+                    <div className="placeholder">
+                      （此处由 LLM 写入「{seg.label}」大运的整体评价。
+                      key = "{seg.label}"。
+                      v7.5 推荐按 references/dayun_review_template.md 的 6 块结构写：
+                      ①命理属性　②时代镶嵌（与 era_windows 对齐 · v7.5 重點）　
+                      ③三派交叉与盲派应事　④4 维曲线整体倾向　
+                      ⑤关键年份概览　⑥核心策略建议。
+                      也可写到 ANALYSIS.dayun_reviews["{seg.label}"] 字段（整体 markdown，覆盖此处）。）
+                    </div>
+                  )}
+                </div>
+              </details>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* === 关键年份评价 === */}
+      <div className="card">
+        <h2>关键年份评价（过往 + 未来）</h2>
+        <div className="sub">人生中的高峰、低谷、转折年。每条都展开了完整的大白话推论。</div>
+        {keyYears.length === 0 ? (
+          <div className="placeholder">
+            （此处由 LLM 按 references/multi_dim_xiangshu_protocol.md §3 写入关键年份。
+            数据结构：analysis.key_years = [{`{year, age, ganzhi, dayun, kind, headline, body}`}]
+            kind ∈ peak/dip/shift。建议至少覆盖 6-10 个关键年。）
           </div>
-        );
-      })()}
+        ) : keyYears.map((k, i) => {
+          const pt = pointsByYear[k.year];
+          const mpEvents = pt ? (pt.mangpai_events || []) : [];
+          const tagLabel = ({peak: "高峰", dip: "低谷", shift: "转折"}[k.kind] || k.kind);
+          return (
+            <details className="key-year" key={i} open={i < 2}>
+              <summary>
+                <span className="ky-year">{k.year} · {k.age}岁</span>
+                <span>{k.ganzhi} · {k.dayun}</span>
+                <span className={"ky-tag "+k.kind}>{tagLabel}</span>
+                <span className="ky-headline">{k.headline}</span>
+              </summary>
+              <div className="ky-body">
+                <MangpaiBlock events={mpEvents} />
+                {k.body && k.body.trim() ? (
+                  <Markdown source={k.body} />
+                ) : (
+                  <div className="placeholder">（待 LLM 写入推论）</div>
+                )}
+              </div>
+            </details>
+          );
+        })}
+      </div>
     </>
   );
 }

@@ -72,16 +72,60 @@ def _save(path: Path, data: Dict):
 
 def _empty_record(bazi: dict) -> Dict:
     return {
+        "schema_version": 8,
         "bazi_key": _bazi_key(bazi),
         "pillars_str": " ".join(p["gan"] + p["zhi"] for p in bazi["pillars"]),
         "gender": bazi.get("gender"),
         "birth_year": bazi.get("birth_year"),
         "first_seen": dt.date.today().isoformat(),
         "last_updated": dt.date.today().isoformat(),
-        "validations": [],         # R1/R2 反馈条目
-        "free_facts": [],          # 自由形式的"已确认 / 已纠正"事实
+        "validations": [],          # 旧 R1/R2 反馈条目（v7 兼容）
+        "user_choices": {},          # v8 · 合并视图 {question_id: option_id}（兼容老读取方）
+        "user_choices_by_round": {   # v8.1 · 区分 R1 / R2 答案（两轮校验协议）
+            "r1": {},
+            "r2": {},
+        },
+        "phase_decision": None,      # v8 · 最近一次 phase_posterior 的输出快照
+        "phase_confirmation": None,  # v8.1 · R2 confirmation_status 快照
+        "free_facts": [],            # 自由形式的"已确认 / 已纠正"事实
         "structural_corrections": [],  # 结构性纠错（如：用户体感→重判 climate）
     }
+
+
+def _migrate_record(rec: Dict, bazi: dict) -> Dict:
+    """v7 → v8 / v8.1 schema migration · 兼容旧 confirmed_facts.json。"""
+    if not rec:
+        return _empty_record(bazi)
+    sv = rec.get("schema_version", 0)
+    # v7 → v8
+    if sv < 8:
+        rec.setdefault("user_choices", {})
+        rec.setdefault("phase_decision", None)
+        sv = 8
+    # v8 → v8.1（增加 round-tracking）
+    rec.setdefault("user_choices_by_round", {"r1": dict(rec.get("user_choices") or {}), "r2": {}})
+    rec.setdefault("phase_confirmation", None)
+    rec["schema_version"] = 8
+    rec["last_updated"] = dt.date.today().isoformat()
+    return rec
+
+
+def append_user_choices(
+    rec: Dict,
+    choices: Dict[str, str],
+    phase_decision: Optional[Dict] = None,
+    round_label: str = "r1",
+    phase_confirmation: Optional[Dict] = None,
+):
+    """v8 · 把 user_answers + 后验快照写入 confirmed_facts；按 round 分桶存储。"""
+    rec.setdefault("user_choices", {}).update(choices)
+    by_round = rec.setdefault("user_choices_by_round", {"r1": {}, "r2": {}})
+    by_round.setdefault(round_label, {}).update(choices)
+    if phase_decision is not None:
+        rec["phase_decision"] = phase_decision
+    if phase_confirmation is not None:
+        rec["phase_confirmation"] = phase_confirmation
+    rec["last_updated"] = dt.date.today().isoformat()
 
 
 def append_validation(rec: Dict, items: List[Dict]):
@@ -123,6 +167,26 @@ def main():
                     help="追加一条结构性纠错（如 climate 燥湿 寒湿） + --reason")
     ap.add_argument("--reason", default="", help="--add-structural 的原因说明")
     ap.add_argument("--list", action="store_true", help="列出所有已确认事实")
+    # v8 · 新增 phase posterior 集成
+    ap.add_argument("--user-choices", default=None,
+                    help="v8 · user_answers.json 路径（{question_id: option_id}）；"
+                         "传入会调 phase_posterior.update_posterior 算后验，写回 bazi.phase + bazi.phase_decision")
+    ap.add_argument("--questions", default=None,
+                    help="v8 · handshake.json 路径（含动态 D3 题的 likelihood_table）。"
+                         "仅 --user-choices 模式下使用。")
+    ap.add_argument("--write-bazi", default=None,
+                    help="v8 · 把更新后的 bazi 写到此路径（默认覆盖 --bazi）")
+    ap.add_argument("--round", default="r1", choices=["r1", "r2"],
+                    help="v8.1 · 当前 --user-choices 属于哪一轮（默认 r1）")
+    # v8.1 · Round 2 confirmation 模式
+    ap.add_argument("--r1-handshake", default=None,
+                    help="v8.1 R2 · R1 handshake.json 路径（仅 --round r2 用）")
+    ap.add_argument("--r1-answers", default=None,
+                    help="v8.1 R2 · R1 用户答案 JSON")
+    ap.add_argument("--r2-handshake", default=None,
+                    help="v8.1 R2 · R2 handshake.json 路径")
+    ap.add_argument("--r2-answers", default=None,
+                    help="v8.1 R2 · R2 用户答案 JSON")
 
     args = ap.parse_args()
 
@@ -137,8 +201,57 @@ def main():
 
     # 优先从 memory_dir 加载（更权威），再合并 project-local
     rec = _load(mem_path) if (mem_path and mem_path.exists()) else _load(out_path)
-    if not rec:
-        rec = _empty_record(bazi)
+    rec = _migrate_record(rec, bazi)
+
+    # v8.1 · Round 2 confirmation 模式（独立路径）
+    if args.round == "r2" and (args.r1_answers or args.r2_answers):
+        if not (args.r1_handshake and args.r1_answers and args.r2_handshake and args.r2_answers):
+            ap.error("--round r2 confirmation 需要 --r1-handshake / --r1-answers / --r2-handshake / --r2-answers 全部提供")
+        sys.path.insert(0, str(Path(__file__).resolve().parent))
+        from phase_posterior import update_posterior_round2  # type: ignore
+        r1_handshake = json.loads(Path(args.r1_handshake).read_text(encoding="utf-8"))
+        r2_handshake = json.loads(Path(args.r2_handshake).read_text(encoding="utf-8"))
+        r1_answers = json.loads(Path(args.r1_answers).read_text(encoding="utf-8"))
+        r2_answers = json.loads(Path(args.r2_answers).read_text(encoding="utf-8"))
+        new_bazi, confirmation = update_posterior_round2(
+            bazi=bazi,
+            r1_handshake=r1_handshake,
+            r1_answers=r1_answers,
+            r2_handshake=r2_handshake,
+            r2_answers=r2_answers,
+        )
+        bazi_out = Path(args.write_bazi) if args.write_bazi else Path(args.bazi)
+        bazi_out.write_text(json.dumps(new_bazi, ensure_ascii=False, indent=2), encoding="utf-8")
+        append_user_choices(rec, r1_answers,
+                            phase_decision=None,
+                            round_label="r1")
+        append_user_choices(rec, r2_answers,
+                            phase_decision=new_bazi.get("phase_decision"),
+                            phase_confirmation=new_bazi.get("phase_confirmation"),
+                            round_label="r2")
+        print(f"[save_confirmed_facts R2] +r1={len(r1_answers)} +r2={len(r2_answers)} → "
+              f"status={confirmation['status']} action={confirmation['action']}")
+        print(f"[save_confirmed_facts R2] wrote {bazi_out}")
+    # v8 · --user-choices 模式：算后验 → 写回 bazi + 同步 user_choices/phase_decision
+    elif args.user_choices:
+        choices = json.loads(Path(args.user_choices).read_text(encoding="utf-8"))
+        if not isinstance(choices, dict):
+            raise ValueError("--user-choices file must be a JSON object {question_id: option_id}")
+        handshake_data = None
+        if args.questions and Path(args.questions).exists():
+            handshake_data = json.loads(Path(args.questions).read_text(encoding="utf-8"))
+        # 局部 import 避免循环
+        sys.path.insert(0, str(Path(__file__).resolve().parent))
+        from phase_posterior import update_posterior  # type: ignore
+        new_bazi = update_posterior(bazi, handshake_data, choices)
+        bazi_out = Path(args.write_bazi) if args.write_bazi else Path(args.bazi)
+        bazi_out.write_text(json.dumps(new_bazi, ensure_ascii=False, indent=2), encoding="utf-8")
+        append_user_choices(rec, choices, phase_decision=new_bazi.get("phase_decision"),
+                            round_label=args.round)
+        pd = new_bazi["phase_decision"]
+        print(f"[save_confirmed_facts] +user_choices ({args.round}): {len(choices)} answers → "
+              f"phase={pd['decision']} confidence={pd['confidence']} prob={pd['decision_probability']:.4f}")
+        print(f"[save_confirmed_facts] wrote {bazi_out} (v8 phase_decision)")
 
     if args.append:
         # stdin 是 JSON Lines

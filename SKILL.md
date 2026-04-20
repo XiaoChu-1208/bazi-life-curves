@@ -4,30 +4,24 @@ description: >-
   根据八字（或公历生辰）生成可调时间区段的「人生曲线图」+ 一生四维度评价 + 大运评价 + 关键年份大白话解读；
   也支持「合盘」—— 用户提供 ≥ 2 份八字，从合作 / 婚配 / 友谊 / 家人 4 个维度做兼容性分析。
   **v6 升级 + v7 现代化**：曲线覆盖 4 维度——精神舒畅度 / 财富 / 名声 / **关系能量**（v6 新增 · v7 重命名「感情→关系能量」+ 加 `--orientation` 取向参数支持 LGBTQ+ / 不婚），每维 2 条曲线（粗实线=当年值为主线，细虚线=5 年区段趋势为辅）= 8 条线。
-  关系能量维度走**独立通道**（不参与三派融合，从配偶星 / 配偶宫 / 比劫 / 桃花 / 大运冲合单独打分），与 R0 反询问·关系画像配套。
   **v7 现代化**删除了所有"克夫 / 旺夫 / 配偶星弱减分 / 女命印多减分 / 女命食伤减分 / 男命比劫扣分高于女命"等带性别歧视和价值判断的古法规则，emotion 高 ≠ 婚姻顺利、emotion 低 ≠ 单身差，纯中性描述。详见 fairness_protocol.md §9-§10。
   采用「格局为先 + 三派交叉打分」（格局派识别主格局优先覆盖用神 → 扶抑 / 调候 / 格局再融合）+ 盲派事件断 + 烈度修正
   + 印化护身后处理（杀印相生 / 伤官见官印护 自动减压）+ 历史回测 + 置信带，保证准确、公正、可证伪。
   **v7.4 新增**：①「化气格」自动识别（甲己 / 乙庚 / 丙辛 / 丁壬 / 戊癸 五合得月令 + 化神有根 + 无破格 → 日主借合化易主，扶抑全部翻转）；
   ② 神煞分布检测（天乙贵人 / 文昌 / 驿马 / 桃花 / 华盖 / 孤辰 / 寡宿 / 空亡），命中原局 → 终生 baseline 微调（±0.3~0.4），
-  大运 / 流年逢 → 当年微调（±0.5~1.0）+ 驿马触发 sigma × 1.3（波动加大）；神煞影响刻意小，只调味，不参与主格局判定；
-  ③ R0 反迎合·反向探针（counter-claim probes）—— 给每条 R0 推论再附一条**完全相反**的 claim，
-  两个相反命题都答「对」→ 自动判定 sycophantic，R0 命中率 × 0.5 打折；
-  原命题答「不对」+ 反向命题答「对」→ 判定 mirror，建议触发相位反演重跑。
-  感情维度走**独立通道**（不参与三派融合，从配偶星 / 配偶宫 / 比劫 / 桃花 / 大运冲合单独打分），与 R0 反询问·感情画像配套。
+  大运 / 流年逢 → 当年微调（±0.5~1.0）+ 驿马触发 sigma × 1.3（波动加大）；神煞影响刻意小，只参与曲线调味，不参与相位决策。
+  关系能量维度走**独立通道**（不参与三派融合，从配偶星 / 配偶宫 / 比劫 / 桃花 / 大运冲合单独打分），与 v8 D2 关系结构题库配套。
   盲派不进 25% 融合权重，仅做应事断 + 烈度修正（详见 references/mangpai_protocol.md）。
   合盘（he_pan.py）用 4 层结构性评分：五行互补 + 干支互动（合冲害 / 三合 / 桃花 / 贵人） + 十神互配（按关系类型）+ 大运同步度。
   起运岁优先用 lunar-python 精算（gregorian 模式自动），pillars 模式可通过 `--qiyun-age` 显式指定。
   用户可指定评分年龄区间和拐点预测窗口；三派分歧大的年份合并进关键年份评价，由 LLM 综合命局做有论据的解读。
-  **出图 / 合盘前会做三阶段校验**：
-    · **R0 反询问·感情画像**（v6 新增 · 2 题：偏好类型 + 对方态度）—— 主动抛给用户的"反询问窗口"，
- 用于校准八字大致对/不对 + 协助判断该走格局派 / 扶抑派 / 调候派
- · **R1 健康三问**（寒热 / 睡眠精力 / 脏腑短板）—— 命局结构准确度
- · **R2 交叉验证**（仅 R1 < 3/3 时触发）—— 本性 + 历史锚点
- · **R3 反询问·原生家庭画像**（v7.3 新增 · 条件触发 · 2 题：①整体家庭结构 5 档分类 + ②父母存在模式合并）
- —— 仅在用户主动问家庭/父母时抛；正交于 R0/R1/R2（不算命局准确度）；
- 用于决定 family 段写不写 / 怎么写，**修古法 survivorship bias 把普通家庭推成"显赫"的 systemic bug**
- 放行（R0+R1+R2）：R0 ≥ 1/2 且（R1 ≥ 2/3 或 R1+R2 ≥ 4/6）；R0=0 + R1≤1 → 八字大概率不准（请核对性别 / 时辰）。
+  **v8 校验回路全面重写**：废弃 v6/v7 的"R0/R1/R2/R3 自然语言转述 + 命中率 N/M 判定 + R0' 反迎合探针 + 事后 phase_inversion_loop 兜底"，
+  整体替换为 **discriminative question bank（5 维度 ~28 题）+ 宿主 AskQuestion 结构化点选 + 贝叶斯后验 + phase_posterior 落地**：
+    · **identification（算法）**：detector 穷尽 14 个候选 phase 并算先验（住在 `_bazi_core.detect_all_phase_candidates`）
+    · **disambiguation（用户）**：Agent 用宿主 `AskQuestion` 一次性抛全部 N 题点选 UI，禁止把题面用自然语言转述让用户口头答"对/不对"
+    · **posterior decision（算法）**：`phase_posterior.py` 算后验，≥ 0.80 high adopt / 0.60-0.80 mid adopt / 0.40-0.60 触发追问轮 / < 0.40 拒绝出图
+    · 5 维度：D1 民族志 × 原生家庭 / D2 关系结构 / D3 流年大事件（动态生成）/ D4 中医体征 / D5 自我体感；硬体征（D1/D3/D4）权重 2× 软自述（D2/D5）
+    · 命名 case：1996/12/08 这盘 6 个 detector 满分但旧默认输出仍是 day_master_dominant，详见 `references/diagnosis_pitfalls.md` §14。
   **v5 流式输出 + 输出格式可选**：校验通过后先问用户「要纯 markdown 流式（A · 默认 · 最快）还是 markdown 流式 + HTML 交互图（B · 多等 5-15 秒）」；
   无论选 A / B，所有文字分析都按节流式输出（写完一节立刻发出，不批量憋整段），HTML 渲染（如选）放最后一步。
   Claude 宿主下 HTML 是含 marked.js + Recharts + details 折叠的交互式 Artifact，
@@ -43,7 +37,7 @@ description: >-
 两条主线：
 
 1. **单盘**：将八字命理结构转化为可调时间区段的「人生曲线图」。**v6 升级为四维度**（精神 / 财富 / 名声 / **感情**）× 2 类曲线（当年值粗实线 + 5 年区段趋势细虚线）= **8 条线**。「格局为先」识别主格局后按三派交叉打分，自动并入印化护身的后处理修正；**感情维度走独立通道**（不参与三派融合，从配偶星 / 配偶宫 / 比劫 / 桃花 / 大运冲合单独打分）。
-2. **合盘**：用户输入 ≥ 2 份八字 + 关系类型（合作 / 婚配 / 友谊 / 家人），脚本算出 4 层结构性评分（五行互补 + 干支互动 + 十神互配 + 大运同步度），LLM 在对话里给出"亮点 + 摩擦点 + 怎么用 / 怎么避"的人话解读。**整体动作逻辑与单盘一致：先 R0 反询问 + R1 健康三问校验，再做合盘评分。**
+2. **合盘**：用户输入 ≥ 2 份八字 + 关系类型（合作 / 婚配 / 友谊 / 家人），脚本算出 4 层结构性评分（五行互补 + 干支互动 + 十神互配 + 大运同步度），LLM 在对话里给出"亮点 + 摩擦点 + 怎么用 / 怎么避"的人话解读。**整体动作逻辑与单盘一致：先校验每份八字再做合盘评分；合盘暂未升级到 v8，仍走旧 R0/R1 校验路径（详见 §2.6 caveat）。**
 
 ## 用户视角速览（先告诉用户怎么用）
 
@@ -55,15 +49,21 @@ description: >-
    - **单盘**：八字四柱 + 性别 + 出生年，或公历生辰 + 性别
    - **合盘**：≥ 2 份八字 + 关系类型（合作 / 婚配 / 友谊 / 家人，可选）
    剩下我全自动跑。
-2. **出图 / 合盘前**我会做三阶段校验（v6 加 R0 反询问）：
-   - **Round 0 = 反询问·感情画像**（v6 新增 · 2 题：偏好类型 + 对方态度）—— 我主动抛给你，凭直觉答即可，用来快速校准八字大致对/不对 + 该按哪种取向（格局 / 扶抑 / 调候）解
-   - **Round 1 = 三个不同侧面的健康问题**（寒热体感 / 睡眠精力 / 易病脏腑），用「命中率」定准确度：
-     - 3/3 命中 → 直接进入下一步
-     - 2/3 → 我再追 3 条交叉验证（R1+R2 ≥ 4/6 才放行 + 加 caveat）
-     - ≤ 1/3 → 八字十有八九不准，请核对出生时辰
-   - **整体放行条件**：R0 ≥ 1/2 且（R1 ≥ 2/3 或 R1+R2 ≥ 4/6）；R0 = 0/2 且 R1 ≤ 1/3 → 大概率性别 / 时辰错了，请复核
-   - 合盘场景下**每份八字都要单独跑 R1**（R0 仅对你自己跑，因为对方的感情史你未必清楚）
-3. 出图是交互式 HTML：曲线 + **整图综合分析** + **一生四维度评价**（精神 / 财富 / 名声 / **感情**）+ **大运评价（含感情看点）** + **关键年份评价**；
+2. **出图 / 合盘前**我会跑 v8 校验回路（一次抛 ~20-25 道结构化点选题）：
+   - **算法先穷尽 phase 候选**：14 个候选相位（默认日主主导 / 弃命从财从杀从儿从印 / 旺神得令 4 种 / 调候反向上燥下寒 / 假从真从 / 化气格 …），detector 给每个候选算先验
+   - **你来在候选间投票**：我会用 IDE / 客户端的结构化点选 UI（AskQuestion）把 5 维度 ~28 道选择题一次抛给你
+     - **D1 民族志 × 原生家庭**（出生时家境 / 父母在场度 / 兄弟姐妹 / 出生地）—— 客观事实，权重 2×
+     - **D2 关系结构**（吸引对象画像 / 谁更主动 / 经济角色 / 依赖方向）—— 自述，权重 1×
+     - **D3 流年大事件**（动态生成：找 phase 候选间最分歧的几个已活过年份问"X 岁那年方向感"）—— 客观事实，权重 2×
+     - **D4 中医体征**（寒热 / 睡眠 / 脏腑 / 体型 / 食欲 / 情志六问）—— 客观事实，权重 2×
+     - **D5 自我体感**（压力默认策略 / 钱的态度 / 与权威关系 / 创造性出口）—— 自述，权重 1×
+   - **贝叶斯后验落地**：你答完后我跑 `phase_posterior.py` 把 prior × likelihood 算成后验：
+     - top-1 后验 **≥ 0.80** → 直接 adopt（high confidence），按该相位出图
+     - **0.60–0.80** → adopt，但标 mid confidence + caveat
+     - **0.40–0.60** → 自动追问轮（top-2 候选间最 discriminative 的 2-3 题）
+     - **< 0.40** → 拒绝出图，告诉你"算法无法落地，请核对时辰 / 性别"
+   - 合盘场景：单盘 v8 已上线，**合盘场景暂未升级到 v8**，仍走旧 R0/R1 校验（详见 §2.6 caveat）
+3. 出图是交互式 HTML：曲线 + **整图综合分析** + **一生四维度评价**（精神 / 财富 / 名声 / **关系能量**）+ **大运评价（含关系看点）** + **关键年份评价**；
    合盘是 markdown 解读：每对人的 4 层评分 + 关键加 / 减分项 + 大运同步度 + 怎么用 / 怎么避。
 
 ## 何时使用
@@ -86,52 +86,44 @@ description: >-
 
 ## 工作流（严格按序）
 
-### 0. 概览：十步流程（v3 更新，v4 加合盘分支，v5 加流式输出 + 输出格式选择，v6 加 R0 反询问 + 感情维度）
+### 0. 概览：十步流程（v8 重写：Step 2.5 / 2.55 合并为单步 phase decision + AskQuestion 校验 → phase_posterior 落地）
 
 ```
 Step 0  加载 confirmed_facts.json（如已存在 → 跳过已确认 trait + 应用结构性纠错）
 Step 1  解析八字（含起运岁精算 / 用户指定）—— 单盘 1 份 / 合盘 ≥ 2 份
   → Step 2 格局识别 + 三派打分（扶抑 / 调候 / 格局）+ 印化护身后处理 + 燥湿覆盖
-  → Step 2a 盲派事件检测 → 应事断 + 烈度修正 + **结构反向规则**（v3 P1）
+  → Step 2a 盲派事件检测 → 应事断 + 烈度修正 + **结构反向规则**
   → Step 2b 融合 + 烈度修正（盲派不进 25% 权重；反向后的 events 直接影响曲线）
-  → Step 2c **感情维度独立打分**（v6 新增）：emotion_baseline + emotion_dayun_delta + emotion_liunian_delta；
+  → Step 2c **关系能量维度独立打分**：emotion_baseline + emotion_dayun_delta + emotion_liunian_delta；
             不参与三派融合，单走一条通道，保证 spirit/wealth/fame 历史回测精度不变
-  → Step 2.5 下马威校验（硬门槛 · v6 三阶段 · v7.3 加 R3 条件触发）
-            **Round 0**（v6 新增 · 反询问·感情画像 2 题）：
-                ① 偏好类型（基于配偶星五行 + 配偶宫藏干十神）
-                ② 对方态度（基于配偶星旺衰 + 比劫 + 食伤 + 印 + 桃花综合）
-                作用：取向校准（八字大致对/不对 + 是否走格局派 / 扶抑派 / 调候派）
-                R0 = 0/2 → 配偶星 / 配偶宫读法可能反了，提示用户复核性别 / 时辰
-            **Round 1**（健康三问）：寒热 / 睡眠精力 / 脏腑短板，命中率定命局准确度
-            **Round 2**（仅 R1 < 3/3 时触发）：本性 + 历史锚点
-            **Round 3**（v7.3 新增 · **条件触发** · 反询问·原生家庭画像 2 题）：
-                ① 整体家庭结构（5 档：显赫/中产/普通/波折/缺位 候选）
-                ② 父母存在模式合并（父亲贴近/偏远/高压/缺位 + 母亲同上）
-                作用：family 段写不写 / 怎么写。**正交于 R0/R1/R2，不算入命局准确度**
-                **触发条件**：仅在用户主动问"家庭/父母/出身"等关键词时抛 R3
-                R3 = 0/2 → family 段不展开（命局对家庭的读法可能反了）
-            放行（R0+R1+R2）：R0 ≥ 1/2 且（R1 ≥ 2/3 或 R1+R2 ≥ 4/6）
-            合盘场景：R0 仅对自己跑（对方感情史你未必清楚）；R1 双方都跑；R3 跟单盘一样按需触发
-  → Step 2.55 【v7 强制】R0+R1+R2 ≤ 2/6 时 → 相位反演校验循环（P1-7）
-            handshake.py --dump-phase-candidates 输出 4 类相位反演候选
-                ① 日主虚浮（弃命从财/杀/儿/印）
-                ② 旺神得令反主事（财/杀/食伤/印当家）
-                ③ 调候反向（外燥内湿 / 上燥下寒）
-                ④ 假从 / 真从边界
-            LLM 跟用户讲"算法可能读反了" → 用户同意 → score_curves --override-phase X 重跑
-                → 重跑后命中率 ≥ 4/6 → 写 confirmed_facts.phase_override → 进 Step 3
-                → 全部候选都 < 4/6 → 才进入时辰扫描（Step 2.5 §12）
-            （命中率 ≥ 4/6 时本步跳过；4 类 detect 都未触发时本步也跳过）
-  → Step 2.7 询问输出格式（v5 · 体验门槛）
+  → Step 2.5 v8 · phase decision + AskQuestion 校验 → phase_posterior 落地（硬门槛）
+            ┌─ identification（算法）：detect_all_phase_candidates 穷尽 14 个候选 + 各 phase 的 phase_likelihoods
+            │  → 乘性融合算 prior 分布（独立证据假设 + day_master_dominant baseline 0.05 兜底）
+            ├─ disambiguation R1（用户）：handshake.py 生成 5 维度 ~28 道 phase-discriminative 多选题
+            │  → Agent 调宿主 AskQuestion 一次性抛全部 N 题点选 UI（Cursor / Claude Desktop / Claude Code 强制）
+            │  → CLI fallback：cli_fallback_prompt（编号 + <id>=<option>）
+            ├─ posterior decision R1（算法）：phase_posterior.py --round 1 算后验 P(phase | R1 answers)
+            │  · ≥ 0.95 且 runner-up < 0.02 → 可直接出图（仍强烈推荐走 R2）
+            │  · 0.40-0.95 → **必须走 Round 2 confirmation**
+            │  · < 0.40 → reject，不出图，提示核对时辰 / 性别
+            ├─ confirmation R2（用户）：handshake.py --round 2 在 R1 决策 phase vs runner-up 之间
+            │  挑高 pairwise 判别力的 6-8 道题（自动排除 R1 已问过的）→ AskQuestion 抛 R2
+            └─ confirmation_status（算法）：phase_posterior.py --round 2 合并 R1+R2 后验
+               · R2 决策 == R1 AND R2 prob ≥ 0.85 → confirmed → render
+               · R2 决策 == R1 AND 0.65 ≤ R2 prob < 0.85 → weakly_confirmed → render_with_caveat
+               · R2 决策 == R1 AND R2 prob < 0.65 → uncertain → escalate
+               · R2 决策 != R1 → decision_changed → escalate（必须报告反转）
+            合盘场景：v8 暂未覆盖，仍走旧 R0/R1（详见 §2.6 caveat）
+  → Step 2.7 询问输出格式（体验门槛）
             「要 HTML 交互图，还是只要 markdown 文字分析？」
             · 单盘默认问；合盘默认 markdown（HTML 仅可选）
             · 用户选 markdown → 跳过最后的 render_artifact.py，节省 5–15 秒等待
   → 单盘分支：Step 3a **流式输出**五类 markdown（整图 + 一生四维 + 大运 + 关键年份）→ Step 3b 渲染 HTML（仅当用户选 HTML）
   → 合盘分支：Step 3' 跑 he_pan.py → **流式输出**按层解读 + 加 / 减分 + 大运同步建议
-Step 4  保存本次反馈到 confirmed_facts.json（v3 P5：下次跑同一八字直接复用）
+Step 4  保存本次反馈到 confirmed_facts.json（含 schema migration 到 v8；下次跑同一八字直接复用）
 ```
 
-**Step 2.5 是硬门槛**：用户没确认八字"准"之前，绝对不进入 Step 3 出图 / 合盘，避免在错八字上做大量徒劳分析。**v6 在原 R1+R2 之上加 R0 反询问 = 三阶段双层准确度判定**（取向准确度 R0 + 命局准确度 R1）。
+**Step 2.5 是硬门槛**：用户没在结构化 AskQuestion UI 中点完 5 维度题集、`bazi.phase_decision.is_provisional` 仍为 `true` 之前，绝对不进入 Step 3 出图 / 合盘。`render_artifact.py` 收到 `is_provisional=true` 会拒绝渲染（红线 HS-R4）。
 
 **Step 2.7 是体验门槛**：用户不需要 HTML 时绝对不强行渲染（让用户白等几十秒）。
 
@@ -247,259 +239,248 @@ python scripts/score_curves.py \
 
 LLM **不直接生成数字**，只能解释脚本输出。
 
-### 2.5 下马威校验（硬门槛 · v6 三阶段：R0 反询问 + R1 健康三问 + R2 交叉验证 · 必须等用户回应）→ `python scripts/handshake.py`
+### 2.5 v8 · phase decision + AskQuestion 校验 → phase_posterior 落地（硬门槛）
+
+> **v8 重大变化总览**（与 v6/v7 对比表）：
+>
+> | 维度 | v6/v7 | v8 |
+> |---|---|---|
+> | 轮次 | R0 / R1 / R2 / R3 分阶段，按命中率推进 | **统一题集**（5 维度 ~28 题）+ 自适应追问，无固定轮次 |
+> | 题目来源 | 按"默认相位"生成自然语言 claim | 按 `detect_all_phase_candidates` **全集 14 个 phase** 生成 + 按 `discrimination_power` 筛选 |
+> | 用户接口 | LLM 把题面**自然语言转述**给用户，让用户口头答「对 / 不对 / 部分」 | **宿主 AskQuestion 结构化点选 UI**（强制），用户在 4 个选项里点击 |
+> | 决策方式 | "命中率 N/M ≥ 阈值"硬门槛 | **贝叶斯后验** P(phase \| answers)，按概率 adopt / 追问 / reject |
+> | 反迎合 | R0' 反向探针（counter-claim probes） | 由题库的 **phase-discriminative + falsifiability 设计原则**取代（每题至少 2 个 phase 间 ≥ 0.20 概率差 + 必须有反方向选项） |
+> | 维度 | 健康（R1）+ 感情（R0）+ 交叉（R2）+ 家庭（R3 条件触发） | **5 维度全开**：D1 民族志 × 原生家庭 / D2 关系结构 / D3 流年大事件（动态生成）/ D4 中医体征 / D5 自我体感 |
+> | 失败兜底 | 命中率 ≤ 2/6 → 触发 Step 2.55 phase_inversion_loop 事后反演 | **identification 提到 `solve_bazi.py` 一等公民**，detector 算先验直接落 `bazi.phase`；`phase_inversion_loop.py` 标 deprecated |
+> | 落地阈值 | R0 ≥ 1/2 且（R1 ≥ 2/3 或 R1+R2 ≥ 4/6） | top-1 后验 ≥ 0.80 high / 0.60-0.80 mid / 0.40-0.60 追问轮 / < 0.40 reject |
+>
+> 命名 case：1996/12/08（丙子 庚子 己卯 己巳）这盘 6 个 detector 满分（P5 三气成象 4/4 + P3 调候反向 3/3 + P4 假从触发），但旧架构 `bazi.json` 仍按 `day_master_dominant` 输出。详见 `references/diagnosis_pitfalls.md` §14。
+
+#### 心智模型 · identification vs disambiguation
+
+| 责任方 | 任务 | 输出 |
+|---|---|---|
+| 算法（detector）| identification —— 穷尽结构性自洽的可能 phase | 候选 phase 全集 + 各 phase 的先验概率 |
+| 用户（AskQuestion）| disambiguation —— 通过外部观察事实在候选间投票 | 多选答案 |
+| 算法（decide_phase）| posterior decision —— 贝叶斯综合 prior + likelihood | 后验分布 + top-1 phase + 置信度 |
+
+**关键边界**：算法负责"我能想到的可能"，用户负责"在我能想到的可能里哪一个像你"。算法不能因为"我自己倾向选 A"就只把按 A 生成的题面抛给用户校验——这是 v6/v7 把题面只按默认相位生成的根本错误。
+
+完整协议：[`references/phase_decision_protocol.md`](references/phase_decision_protocol.md)。
+
+#### 跑 handshake 出题集
 
 ```bash
 python scripts/handshake.py \
-  --bazi bazi.json --curves curves.json \
-  --current-year 2026 \      # 默认 today.year
-  --out handshake.json
+  --bazi out/bazi.json --curves out/curves.json \
+  --current-year 2026 \      # 默认 today.year（D3 流年题需要换算 age）
+  --out out/handshake.json
 ```
 
-**v6 改版**：在原 v3 的"R1 健康三问 + R2 交叉验证"前面加 **R0 反询问·感情画像**（2 题），形成三阶段校验：
+输出 `handshake.json` v8 schema 关键字段：
 
-- `round0_candidates`（v6 新增 · **必须最先抛**）：固定 2 条
-  - **⓪-① 感情①·偏好类型**（preference） —— 配偶星五行（男看正/偏财，女看正/七杀）+ 配偶宫（日支）藏干十神
-  - **⓪-② 感情②·对方态度**（attitude） —— 配偶星旺衰 + 比劫多寡 + 食伤显隐 + 印多遮蔽 + 桃花地支综合
-  - 作用：**取向校准**（八字大致对/不对 + 该走格局派 / 扶抑派 / 调候派）；R0 = 0/2 提示用户复核性别 / 时辰
-- `round1_candidates`：固定 3 条（v3 健康三问，不变）
-  - **① 健康①·寒热出汗**（temperature） —— 命局 climate.label 直接导出
-  - **② 健康②·睡眠精力**（sleep_energy） —— climate × strength 组装
-  - **③ 健康③·脏腑短板**（organ） —— 五行最弱 → 对应脏腑系统
-- `round2_candidates`：1 本性画像 + 2 历史锚点（旧 R1 池移到 R2，作为交叉验证）
-
-**为什么 R1 全部用健康问题**：
-- 用户对"从小怕不怕冷 / 睡得浅不浅 / 哪个脏腑老出问题"的回答近乎二值，记忆终生稳定
-- 错八字（时辰差 1 小时）会让 climate 跳档 + 五行权重剧变 → 健康三维同时跳档，**一查就露馅**
-- 三个不同侧面 = 三次独立投票，避免单一维度偶然撞中
-- 不需要用户回忆任何具体事件 / 关系 / 职业 → 满足 fairness_protocol 的盲化要求
-
-**LLM 必须严格按以下三轮模板**把候选转述给用户，禁止添加候选数据中没有的事实：
-
-**Round 0**（v6 新增 · 反询问·感情画像 2 题 · **最先抛**）：
-
-```
-开始之前先问你两个感情相关的问题——这两题不评判 / 不打标签，只用来快速判断你的八字大概率"对/不对"，
-以及该按哪种取向（格局 / 扶抑 / 调候）来给你解。请凭直觉答「对 / 不对 / 部分」。
-
-⓪-① 【感情①·偏好类型】{claim}
-   依据：{evidence}
-   可证伪点：{falsifiability}
-
-⓪-② 【感情②·对方态度】{claim}
-   依据：{evidence}
-   可证伪点：{falsifiability}
+```json
+{
+  "version": 8,
+  "phase_candidates": [
+    {"phase_id": "floating_dms_to_cong_cai", "label": "弃命从财", "detector_score": "4/4 (P5)"},
+    {"phase_id": "day_master_dominant", "label": "默认 · 日主主导", "detector_score": "baseline"}
+  ],
+  "prior_distribution": {
+    "floating_dms_to_cong_cai": 0.46,
+    "floating_dms_to_cong_er": 0.21,
+    "climate_inversion_dry_top": 0.18,
+    "day_master_dominant": 0.05
+  },
+  "questions": [
+    {"id": "D1_Q3_father_presence", "dimension": "ethnography_family",
+     "weight_class": "hard_evidence", "prompt": "...", "options": [...],
+     "likelihood_table": {...}, "discrimination_power": 0.34}
+  ],
+  "askquestion_payload": [
+    {"id": "D1_Q3_father_presence", "prompt": "...", "options": [...], "allow_multiple": false}
+  ],
+  "cli_fallback_prompt": "请按以下编号回答（输入 D1_Q3=B 形式）：\n\nD1_Q3 ...\n  A) ...\n",
+  "decision_threshold": {"auto_adopt": 0.80, "adopt": 0.60, "ask_more": 0.40}
+}
 ```
 
-R0 命中 → 取向准确度（不论命中几条，都继续走 R1）：
-- 2/2 → 命局取向无悬念，按主流派系走
-- 1/2 → 取向部分对，做分析时主动注明"X 处取向有歧义"
-- 0/2 → 配偶星 / 配偶宫读法可能反了 → 提醒用户复核性别 / 时辰，**仍继续 R1 看命局准确度**
+完整 schema：[`references/handshake_protocol.md`](references/handshake_protocol.md) §2。
 
-**Round 0' · 反迎合·反向探针（v7.4 #3 新增 · 强制在 R0 ② 答完后立刻抛 · R1 之前）**：
+#### 5 个维度的设计原则
 
-```
-为了避免你"迎合性"答题（命局推啥就说啥），我再抛 2 条**故意构造的反向陈述**让你校验。
-你只需对每条回 「对 / 不对 / 部分」，按你真实记忆答即可——
-如果你两条都答「对」，意味着相反的两种描述你都觉得像，逻辑上不可能 → 我会自动给 R0 命中率打折。
+| 维度 | 题数 | 权重 | 内容 |
+|---|---|---|---|
+| **D1 · 民族志 × 原生家庭** | 6 | hard_evidence × 2.0 | 出生时家境 / 父母在场度（父 + 母） / 兄弟姐妹 / 出生地 × 时代（结合 `era_windows_skeleton.yaml`） / 祖辈影响 |
+| **D2 · 关系结构** | 6 | soft_self_report × 1.0 | 吸引对象画像 / 谁更主动 / 经济角色 / 情感依赖方向 / 关系总体模式 / 吸引年龄段（升级旧 R0） |
+| **D3 · 流年大事件**（动态）| ~5 | hard_evidence × 2.0 | 跨候选 phase 跑 `score_curves.score_one_year()` 找方差最大的 3-5 个**已活过年份**，套 4 档方向选项（向上 / 向下 / 大起大落 / 平稳） |
+| **D4 · 中医体征** | 6 | hard_evidence × 2.0 | 寒热 / 睡眠 / 脏腑薄弱处 / 体型体格 / 食欲口味 / 情志倾向（扩展旧 R1 健康三问到完整六问） |
+| **D5 · 自我体感** | 4 | soft_self_report × 1.0 | 压力默认策略 / 钱的态度 / 与权威关系 / 创造性输出方式（本性画像兜底） |
 
-⓪'-① 【关系①·反向探针（防迎合）】{round0_counter_probes[0].claim}
-   依据：{round0_counter_probes[0].evidence}
-   可证伪点：{round0_counter_probes[0].falsifiability}
+**题库设计原则**（住在 `references/discriminative_question_bank.md` §0）：
+1. **phase-discriminative**：每题在 likelihood_table 中至少 2 个 phase 间 ≥ 0.20 概率差，否则剔除
+2. **falsifiability**：每题选项必须有明确"反方向"选项（不只问"你像不像 X"，必须问"X 还是 Y 还是 Z 还是 W"）
+3. **无身份标签**：选项措辞严守 `references/fairness_protocol.md` §10，**禁出现**"升职 / 结婚 / 生育 / 离职 / 确诊 / 拿到 offer / 创业失败 / 分手"等具体事件，改用方向性、体感性描述
+4. **likelihood_table**：每行（phase）∑ = 1.0；学理出处回到《滴天髓》《子平真诠》《穷通宝鉴》《三命通会》
 
-⓪'-② 【关系②·反向探针（防迎合）】{round0_counter_probes[1].claim}
-   依据：{round0_counter_probes[1].evidence}
-   可证伪点：{round0_counter_probes[1].falsifiability}
-```
+#### Step 2.5 v8 · AskQuestion 执行协议（Agent 必跑 5 步）
 
-反迎合判定（机械化在 `evaluate_responses` 里跑，LLM 不要自己算 / 不要改 claim）：
-- **consistent**（原 + 反对应一致 / 部分一致）→ R0 命中率正常
-- **sycophantic**（n_contradictions ≥ 1：原 = 对 且 反 = 对）→ **R0 命中率 × 0.5 打折**，advisory caveat 提示用户重新校准
-- **mirror**（n_mirror_signals ≥ 1：原 = 不对 + 反 = 对）→ 命局推反了，建议触发 `--dump-phase-candidates` 跑相位反演
+**1) 读 `handshake.json` 的 `askquestion_payload`**
 
-详见 `references/handshake_protocol.md` §5.5。
+跑 `handshake.py` 后从 `out/handshake.json` 取 `askquestion_payload` 数组（每项含 `id` / `prompt` / `options` / `allow_multiple`）和 `cli_fallback_prompt` 兜底文案。
 
-**Round 1**（首轮 3 条 = 健康三问）：
+**2) 调宿主 AskQuestion 工具一次抛全部 N 道**
 
-```
-在画图 / 合盘之前，我先用 3 个不同侧面的「健康/体感」问题来校验一下八字的准确度。
-请逐条回 「对 / 不对 / 部分」。这三条都是终生稳定的体感证据，最不容易自欺。
-（命中率 → 准确度：3/3 高 → 直接进下一步；2/3 中 → 我再给你 3 条交叉验证；
-  ≤ 1/3 低 → 八字十有八九不准，请核对出生时辰）
+| 宿主 | 抛题方式 |
+|---|---|
+| **Cursor** | 用 `AskQuestion` 工具，每题作为一个 question 项，options 直接传 `askquestion_payload[i].options`，**一次性抛全部 N 题**（不分轮） |
+| **Claude Desktop / Claude Code** | 同上，调宿主结构化问询接口 |
+| **CLI / 无 AskQuestion 宿主** | 回退到 `cli_fallback_prompt`，逐题列出选项让用户输入 `<question_id>=<option_id>` 形式（如 `D1_Q3=B`） |
 
-① 【健康①·寒热出汗】{claim}
-   依据：{evidence}
-   可证伪点：{falsifiability}
+**3) 收 `user_answers.json` → 调 `phase_posterior.py`**
 
-② 【健康②·睡眠精力】{claim}
-   依据：{evidence}
-   可证伪点：{falsifiability}
-
-③ 【健康③·脏腑短板】{claim}
-   依据：{evidence}
-   可证伪点：{falsifiability}
+```bash
+# 把用户答案存为 user_answers.json：{"D1_Q3_father_presence": "B", "D4_Q1_cold_heat": "C", ...}
+python scripts/phase_posterior.py \
+  --bazi out/bazi.json \
+  --questions out/handshake.json \
+  --answers out/user_answers.json \
+  --out out/bazi.json    # 写回同一 bazi.json，phase_decision.is_provisional=False
 ```
 
-**Round 2**（追问 3 条 = 1 本性 + 2 历史锚点，仅在 R1 命中 < 3 时触发）：
+`phase_posterior.py` 算后验公式：
 
 ```
-为了把八字校验得更扎实，我再给你 3 条交叉验证。请继续回「对 / 不对 / 部分」。
-两轮合计 6 条命中 ≥ 4 → 进入下一步；< 4 → 八字十有八九不准（多半是时辰偏 1 小时）。
+P(phase_i | answers) ∝ prior(phase_i) × ∏_j likelihood(answer_j | phase_i)^{w_j}
 
-④ ...   ⑤ ...   ⑥ ...
+其中 w_j = 2.0 if question_j.weight_class == "hard_evidence" else 1.0
+     likelihood(answer_j | phase_i) = question_j.likelihood_table[phase_i][answer_option_j]
 ```
 
-**命中率 → 准确度（v6 强制双层等级表）**：
+硬体征（D1 / D3 / D4）权重 2× 软自述（D2 / D5）。
 
-第一层 · 取向准确度（R0）：
+**4) R1 后验阈值 → 行动**（与 `references/phase_decision_protocol.md` §5 对齐）
 
-| R0 命中 | 取向 grade | 含义 |
+| R1 后验 top-1 概率 | 行动 | confidence |
 |---|---|---|
-| 2/2 | high | 命局取向无悬念，可按主流派系（geju 主格局 / 经典扶抑）直接走 |
-| 1/2 | mid  | 取向部分对，分析时主动注明"X 处取向有歧义" |
-| 0/2 | low  | 配偶星 / 配偶宫读法可能反了 → 性别 / 时辰可能错；**仍继续 R1**，但若 R1 也 ≤ 1/3 → 强烈建议核对 |
+| **≥ 0.95** 且 runner-up < 0.02 | 可直接出图（**强烈推荐仍走 Round 2**） | high |
+| **0.60 – 0.95** | 必须走 **Round 2 confirmation**（详见 §2.6） | mid / high |
+| **0.40 – 0.60** | 必须走 **Round 2**（confirmation_threshold 决定是否出图） | low |
+| **< 0.40** | **拒绝出图**：报告"算法无法落地，请核对时辰 / 性别"，**禁止**调 `score_curves` / `render_artifact` | reject |
 
-第二层 · 命局准确度（R1）：
+**5) 严禁用自然语言转述题面让用户口头答"对/不对/部分"**
 
-| R1 命中 | accuracy_grade | 后续动作 |
-|---|---|---|
-| **3/3** | high   | 若 R0 ≥ 1/2 → 直接进入下一步（绘图 / 合盘评分）；R0 = 0 → 进但加强 caveat |
-| **2/3** | mid    | 触发 Round 2；R1+R2 ≥ 4/6 → 继续 + 加 caveat；< 4/6 → 停 |
-| **1/3** | low    | 触发 Round 2；R1+R2 ≥ 4/6 → 谨慎继续 + 强 caveat；< 4/6 → 停 |
-| **0/3** | reject | 不再追问，强烈建议核对八字本身（时辰多半错） |
-
-**整体放行**：R0 ≥ 1/2 且（R1 ≥ 2/3 或 R1+R2 ≥ 4/6）。
-**整体拒绝**：R0 = 0/2 且 R1 ≤ 1/3 → 八字大概率不准（最常见：性别输错 / 时辰差 1 小时）→ 让用户复核后再来。
-
-**红线规则（v6 三红线）**：
-
-| 触发条件 | 行动 |
-|---|---|
-| ★ 健康①·寒热出汗 ✗ | **立即停下**，climate.label 多半判错了，告知用户："寒热体感没对上 → climate 判读可能反了 → 我需要重新审视命局结构再给你跑一遍" |
-| ★ 健康③·脏腑短板 ✗ | **立即停下**，五行权重多半算偏（常见于时辰错导致月柱 / 时柱跳位），建议用 `--gregorian` 重新解析或时辰 ±1 小时对比 |
-| ★ 感情①·偏好类型 ✗ + R1 ≤ 1/3 | **立即停下**（v6 新增），配偶星 / 性别 多半弄错了，告知用户："感情偏好和健康两层都不对 → 八字基础数据有较大概率不准 → 建议先核对（1）性别 是否正确（2）出生时辰 是否准确" |
-| 健康②·睡眠精力 ✗（其他都对） | 不算红线，按命中率走（2/3 → mid），caveat 注明"strength 判读边界处可能略偏" |
-
-**禁止**：
-- ❌ 跳过 Step 2.5 直接出图 / 合盘
-- ❌ 改写 R1 的 3 条 claim（必须原样转述脚本文案）
-- ❌ R1 里加历史锚点 / 事件类候选（v3 R1 全部是健康问题）
-- ❌ 红线触发后绕过去继续
-
-**Round 3**（v7.3 新增 · **条件触发 · 反询问·原生家庭画像 2 题**）：
-
-handshake.py 在生成 `handshake.json` 时会顺带生成 `round3_candidates`（来自 `family_profile.py`），但 R3 是**条件触发**的——LLM 不是默认抛 R3，而是按以下规则决定：
-
-- ✓ 用户在初次提问中提到「家庭 / 父母 / 父亲 / 母亲 / 原生家庭 / 出身 / 家世 / 我爸 / 我妈」等关键词 → **必须抛 R3**（建议在 R0 之后、R1 之前抛）
-- ✓ 用户在分析过程中追问「我家怎么样 / 我爸是什么样 / 我妈呢」 → **必须抛 R3**（在写 family 段之前）
-- ✗ 用户没主动问家庭 → **不要抛 R3**（也不要写 family 段）
-
-R3 候选 2 条：
-- **③-① 原生家庭①·整体结构**：5 档候选（显赫候选 / 中产候选 / 普通 / 波折候选 / 缺位候选）
-- **③-② 原生家庭②·父母存在模式合并**：父亲 + 母亲存在模式（贴近 / 偏远 / 高压 / 缺位 等）
-
-R3 命中级别 → family 段权重（**正交于 R0/R1/R2，不算入命局准确度**）：
-
-| R3 命中 | family 段写法 |
-|---|---|
-| 2/2 | 高置信展开（按 primary_class）。**显赫候选** + 用户确认 → 可以谨慎说"父辈/祖辈中可能有人在某领域有可识别的位置" |
-| 1/2 | 中置信。命中那条可展开；未命中那条标"取向歧义"或省略 |
-| 0/2 | **family 段不展开具体内容**，只写一句"原生家庭推断未通过校验，本次不展开（命局对家庭的读法可能反了）" |
-
-R3 红线（v7.3 新增）：
-- ★ 整体结构标"不对"且 `primary_class = illustrious_candidate` → **必须降级**，禁用"显赫 / 名门 / 名利双收"等措辞（修古法 survivorship bias 的 systemic bug）
-- ★ 父母存在模式两条都标"不对" → 父星 / 母星读法多半反了 → family 段直接省略
-
-**为什么 v7.3 加 R3**：古法和 LLM 训练语料对原生家庭有严重的 survivorship bias —— 古典命书几乎只收录显赫人物的命例，导致"年柱财官印聚合"在书里反复对应"显赫家世"，但普通人的同样结构在古籍里几乎不出现。LLM 裸推家庭 = 90% 概率把普通家庭描述成"大家长 / 名利双收 / 出身有底蕴"。R3 反询问就是把这个偏置交回给用户校验，**校验通过的"显赫"才能说，没校验过 / 校验不通过 → family 段降级或省略**。完整解读铁律见 `references/fairness_protocol.md` §11 + `references/multi_dim_xiangshu_protocol.md` §11。
-
-**合盘场景的特殊要求**（详见 `references/he_pan_protocol.md` §4）：
-- 用户输入多份八字 → **每份都要单独跑一次 R1 健康三问**
-- 用户对自己的八字答得最准；对方（配偶 / 合伙人 / 朋友 / 家人）的健康问题答多少算多少
-- 主体本人八字必须 R1 ≥ 2/3 才放行合盘
-- 对方八字若 R1 < 2/3，合盘 confidence 降级 + caveat："另一方八字校验不足，结论作为方向参考"
-
-完整规则见 `references/handshake_protocol.md`、`references/he_pan_protocol.md` §4 和 `references/diagnosis_pitfalls.md` §0 红线表。
-
-### 2.55 【v7 强制 · v7.2 加二轮校验】R0+R1+R2 ≤ 2/6 时 · 相位反演校验循环（P1-7）
-
-**触发条件**：Step 2.5 总命中率 ≤ 2/6（含 R0 + R1 + R2）。
-**目的**：在跳到"八字错 / 时辰错"结论之前，先排除「**算法的相位选择反了**」这种可能。**反演不是直接信，要再让用户答一遍二轮校验**——命中率 ≥ 4/6 才落地。
-
-**为什么必须做**：某用户 1996 八字 `丙子 庚子 己卯 己巳`，默认相位命中率 1/6 = 17%，反向到 `floating_dms_to_cong_cai` (P5 三气成象 4/4) 后跳到 5/6 ≈ 83%——66 个百分点的差异。这是算法的盲区，不是用户的八字错。详见 `references/phase_inversion_protocol.md` §11 和 `references/diagnosis_pitfalls.md §12`。
-
-#### v7.2 推荐用法 · 一条命令搞定 4 步（Auto-Loop）
-
-```bash
-python scripts/phase_inversion_loop.py \
-    --bazi out/bazi.json \
-    --out-dir out/ \
-    --default-hit-rate "1/6"
+❌ **错误做法（v6/v7 旧风格）**：
+```
+我看你日主弱，月令子水当令，那这样问你：你从小是不是怕冷、手脚常凉？请回答「对 / 不对 / 部分」。
 ```
 
-它会自动：
-1. dump 5 类相位反演候选（P1 日主虚浮 / P2 旺神得令 / P3 调候反向 / P4 假从-真从 / P5 三气成象）
-2. 自动选 top-1（按 detector 置信度排序）
-3. 跑 `score_curves --override-phase <pick>` → `curves_phase_inverted.json`
-4. 跑 `handshake --phase-id <pick>` → `handshake_round2.json`（**按反演相位重新生成 6 题**）
+✓ **正确做法（v8）**：直接调宿主 AskQuestion，把 `askquestion_payload[i].prompt` 原样作为问题文案，把 `options` 原样作为 4 个点选项。**不要改写、不要浓缩、不要预先告诉用户"我倾向你是 X 相位"**（会污染答案）。
 
-输出含完整的 `next_step_for_llm` + 落地命令模板。
+#### 红线（违反任意一条 → 立即停下）
 
-#### LLM 必守的 4 条话术铁律（v7.2）
-
-1. **不允许第一句话就说"八字错"**：必须先讲"另一种可能是算法读反"
-2. **不允许反演后默默重跑**：必须先用 `pick_explain_for_user` 跟用户说清楚反演是什么
-3. **二轮校验是强制的**：把 `handshake_round2.json` 的 6 题完整抛给用户重新作答，**禁止**根据反演候选直接出图
-4. **重跑后必须明确告知"已反演"**：第一段输出必带「相位 = X，不是默认相位」
-
-#### 二轮校验落地条件
-
-| 二轮命中率 | 动作 |
-|---|---|
-| **≥ 4/6** | 写 `confirmed_facts.structural_corrections` (kind=phase_override) → 进 Step 3 出图（带「相位 = X」标记） |
-| **< 4/6 且还有候选** | 重跑 `phase_inversion_loop.py --pick <next_id>` 试下一个候选 |
-| **全部候选都 < 4/6** | 真正进入"建议核对时辰"流程（详见 `references/diagnosis_pitfalls.md §0`） |
-
-#### 落地命令（用户二轮命中率 ≥ 4/6 后）
-
-```bash
-# 1. 写入 confirmed_facts
-python scripts/save_confirmed_facts.py \
-    --bazi out/bazi.json \
-    --out out/confirmed_facts.json \
-    --add-structural phase_override day_master_dominant <pick> \
-    --reason '二轮校验命中率 5/6 → 反演相位落地'
-
-# 2. 用 confirmed_facts 重跑 score_curves（之后所有重算都自动应用反演）
-python scripts/score_curves.py \
-    --bazi out/bazi.json \
-    --confirmed-facts out/confirmed_facts.json \
-    --out out/curves_final.json
-```
-
-#### v7 旧用法（仍可用 · 手工分步）
-
-```bash
-python scripts/handshake.py --bazi out/bazi.json --dump-phase-candidates --out out/phase_dump.json
-python scripts/score_curves.py --bazi out/bazi.json --override-phase <pick> --out out/curves_inverted.json
-python scripts/handshake.py --bazi out/bazi.json --curves out/curves_inverted.json --phase-id <pick> --out out/handshake_round2.json
-```
-
-#### 跳过相位反演的条件
-
-- 默认相位 R0+R1+R2 ≥ 4/6（happy path，本来就不需要）
-- `dump_phase_candidates` 返回 `n_triggered = 0`（5 类 detect 都没触发，命中率低更可能是八字错）
-- 用户明确说"我确定八字对，不需要试反向假设"
+| # | 红线 | 触发 | 处理 |
+|---|------|------|------|
+| HS-R1 | Agent 用自然语言转述题面 | 任何 `questions[i].prompt` 被改写或浓缩 | 立即停下，重新走 `askquestion_payload` |
+| HS-R2 | 跳过 < 0.40 拒判路径 | 后验 < 0.40 仍调 `score_curves` 出图 | 强制返回 reject 文案 |
+| HS-R3 | 后验 < 0.60 没追问就 adopt | 0.40-0.60 区间被当 mid 落地 | 强制走追问轮 |
+| HS-R4 | `is_provisional=true` 状态下出图 | `render_artifact` 收到 `phase_decision.is_provisional=true` | 拒绝渲染，要求先跑 `phase_posterior` |
+| HS-R5 | D3 流年题踩 fairness §10 黑名单 | options 中含"升职 / 结婚 / 离职 / 生育 / 确诊"等身份标签词 | `_question_bank.py` 单元测试拦截，不允许进 prompt |
 
 #### 禁止
 
-- ❌ R0+R1+R2 ≤ 2/6 时跳过这一步直接判"八字错 / 时辰错"
-- ❌ 跳过 `--dump-phase-candidates` 直接 `score_curves --override-phase`（必须先看 detect 触发了什么）
-- ❌ **跳过二轮校验**（v7.2 强制）：phase 反演候选挑出来后，必须按 `--phase-id` 重新生成 6 题让用户答，不允许直接相信
-- ❌ 反演重跑后第一段还按默认相位的语义解读
+- ❌ 跳过 Step 2.5 直接出图 / 合盘
+- ❌ Agent 在抛题前先告诉用户"我看你这个八字大概率是 X 相位"（污染答案）
+- ❌ 把多选题改成自由文本输入 / 改成"对 / 不对 / 部分"二元
+- ❌ 跳过若干题只问 3-5 道（必须把题库全部 ~20-25 道一次抛完，按 `discrimination_power` 已经过筛选了）
+- ❌ 后验 < 0.40 时不报 reject 仍硬出图
+- ❌ 用旧 `phase_inversion_loop.py` 流程（v8 已替代，详见 §2.55 deprecated）
 
-完整流程见 `references/phase_inversion_protocol.md` §5 + §11 和 `references/handshake_protocol.md §13`。
+完整规则见 `references/handshake_protocol.md`、`references/phase_decision_protocol.md`、`references/discriminative_question_bank.md` 和 `references/diagnosis_pitfalls.md` §14（命名 case）。
+
+### 2.6 v8.1 · Round 2 confirmation（第二轮校验，**必跑**）
+
+> R1 是宽口径的 disambiguation；R2 是**第二批独立证据**的 confirmation。R1 答得再像 cong_cai 也可能是偶然命中——R2 用 R1 决策 phase 与 runner-up phase 之间高判别力的题再问一次，决定是否真的出图。
+
+#### 跑 Round 2 handshake
+
+```bash
+python scripts/handshake.py --round 2 \
+  --bazi out/bazi.json \
+  --curves out/curves.json \
+  --r1-handshake out/handshake.r1.json \
+  --r1-answers out/user_answers.r1.json \
+  --current-year 2026 \
+  --out out/handshake.r2.json
+```
+
+输出 `handshake.r2.json` 关键字段：
+
+```json
+{
+  "version": 8, "round": 2,
+  "round1_summary": {
+    "decision": "floating_dms_to_cong_cai",
+    "decision_probability": 0.999,
+    "runner_up": "pseudo_following",
+    "runner_up_probability": 0.0001,
+    "answered_question_ids": [...]
+  },
+  "pairwise_target": {"a": "floating_dms_to_cong_cai", "b": "pseudo_following"},
+  "questions": [/* 6-8 道高 pairwise dp 的题，自动排除 R1 已问过的 */],
+  "askquestion_payload": [...],
+  "confirmation_threshold": {"confirmed": 0.85, "weakly_confirmed": 0.65}
+}
+```
+
+#### Agent 抛 R2 题
+
+调宿主 AskQuestion 抛 `askquestion_payload` 全部 6-8 题，收到 `user_answers.r2.json` 后：
+
+```bash
+python scripts/phase_posterior.py --round 2 \
+  --bazi out/bazi.json \
+  --r1-handshake out/handshake.r1.json --r1-answers out/user_answers.r1.json \
+  --r2-handshake out/handshake.r2.json --r2-answers out/user_answers.r2.json \
+  --out out/bazi.json
+```
+
+#### confirmation_status → 出图行动
+
+| 条件 | confirmation_status | action | Agent 行为 |
+|---|---|---|---|
+| R2 决策 == R1 决策 AND R2 prob ≥ 0.85 | `confirmed` | `render` | 直接出图 |
+| R2 决策 == R1 决策 AND 0.65 ≤ R2 prob < 0.85 | `weakly_confirmed` | `render_with_caveat` | 出图但解读处加 caveat："本盘 phase 决策为弱确认，部分维度证据不齐" |
+| R2 决策 == R1 决策 AND R2 prob < 0.65 | `uncertain` | `escalate` | 报告"R2 后验不足以确认 R1 决策"，建议核对时辰 / 性别 |
+| R2 决策 != R1 决策 | `decision_changed` | `escalate` | **必须**报告决策反转，建议核对时辰 / 性别，或采纳 R2 决策再走一轮 R2 |
+
+#### Round 2 红线（在 §2.5 红线之外补充）
+
+| # | 红线 | 触发 | 处理 |
+|---|------|------|------|
+| HS-R6 | `decision_changed` 仍出图 | R2 决策与 R1 反转，但 Agent 直接渲染 | 强制 escalate 文案，要求核对时辰 / 性别 |
+| HS-R7 | R1 后验 < 0.95 跳过 R2 | R1 mid/low 区间未走 confirmation 就渲染 | 强制走 Round 2 |
+
+完整规则见 `references/handshake_protocol.md` §4 和 `references/phase_decision_protocol.md` §7。
+
+### 2.55 [DEPRECATED · v8] 旧 phase_inversion_loop 事后反演路径
+
+> **v8 起本节整体废弃**。下文仅作为兼容性说明保留，**新流程不要走这里**。
+
+旧 v6/v7 把"相位反演"做成"R0+R1+R2 命中率 ≤ 2/6 时才触发"的事后兜底机制（`phase_inversion_loop.py` + `handshake.py --dump-phase-candidates` + `score_curves --override-phase`）。这个设计的根本错误是：**算法的 identification 能力（穷尽候选）远超过产品的 disambiguation 接口（让用户在候选间投票）**——detector 已经知道这盘走反了，但默认 `bazi.json` 仍按 `day_master_dominant` 输出，因此用户解读全按错相位讲。
+
+v8 的 `phase_decision_protocol.md` 把 phase decision 提到 `solve_bazi.py` 阶段的强制一等公民：
+
+1. `solve_bazi.py` 末尾必须调 `decide_phase(user_answers=None)` 算先验，把 `phase` + `phase_decision` 写进 `bazi.json`，初始 `is_provisional=True`
+2. `score_curves.py` 默认读 `bazi.phase.id` 走 `apply_phase_override`，不再"忘读"
+3. `handshake.py` 通过 5 维度 28 题让用户校验，answers 经贝叶斯后验落地
+4. 后验 ≥ 0.60 → adopt；< 0.40 → 报"算法无法落地，请核对时辰"
+
+**`phase_inversion_loop.py` 脚本仍可运行**（避免破坏旧 confirmed_facts），但只剩"调试用手工分步"价值。新跑流程 / 新场景不要再调用它。详见 `references/phase_decision_protocol.md` §7 和 `references/diagnosis_pitfalls.md` §14。
 
 ### 2.6 合盘分支（仅当输入 ≥ 2 份八字时执行）→ `python scripts/he_pan.py`
+
+> **v8 caveat**：合盘场景**暂未升级到 v8**。每份八字单独跑校验时，仍走旧 R0/R1 健康三问 + 命中率判定路径（不调 v8 AskQuestion + phase_posterior）。计划在后续版本中把合盘的双方校验都迁到 v8 question bank，目前的 4 层评分逻辑、加 / 减分规则、解读铁律不受影响。
 
 ```bash
 # 每份八字都先 solve_bazi.py + score_curves.py + handshake.py（Step 1 / 2 / 2.5 全跑）
@@ -630,15 +611,15 @@ HTML 渲染单盘要 5–15 秒、合盘也要 3–5 秒，用户没要的时候
          ↓ 立刻发出
 [Node 4] 一生四维度评价 · 名声（life_review.fame）
          ↓ 立刻发出
-[Node 5] 一生四维度评价 · **关系**（life_review.relations · v7.6；旧名 life_review.emotion 兼容 · 必须援引 R0 命中情况）
+[Node 5] 一生四维度评价 · **感情**（life_review.emotion · v6 新增 · 必须援引 R0 命中情况）
          ↓ 立刻发出
-[Node 6..K] 大运评价 · 每段 1 节（按时间从早到晚，dayun_segments 逐段，**每段必带"关系看点"行**）
+[Node 6..K] 大运评价 · 每段 1 节（按时间从早到晚，dayun_segments 逐段，**每段必带"感情看点"行**）
             ↓ 每写完一段立刻发出
-[Node K+1..N] 关键年份评价 · 每条 1 节（按 year 升序，含三派分歧说明 + relations/emotion 偏离 ≥ 12 的必须带【关系·v7.6】行）
+[Node K+1..N] 关键年份评价 · 每条 1 节（按 year 升序，含三派分歧说明 + emotion 偏离 ≥ 12 的必须带【感情·v6】行）
               ↓ 每写完一条立刻发出
 ```
 
-每节用 markdown 标题（`## 整图综合分析` / `## 一生 · 关系` / `## 大运评价 · 辛丑（25–34 岁）` / `## 关键年份 · 2031 (35 岁 辛亥)` 等），方便用户视觉扫描和折叠。
+每节用 markdown 标题（`## 整图综合分析` / `## 一生 · 感情` / `## 大运评价 · 辛丑（25–34 岁）` / `## 关键年份 · 2031 (35 岁 辛亥)` 等），方便用户视觉扫描和折叠。
 
 **Node 5 感情段写作要求**（v6）：
 - 标题必带 R0 命中：`## 一生 · 感情（援引 R0：偏好类型 = X / 对方态度 = Y / 命中 = N/2）`
@@ -655,11 +636,11 @@ HTML 渲染单盘要 5–15 秒、合盘也要 3–5 秒，用户没要的时候
 {
   "overall": "Markdown 字符串（整图综合分析 · 命格定位 · 一生主线）",
 
-  "life_review": {                                      // 一生四大维度评价（卡片网格 · v7.6 「关系」面）
-    "spirit":    "Markdown：精神舒畅度的一生走势 + 体感建议",
-    "wealth":    "Markdown：财富的一生走势 + 钱从哪来 / 高峰区段 / 防漏点",
-    "fame":      "Markdown：名望的一生走势 + 被看见的方式 / 警惕陷阱（旧名 fame，UI 标签「名望」）",
-    "relations": "Markdown（v7.6）：感情、家庭、人脉的总体能量与节奏 + 援引 R0 命中 + 偏好类型 + 对方态度在大运/流年的展开 + 与事业的同步/对冲（旧 key 'emotion' 仍兼容）"
+  "life_review": {                                      // 一生四维度评价（卡片网格 · v6 加 emotion）
+    "spirit":  "Markdown：精神舒畅度的一生走势 + 体感建议",
+    "wealth":  "Markdown：财富的一生走势 + 钱从哪来 / 高峰区段 / 防漏点",
+    "fame":    "Markdown：名声的一生走势 + 被看见的方式 / 警惕陷阱",
+    "emotion": "Markdown（v6）：感情走势 + 援引 R0 命中 + 偏好类型 + 对方态度在大运/流年的展开 + 与事业的同步/对冲"
   },
 
   "dayun_review": {                                     // 大运评价（按 dayun_segments.label 索引）
@@ -682,7 +663,7 @@ HTML 渲染单盘要 5–15 秒、合盘也要 3–5 秒，用户没要的时候
 
 **强制要求（严禁简化）**：
 - `overall`：整图综合分析 + 命格定位（援引 `curves["geju"]`）+ 一生主线 + **4 条曲线的整体形状 + 关系**（v6）
-- `life_review.{spirit,wealth,fame,relations}`：每个维度 ≥ 200 字大白话；spirit/wealth/fame 结合三派分数 + 命理依据；**relations 必须援引 R0 命中情况 + 偏好类型 + 对方态度在 dayun 的展开**（旧 key `emotion` 仍可，模板会自动 fallback 读取）
+- `life_review.{spirit,wealth,fame,emotion}`：每个维度 ≥ 200 字大白话；spirit/wealth/fame 结合三派分数 + 命理依据；**emotion 必须援引 R0 命中情况 + 偏好类型 + 对方态度在 dayun 的展开**
 - `dayun_review[label]`：每段 10 年大运都要写（**含起运前段 + 65 岁以后只要 dayun_segments 里有就要写**），含 1 行 headline + Markdown body（命理属性 / 主线 / 实际表现 / 建议）
 - `key_years`：把过往的"用户已确认事件年份" + 未来的"高峰 / 低谷 / 拐点"都列入；每条 ≥ 250 字，必须包含**推论过程的大白话描述**（"为什么我推这一年是 X"），有盲派事件的必须援引 `points[year].mangpai_events` 文本
 - 旧版 `turning_points` / `disputes` 字段已废弃 → 全部合并到 `key_years` 里（disputed 年份在 key_years body 里加一段「⚠ 三派分歧」说明）
@@ -735,19 +716,20 @@ Artifact 默认折叠状态（仅 HTML 路径）：
 
 **v6 RichTooltip 内容**（鼠标 hover 任意年份点显示）：年份 + 年龄 + 干支 + 大运 + **4 维**当年值 + **4 维**趋势值 + 互动 tag + 盲派 tag（含反向标记） + 关键年高亮 box（提示用户跳转到下方详解）。所有 `key_years` 在图上还有竖线标记（▲ peak / ▼ dip / ◆ shift）。
 
-**Step 4：保存反馈记忆** —— 用户给完 R1+R2 反馈或后续校正后，调用 `save_confirmed_facts.py` 把反馈写回 `output/confirmed_facts.json`：
+**Step 4：保存反馈记忆** —— 用户答完 v8 AskQuestion 题集后，`phase_posterior.py` 已经把 phase 写回 `bazi.json`；同时把 `user_answers.json` 沉淀到 `output/confirmed_facts.json` 供下次复用：
 
 ```bash
-# 写入 R1/R2 反馈（JSON Lines）
-echo '{"round":"R1","trait_or_anchor":"外燥内湿","user_response":"对"}
-{"round":"R1","trait_or_anchor":"包容低调","user_response":"部分对","user_note":"我是带头型"}' \
-  | python3 scripts/save_confirmed_facts.py --bazi output/bazi.json --append
+# v8 主路径：把 user_answers + 后验决策写入 confirmed_facts（含 schema migration）
+python3 scripts/save_confirmed_facts.py \
+    --bazi output/bazi.json \
+    --user-choices output/user_answers.json \
+    --out output/confirmed_facts.json
 
-# 自由事实
+# 自由事实（结构性、不带身份标签）
 python3 scripts/save_confirmed_facts.py --bazi output/bazi.json --add-fact \
-  "用户 2024 年升职 + 论文奖；脚本曾误判为 fame down，已通过 P1 反向规则修正"
+  "用户 2024 年事业方向有正向波动；曲线曾误判为 fame down，已通过反向规则修正"
 
-# 结构性纠错（用于下次跳过这个判错路径）
+# 结构性纠错（用于下次跳过这个判错路径，例如 climate 标签）
 python3 scripts/save_confirmed_facts.py --bazi output/bazi.json --add-structural \
   climate "湿寒命" "外燥内湿" --reason "用户从小怕热 → 体感证伪"
 ```
@@ -776,7 +758,7 @@ python3 scripts/save_confirmed_facts.py --bazi output/bazi.json --add-structural
 
 完整规则见 `references/dispute_analysis_protocol.md`。
 
-## 三大保障 + 六项强制（必须遵守 · v6 加 R0 反询问 · v7 加现代化解读铁律 + 相位反演 · v7.3 加原生家庭 R3 反询问）
+## 三大保障 + 七项强制（必须遵守 · v8 重写校验回路）
 
 - **准确**：分数来自脚本（单盘=「格局为先 + 三派交叉」+「emotion 独立通道」、合盘=「五行 + 干支 + 十神 + 大运」4 层），**禁止 LLM 直接打分**
 - **公正**：身份信息不得进入打分流程；同输入双盲必须 bit-for-bit 一致；合盘也只看八字结构、不接收姓名 / 关系状态 / 历史
@@ -784,8 +766,7 @@ python3 scripts/save_confirmed_facts.py --bazi output/bazi.json --add-structural
 - **争议解读（强制）**：每个 disputed 年份都必须并入 key_years 并按 dispute_analysis_protocol Step A–D 解读
 - **合盘解读（强制）**：4 层评分必须按 he_pan_protocol §5 解读（按层 → 加 / 减分 → 大运同步 → confidence），禁止甩 grade、禁止给"配/不配"结论
 - **流式输出（强制 · v5）**：Step 3a / 合盘解读必须按节流式发出（每写完一节立刻发，禁止憋整段）；Step 2.7 必须先问用户要 markdown-only 还是要 HTML，禁止默认渲染 HTML 让用户白等
-- **R0 反询问 + 双层准确度（强制 · v6）**：Step 2.5 必须先抛 R0 反询问·关系画像 2 题（偏好类型 + 对方反应模式）做"取向校准"，再抛 R1 健康/重大事件 3 题做"命局校准"；最终 `accuracy_grade` 必须按 R0 + R1 双层判定（详见 §2.5），命中红线（关系①✗ + R1 ≤ 1/3）必须停手要时辰
-- **相位反演校验（强制 · v7 · P1-7）**：当 Step 2.5 R0+R1+R2 命中率 ≤ 2/6 时，**禁止**第一句话就判"八字错 / 时辰错"。**必须**先跑 Step 2.55 的 `handshake.py --dump-phase-candidates`，按 4 类相位反演候选（日主虚浮 / 旺神得令 / 调候反向 / 假从-真从）跟用户讨论"算法是否读反"，用户同意后用 `score_curves --override-phase X` 重跑。只有 4 类候选都跑过且 < 4/6 才进入时辰扫描。详见 `references/phase_inversion_protocol.md` 和 `references/diagnosis_pitfalls.md §12`。
+- **v8 校验回路（强制 · 替代旧 R0/R1/R2/R3 + 命中率 + phase_inversion）**：Step 2.5 必须按 v8 协议跑 —— ① `handshake.py` 生成 5 维度 ~28 题 + `askquestion_payload`；② Agent 调宿主 **AskQuestion 结构化点选** UI 一次抛全部题（**禁止**用自然语言转述题面让用户口头答"对/不对/部分"，CLI 宿主 fallback 到 `cli_fallback_prompt`）；③ `phase_posterior.py` 算贝叶斯后验 P(phase | answers)；④ 后验阈值落地：≥ 0.80 high adopt / 0.60-0.80 mid adopt / 0.40-0.60 触发追问轮（top-2 候选间最 discriminative 2-3 题，最多 1 轮）/ < 0.40 reject 不出图。`bazi.phase_decision.is_provisional=true` 时 `render_artifact.py` 必须拒绝渲染。详见 `references/phase_decision_protocol.md` + `references/handshake_protocol.md` + `references/discriminative_question_bank.md` 和 `references/diagnosis_pitfalls.md` §14（命名 case：1996/12/08）。
 - **现代化解读铁律（强制 · v7）**：emotion 维度的解读**必须**遵守 fairness_protocol.md §10：
   - **命局可推**：关系结构 / 能量模式 / 偏好的互动模式 / 关系密度
   - **命局不可推**：对方生理性别 / 是否结婚 / 几段关系 / 是否生育 / 关系是否被祝福
@@ -793,19 +774,19 @@ python3 scripts/save_confirmed_facts.py --bazi output/bazi.json --add-structural
   - **emotion 高 ≠ 婚姻顺利，emotion 低 ≠ 单身差**——纯中性描述
   - **必须前置声明**：出图后第一段感情解读必须包含「命局只反映关系结构和能量模式，不预设对方性别 / 是否结婚 / 是否生育——这些是你的现代选择，不在命局之内」
   - **不接受用户的关系状态作为输入**（"我已婚 / 我跟 X 在一起 5 年" → 接受为现实但不回写打分、不掺入后视镜叙事）
-- **原生家庭解读铁律（强制 · v7.3）**：family 段的解读**必须**遵守 fairness_protocol.md §11：
+- **原生家庭解读铁律（强制 · v8 经 D1 题库校验）**：family 段的解读**必须**遵守 fairness_protocol.md §11：
   - **命局可推**：父母在你能量场里的存在模式 + 年/月柱财官印聚合的结构画像（5 档：显赫候选 / 中产 / 普通 / 波折 / 缺位）
   - **命局不可推**：父母的社会地位 / 收入 / 职业 / 学历 / 是否健在 / 是否离异 / 是否再嫁
   - **禁用措辞**："出身名门 / 名门望族 / 家世优渥 / 家世显赫 / 父亲名利双收 / 母亲贤惠 / 大家长 / 严父慈母 / 父能传财"
-  - **R3 反询问校验是必经**：写 family 段前必须抛 R3 反询问 2 题（整体结构 + 父母存在模式），R3 = 0/2 时 family 段直接降级为一句话
-  - **修古法 survivorship bias**：古典命书只收录显赫人物的命例，所以"年柱财官印聚合"在古籍里反复对应"显赫家世"——但在现代普通人的同样结构上，真实概率远低于古法暗示。R3 校验通过的"显赫"才能说，没校验过 / 校验不通过 → family 段降级或省略
-  - **触发条件**：仅在用户主动问"家庭/父母/出身"等关键词时抛 R3 + 写 family 段；用户没问 → 不要"为了完整性"硬写
+  - **D1 题库校验已并入 v8 主回路**（不再走 v7.3 R3 单独条件触发）：D1 6 题（家境 / 父在场 / 母在场 / 兄弟姐妹 / 出生地 × 时代 / 祖辈影响）随每次 handshake 一起抛，phase_posterior 把答案直接吸收进相位决策；family 段写不写、写多细，由 D1 相关 hard_evidence 题的后验信号 + 用户是否主动问家庭 共同决定
+  - **修古法 survivorship bias**：古典命书只收录显赫人物的命例，所以"年柱财官印聚合"在古籍里反复对应"显赫家世"——但在现代普通人的同样结构上，真实概率远低于古法暗示。D1 校验通过的"显赫"才能说，没校验过 / 校验不通过 → family 段降级或省略
 
 ## 何时阅读 USAGE.md / references/
 
 - **用户问"怎么用 / 怎么触发 / 不会用"** → `USAGE.md`（直接复述给用户）
-- **每次接到八字 / 生日，进入 Step 2.5 之前** → `references/handshake_protocol.md`（强制）
-- **R0+R1+R2 命中率 ≤ 2/6 时（进入 Step 2.55 之前）** → `references/phase_inversion_protocol.md`（强制 · v7 新增）
+- **每次接到八字 / 生日，进入 Step 2.5 之前** → `references/phase_decision_protocol.md`（v8 强制）+ `references/handshake_protocol.md`（v8 强制）+ `references/discriminative_question_bank.md`（v8 题库源文件）
+- **任何后验落地 / 阈值 / phase 决策疑问** → `references/phase_decision_protocol.md` §5 + `references/diagnosis_pitfalls.md` §14（命名 case：1996/12/08）
+- **[deprecated v8] 旧 R0+R1+R2 命中率 / 相位反演兜底** → `references/phase_inversion_protocol.md` 仅作历史参考，新流程不读
 - **每次合盘前 / 用户给 ≥ 2 份八字** → `references/he_pan_protocol.md`（强制）
 - **每次跑 Step 2a 之前 / 用户问"盲派怎么看"** → `references/mangpai_protocol.md`（强制）
 - **每次进入 Step 3a 写 LLM 分析之前** → `references/multi_dim_xiangshu_protocol.md`（强制）
@@ -830,7 +811,7 @@ python3 scripts/save_confirmed_facts.py --bazi output/bazi.json --add-structural
 |---|---|
 | `chart` | Artifact（HTML，type="text/html"，含 marked.js + Recharts + details 折叠 + 整图分析 / 一生评价 / 大运评价 / 关键年份评价四类 markdown）或 PNG 路径；**v6 起 8 条曲线（4 维度 × 实/虚）** |
 | `score_table` | Markdown 表格：年份 / 年龄 / 干支 / 大运 / 精神(当/趋势) / 财富(当/趋势) / 名声(当/趋势) / **感情(当/趋势)** / 置信度 |
-| `life_review` | 一生**四大维度**评价（精神 / 财富 / 名望 / **关系** 各 ≥ 200 字 · v7.6 起 key 推荐 `relations`，兼容旧 `emotion`） |
+| `life_review` | 一生**四维度**评价（精神 / 财富 / 名声 / **感情** 各 ≥ 200 字） |
 | `dayun_review` | 每段 10 年大运 headline + body |
 | `key_years` | 关键年份评价（peak / dip / shift），含大白话推论过程 + 盲派应事 + 三派分歧说明 |
 | `mangpai_events` | 按年汇总的盲派应事（仅当 Step 2a 启用） |
