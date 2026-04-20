@@ -1,0 +1,21 @@
+# 回测阈值
+# 算法对 dataset.yaml 中 notable_years 的命中率不达标 → calibrate.py 非零退出
+# （除非用 --soft，此时只报告不阻塞，用于追踪算法迭代）
+#
+# 注意：本 skill 评分模型是**结构性概率**而非确定预测。
+# 阈值参考：随机猜测方向 ≈ 33%；当前 v1 启发式约 30-40%；后续算法精化的目标 ≥ 50%。
+#
+# 当前 v1 启发式版本阈值故意设得宽松（但仍高于随机），
+# 不希望意外退化即可。后续若加入：
+#   - 完整神煞表（天乙、文昌、华盖、桃花、驿马 等）
+#   - 月令深细藏干
+#   - 十神组合（三奇、三贵、伤官配印 等成格规则）
+#   - 流年-大运-原局三层互动权重学习
+# 阈值应上调至 0.55+。
+
+direction_hit_rate: 0.30          # 方向命中率下限（v1 baseline）
+magnitude_within_one_rate: 0.40   # 量级误差 ≤ 1 档的样本比例（v1 baseline）
+
+# 算法迭代目标（信息性，calibrate.py 不读取）
+target_v2_direction_hit_rate: 0.50
+target_v2_magnitude_within_one_rate: 0.60

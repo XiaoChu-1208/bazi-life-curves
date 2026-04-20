@@ -1,0 +1,14 @@
+# Font fallback chain for chart rendering (priority order)
+# matplotlib reads this list; first available wins.
+
+PingFang SC
+Heiti SC
+STHeiti
+Songti SC
+Arial Unicode MS
+Hiragino Sans GB
+Noto Sans CJK SC
+Source Han Sans SC
+WenQuanYi Micro Hei
+SimHei
+DejaVu Sans

@@ -1,0 +1,807 @@
+{
+  "version": 1,
+  "input_kind": "pillars",
+  "gender": "M",
+  "birth_year": 1977,
+  "pillars": [
+    {
+      "gan": "丁",
+      "zhi": "巳"
+    },
+    {
+      "gan": "甲",
+      "zhi": "辰"
+    },
+    {
+      "gan": "戊",
+      "zhi": "寅"
+    },
+    {
+      "gan": "庚",
+      "zhi": "申"
+    }
+  ],
+  "pillars_str": "丁巳 甲辰 戊寅 庚申",
+  "pillar_info": [
+    {
+      "position": "年柱",
+      "gan": "丁",
+      "zhi": "巳",
+      "gan_wuxing": "火",
+      "zhi_wuxing": "火",
+      "gan_shishen": "正印",
+      "zhi_shishen": "偏印"
+    },
+    {
+      "position": "月柱",
+      "gan": "甲",
+      "zhi": "辰",
+      "gan_wuxing": "木",
+      "zhi_wuxing": "土",
+      "gan_shishen": "七杀",
+      "zhi_shishen": "比肩"
+    },
+    {
+      "position": "日柱",
+      "gan": "戊",
+      "zhi": "寅",
+      "gan_wuxing": "土",
+      "zhi_wuxing": "木",
+      "gan_shishen": "日主",
+      "zhi_shishen": "七杀"
+    },
+    {
+      "position": "时柱",
+      "gan": "庚",
+      "zhi": "申",
+      "gan_wuxing": "金",
+      "zhi_wuxing": "金",
+      "gan_shishen": "食神",
+      "zhi_shishen": "食神"
+    }
+  ],
+  "day_master": "戊",
+  "day_master_wuxing": "土",
+  "strength": {
+    "score": 12.0,
+    "label": "中和",
+    "in_season": true,
+    "same": 4.8,
+    "sheng": 3.6,
+    "xie": 3.6,
+    "ke": 1.5,
+    "kewo": 3.9
+  },
+  "yongshen": {
+    "yongshen": "金",
+    "xishen": "水",
+    "jishen": "土",
+    "tongguan": null,
+    "season": "春",
+    "day_master_wuxing": "土"
+  },
+  "dayun": [
+    {
+      "index": 0,
+      "gan": "癸",
+      "zhi": "卯",
+      "start_age": 8,
+      "start_year": 1985,
+      "end_age": 17,
+      "end_year": 1994
+    },
+    {
+      "index": 1,
+      "gan": "壬",
+      "zhi": "寅",
+      "start_age": 18,
+      "start_year": 1995,
+      "end_age": 27,
+      "end_year": 2004
+    },
+    {
+      "index": 2,
+      "gan": "辛",
+      "zhi": "丑",
+      "start_age": 28,
+      "start_year": 2005,
+      "end_age": 37,
+      "end_year": 2014
+    },
+    {
+      "index": 3,
+      "gan": "庚",
+      "zhi": "子",
+      "start_age": 38,
+      "start_year": 2015,
+      "end_age": 47,
+      "end_year": 2024
+    },
+    {
+      "index": 4,
+      "gan": "己",
+      "zhi": "亥",
+      "start_age": 48,
+      "start_year": 2025,
+      "end_age": 57,
+      "end_year": 2034
+    },
+    {
+      "index": 5,
+      "gan": "戊",
+      "zhi": "戌",
+      "start_age": 58,
+      "start_year": 2035,
+      "end_age": 67,
+      "end_year": 2044
+    },
+    {
+      "index": 6,
+      "gan": "丁",
+      "zhi": "酉",
+      "start_age": 68,
+      "start_year": 2045,
+      "end_age": 77,
+      "end_year": 2054
+    },
+    {
+      "index": 7,
+      "gan": "丙",
+      "zhi": "申",
+      "start_age": 78,
+      "start_year": 2055,
+      "end_age": 87,
+      "end_year": 2064
+    }
+  ],
+  "liunian": [
+    {
+      "age": 0,
+      "year": 1977,
+      "gan": "丁",
+      "zhi": "巳",
+      "gan_shishen": "正印",
+      "zhi_shishen": "偏印"
+    },
+    {
+      "age": 1,
+      "year": 1978,
+      "gan": "戊",
+      "zhi": "午",
+      "gan_shishen": "比肩",
+      "zhi_shishen": "正印"
+    },
+    {
+      "age": 2,
+      "year": 1979,
+      "gan": "己",
+      "zhi": "未",
+      "gan_shishen": "劫财",
+      "zhi_shishen": "劫财"
+    },
+    {
+      "age": 3,
+      "year": 1980,
+      "gan": "庚",
+      "zhi": "申",
+      "gan_shishen": "食神",
+      "zhi_shishen": "食神"
+    },
+    {
+      "age": 4,
+      "year": 1981,
+      "gan": "辛",
+      "zhi": "酉",
+      "gan_shishen": "伤官",
+      "zhi_shishen": "伤官"
+    },
+    {
+      "age": 5,
+      "year": 1982,
+      "gan": "壬",
+      "zhi": "戌",
+      "gan_shishen": "偏财",
+      "zhi_shishen": "比肩"
+    },
+    {
+      "age": 6,
+      "year": 1983,
+      "gan": "癸",
+      "zhi": "亥",
+      "gan_shishen": "正财",
+      "zhi_shishen": "偏财"
+    },
+    {
+      "age": 7,
+      "year": 1984,
+      "gan": "甲",
+      "zhi": "子",
+      "gan_shishen": "七杀",
+      "zhi_shishen": "正财"
+    },
+    {
+      "age": 8,
+      "year": 1985,
+      "gan": "乙",
+      "zhi": "丑",
+      "gan_shishen": "正官",
+      "zhi_shishen": "劫财"
+    },
+    {
+      "age": 9,
+      "year": 1986,
+      "gan": "丙",
+      "zhi": "寅",
+      "gan_shishen": "偏印",
+      "zhi_shishen": "七杀"
+    },
+    {
+      "age": 10,
+      "year": 1987,
+      "gan": "丁",
+      "zhi": "卯",
+      "gan_shishen": "正印",
+      "zhi_shishen": "正官"
+    },
+    {
+      "age": 11,
+      "year": 1988,
+      "gan": "戊",
+      "zhi": "辰",
+      "gan_shishen": "比肩",
+      "zhi_shishen": "比肩"
+    },
+    {
+      "age": 12,
+      "year": 1989,
+      "gan": "己",
+      "zhi": "巳",
+      "gan_shishen": "劫财",
+      "zhi_shishen": "偏印"
+    },
+    {
+      "age": 13,
+      "year": 1990,
+      "gan": "庚",
+      "zhi": "午",
+      "gan_shishen": "食神",
+      "zhi_shishen": "正印"
+    },
+    {
+      "age": 14,
+      "year": 1991,
+      "gan": "辛",
+      "zhi": "未",
+      "gan_shishen": "伤官",
+      "zhi_shishen": "劫财"
+    },
+    {
+      "age": 15,
+      "year": 1992,
+      "gan": "壬",
+      "zhi": "申",
+      "gan_shishen": "偏财",
+      "zhi_shishen": "食神"
+    },
+    {
+      "age": 16,
+      "year": 1993,
+      "gan": "癸",
+      "zhi": "酉",
+      "gan_shishen": "正财",
+      "zhi_shishen": "伤官"
+    },
+    {
+      "age": 17,
+      "year": 1994,
+      "gan": "甲",
+      "zhi": "戌",
+      "gan_shishen": "七杀",
+      "zhi_shishen": "比肩"
+    },
+    {
+      "age": 18,
+      "year": 1995,
+      "gan": "乙",
+      "zhi": "亥",
+      "gan_shishen": "正官",
+      "zhi_shishen": "偏财"
+    },
+    {
+      "age": 19,
+      "year": 1996,
+      "gan": "丙",
+      "zhi": "子",
+      "gan_shishen": "偏印",
+      "zhi_shishen": "正财"
+    },
+    {
+      "age": 20,
+      "year": 1997,
+      "gan": "丁",
+      "zhi": "丑",
+      "gan_shishen": "正印",
+      "zhi_shishen": "劫财"
+    },
+    {
+      "age": 21,
+      "year": 1998,
+      "gan": "戊",
+      "zhi": "寅",
+      "gan_shishen": "比肩",
+      "zhi_shishen": "七杀"
+    },
+    {
+      "age": 22,
+      "year": 1999,
+      "gan": "己",
+      "zhi": "卯",
+      "gan_shishen": "劫财",
+      "zhi_shishen": "正官"
+    },
+    {
+      "age": 23,
+      "year": 2000,
+      "gan": "庚",
+      "zhi": "辰",
+      "gan_shishen": "食神",
+      "zhi_shishen": "比肩"
+    },
+    {
+      "age": 24,
+      "year": 2001,
+      "gan": "辛",
+      "zhi": "巳",
+      "gan_shishen": "伤官",
+      "zhi_shishen": "偏印"
+    },
+    {
+      "age": 25,
+      "year": 2002,
+      "gan": "壬",
+      "zhi": "午",
+      "gan_shishen": "偏财",
+      "zhi_shishen": "正印"
+    },
+    {
+      "age": 26,
+      "year": 2003,
+      "gan": "癸",
+      "zhi": "未",
+      "gan_shishen": "正财",
+      "zhi_shishen": "劫财"
+    },
+    {
+      "age": 27,
+      "year": 2004,
+      "gan": "甲",
+      "zhi": "申",
+      "gan_shishen": "七杀",
+      "zhi_shishen": "食神"
+    },
+    {
+      "age": 28,
+      "year": 2005,
+      "gan": "乙",
+      "zhi": "酉",
+      "gan_shishen": "正官",
+      "zhi_shishen": "伤官"
+    },
+    {
+      "age": 29,
+      "year": 2006,
+      "gan": "丙",
+      "zhi": "戌",
+      "gan_shishen": "偏印",
+      "zhi_shishen": "比肩"
+    },
+    {
+      "age": 30,
+      "year": 2007,
+      "gan": "丁",
+      "zhi": "亥",
+      "gan_shishen": "正印",
+      "zhi_shishen": "偏财"
+    },
+    {
+      "age": 31,
+      "year": 2008,
+      "gan": "戊",
+      "zhi": "子",
+      "gan_shishen": "比肩",
+      "zhi_shishen": "正财"
+    },
+    {
+      "age": 32,
+      "year": 2009,
+      "gan": "己",
+      "zhi": "丑",
+      "gan_shishen": "劫财",
+      "zhi_shishen": "劫财"
+    },
+    {
+      "age": 33,
+      "year": 2010,
+      "gan": "庚",
+      "zhi": "寅",
+      "gan_shishen": "食神",
+      "zhi_shishen": "七杀"
+    },
+    {
+      "age": 34,
+      "year": 2011,
+      "gan": "辛",
+      "zhi": "卯",
+      "gan_shishen": "伤官",
+      "zhi_shishen": "正官"
+    },
+    {
+      "age": 35,
+      "year": 2012,
+      "gan": "壬",
+      "zhi": "辰",
+      "gan_shishen": "偏财",
+      "zhi_shishen": "比肩"
+    },
+    {
+      "age": 36,
+      "year": 2013,
+      "gan": "癸",
+      "zhi": "巳",
+      "gan_shishen": "正财",
+      "zhi_shishen": "偏印"
+    },
+    {
+      "age": 37,
+      "year": 2014,
+      "gan": "甲",
+      "zhi": "午",
+      "gan_shishen": "七杀",
+      "zhi_shishen": "正印"
+    },
+    {
+      "age": 38,
+      "year": 2015,
+      "gan": "乙",
+      "zhi": "未",
+      "gan_shishen": "正官",
+      "zhi_shishen": "劫财"
+    },
+    {
+      "age": 39,
+      "year": 2016,
+      "gan": "丙",
+      "zhi": "申",
+      "gan_shishen": "偏印",
+      "zhi_shishen": "食神"
+    },
+    {
+      "age": 40,
+      "year": 2017,
+      "gan": "丁",
+      "zhi": "酉",
+      "gan_shishen": "正印",
+      "zhi_shishen": "伤官"
+    },
+    {
+      "age": 41,
+      "year": 2018,
+      "gan": "戊",
+      "zhi": "戌",
+      "gan_shishen": "比肩",
+      "zhi_shishen": "比肩"
+    },
+    {
+      "age": 42,
+      "year": 2019,
+      "gan": "己",
+      "zhi": "亥",
+      "gan_shishen": "劫财",
+      "zhi_shishen": "偏财"
+    },
+    {
+      "age": 43,
+      "year": 2020,
+      "gan": "庚",
+      "zhi": "子",
+      "gan_shishen": "食神",
+      "zhi_shishen": "正财"
+    },
+    {
+      "age": 44,
+      "year": 2021,
+      "gan": "辛",
+      "zhi": "丑",
+      "gan_shishen": "伤官",
+      "zhi_shishen": "劫财"
+    },
+    {
+      "age": 45,
+      "year": 2022,
+      "gan": "壬",
+      "zhi": "寅",
+      "gan_shishen": "偏财",
+      "zhi_shishen": "七杀"
+    },
+    {
+      "age": 46,
+      "year": 2023,
+      "gan": "癸",
+      "zhi": "卯",
+      "gan_shishen": "正财",
+      "zhi_shishen": "正官"
+    },
+    {
+      "age": 47,
+      "year": 2024,
+      "gan": "甲",
+      "zhi": "辰",
+      "gan_shishen": "七杀",
+      "zhi_shishen": "比肩"
+    },
+    {
+      "age": 48,
+      "year": 2025,
+      "gan": "乙",
+      "zhi": "巳",
+      "gan_shishen": "正官",
+      "zhi_shishen": "偏印"
+    },
+    {
+      "age": 49,
+      "year": 2026,
+      "gan": "丙",
+      "zhi": "午",
+      "gan_shishen": "偏印",
+      "zhi_shishen": "正印"
+    },
+    {
+      "age": 50,
+      "year": 2027,
+      "gan": "丁",
+      "zhi": "未",
+      "gan_shishen": "正印",
+      "zhi_shishen": "劫财"
+    },
+    {
+      "age": 51,
+      "year": 2028,
+      "gan": "戊",
+      "zhi": "申",
+      "gan_shishen": "比肩",
+      "zhi_shishen": "食神"
+    },
+    {
+      "age": 52,
+      "year": 2029,
+      "gan": "己",
+      "zhi": "酉",
+      "gan_shishen": "劫财",
+      "zhi_shishen": "伤官"
+    },
+    {
+      "age": 53,
+      "year": 2030,
+      "gan": "庚",
+      "zhi": "戌",
+      "gan_shishen": "食神",
+      "zhi_shishen": "比肩"
+    },
+    {
+      "age": 54,
+      "year": 2031,
+      "gan": "辛",
+      "zhi": "亥",
+      "gan_shishen": "伤官",
+      "zhi_shishen": "偏财"
+    },
+    {
+      "age": 55,
+      "year": 2032,
+      "gan": "壬",
+      "zhi": "子",
+      "gan_shishen": "偏财",
+      "zhi_shishen": "正财"
+    },
+    {
+      "age": 56,
+      "year": 2033,
+      "gan": "癸",
+      "zhi": "丑",
+      "gan_shishen": "正财",
+      "zhi_shishen": "劫财"
+    },
+    {
+      "age": 57,
+      "year": 2034,
+      "gan": "甲",
+      "zhi": "寅",
+      "gan_shishen": "七杀",
+      "zhi_shishen": "七杀"
+    },
+    {
+      "age": 58,
+      "year": 2035,
+      "gan": "乙",
+      "zhi": "卯",
+      "gan_shishen": "正官",
+      "zhi_shishen": "正官"
+    },
+    {
+      "age": 59,
+      "year": 2036,
+      "gan": "丙",
+      "zhi": "辰",
+      "gan_shishen": "偏印",
+      "zhi_shishen": "比肩"
+    },
+    {
+      "age": 60,
+      "year": 2037,
+      "gan": "丁",
+      "zhi": "巳",
+      "gan_shishen": "正印",
+      "zhi_shishen": "偏印"
+    },
+    {
+      "age": 61,
+      "year": 2038,
+      "gan": "戊",
+      "zhi": "午",
+      "gan_shishen": "比肩",
+      "zhi_shishen": "正印"
+    },
+    {
+      "age": 62,
+      "year": 2039,
+      "gan": "己",
+      "zhi": "未",
+      "gan_shishen": "劫财",
+      "zhi_shishen": "劫财"
+    },
+    {
+      "age": 63,
+      "year": 2040,
+      "gan": "庚",
+      "zhi": "申",
+      "gan_shishen": "食神",
+      "zhi_shishen": "食神"
+    },
+    {
+      "age": 64,
+      "year": 2041,
+      "gan": "辛",
+      "zhi": "酉",
+      "gan_shishen": "伤官",
+      "zhi_shishen": "伤官"
+    },
+    {
+      "age": 65,
+      "year": 2042,
+      "gan": "壬",
+      "zhi": "戌",
+      "gan_shishen": "偏财",
+      "zhi_shishen": "比肩"
+    },
+    {
+      "age": 66,
+      "year": 2043,
+      "gan": "癸",
+      "zhi": "亥",
+      "gan_shishen": "正财",
+      "zhi_shishen": "偏财"
+    },
+    {
+      "age": 67,
+      "year": 2044,
+      "gan": "甲",
+      "zhi": "子",
+      "gan_shishen": "七杀",
+      "zhi_shishen": "正财"
+    },
+    {
+      "age": 68,
+      "year": 2045,
+      "gan": "乙",
+      "zhi": "丑",
+      "gan_shishen": "正官",
+      "zhi_shishen": "劫财"
+    },
+    {
+      "age": 69,
+      "year": 2046,
+      "gan": "丙",
+      "zhi": "寅",
+      "gan_shishen": "偏印",
+      "zhi_shishen": "七杀"
+    },
+    {
+      "age": 70,
+      "year": 2047,
+      "gan": "丁",
+      "zhi": "卯",
+      "gan_shishen": "正印",
+      "zhi_shishen": "正官"
+    },
+    {
+      "age": 71,
+      "year": 2048,
+      "gan": "戊",
+      "zhi": "辰",
+      "gan_shishen": "比肩",
+      "zhi_shishen": "比肩"
+    },
+    {
+      "age": 72,
+      "year": 2049,
+      "gan": "己",
+      "zhi": "巳",
+      "gan_shishen": "劫财",
+      "zhi_shishen": "偏印"
+    },
+    {
+      "age": 73,
+      "year": 2050,
+      "gan": "庚",
+      "zhi": "午",
+      "gan_shishen": "食神",
+      "zhi_shishen": "正印"
+    },
+    {
+      "age": 74,
+      "year": 2051,
+      "gan": "辛",
+      "zhi": "未",
+      "gan_shishen": "伤官",
+      "zhi_shishen": "劫财"
+    },
+    {
+      "age": 75,
+      "year": 2052,
+      "gan": "壬",
+      "zhi": "申",
+      "gan_shishen": "偏财",
+      "zhi_shishen": "食神"
+    },
+    {
+      "age": 76,
+      "year": 2053,
+      "gan": "癸",
+      "zhi": "酉",
+      "gan_shishen": "正财",
+      "zhi_shishen": "伤官"
+    },
+    {
+      "age": 77,
+      "year": 2054,
+      "gan": "甲",
+      "zhi": "戌",
+      "gan_shishen": "七杀",
+      "zhi_shishen": "比肩"
+    },
+    {
+      "age": 78,
+      "year": 2055,
+      "gan": "乙",
+      "zhi": "亥",
+      "gan_shishen": "正官",
+      "zhi_shishen": "偏财"
+    },
+    {
+      "age": 79,
+      "year": 2056,
+      "gan": "丙",
+      "zhi": "子",
+      "gan_shishen": "偏印",
+      "zhi_shishen": "正财"
+    },
+    {
+      "age": 80,
+      "year": 2057,
+      "gan": "丁",
+      "zhi": "丑",
+      "gan_shishen": "正印",
+      "zhi_shishen": "劫财"
+    }
+  ]
+}

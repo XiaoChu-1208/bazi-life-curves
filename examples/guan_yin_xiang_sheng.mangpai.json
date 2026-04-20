@@ -1,0 +1,679 @@
+{
+  "version": 1,
+  "school_position": "mangpai (盲派) — 不进 25% 打分融合，仅做应事断 + 烈度修正",
+  "intensity_amplifier_table": {
+    "重": 8,
+    "中": 4,
+    "轻": 2
+  },
+  "static_markers": [],
+  "events": [
+    {
+      "year": 1982,
+      "age": 0,
+      "ganzhi": "壬戌",
+      "dayun": "起运前",
+      "key": "fuyin_yingqi",
+      "name": "伏吟应期",
+      "school": "盲派应期模型",
+      "canonical_event": "旧事重演 / 必须直面同一类课题；情绪上多内省、纠结、'怎么又是这个'",
+      "dimensions": [
+        {
+          "dim": "spirit",
+          "sign": -1
+        }
+      ],
+      "intensity": "中",
+      "amplifier": {
+        "spirit": -4
+      },
+      "evidence": "流年壬戌 与 年柱伏吟",
+      "reference": "盲派应期模型",
+      "falsifiability": "如果该年并未出现重复性的旧事 / 旧关系 / 旧课题再现，这条就是错的"
+    },
+    {
+      "year": 1984,
+      "age": 2,
+      "ganzhi": "甲子",
+      "dayun": "起运前",
+      "key": "fanyin_yingqi",
+      "name": "反吟应期",
+      "school": "盲派应期模型",
+      "canonical_event": "天克地冲应期：身体 / 居所 / 关系层面的剧变，常应'一翻一覆'——先得后失或先失后得",
+      "dimensions": [
+        {
+          "dim": "spirit",
+          "sign": -1
+        },
+        {
+          "dim": "wealth",
+          "sign": 0
+        }
+      ],
+      "intensity": "重",
+      "amplifier": {
+        "spirit": -8,
+        "wealth": 0
+      },
+      "evidence": "流年甲子 与 日柱庚午 天克地冲",
+      "reference": "盲派应期模型",
+      "falsifiability": "如果该年并无身体 / 居所 / 关系的剧变事件（哪怕是先得后失），这条就是错的"
+    },
+    {
+      "year": 1986,
+      "age": 4,
+      "ganzhi": "丙寅",
+      "dayun": "起运前",
+      "key": "guan_sha_hun_za",
+      "name": "官杀混杂",
+      "school": "《滴天髓》《盲派命理》通用",
+      "canonical_event": "身份 / 职业 / 婚姻同时承受多重压力，左右为难、不易决断；女命常应婚姻波折",
+      "dimensions": [
+        {
+          "dim": "spirit",
+          "sign": -1
+        }
+      ],
+      "intensity": "中",
+      "amplifier": {
+        "spirit": -4
+      },
+      "evidence": "原局有正官无七杀，流年天干丙=七杀 → 补出七杀 ",
+      "reference": "《滴天髓》《盲派命理》通用",
+      "falsifiability": "如果该年并无『被多重身份 / 责任挤压』的明显感受，这条就是错的"
+    },
+    {
+      "year": 1986,
+      "age": 4,
+      "ganzhi": "丙寅",
+      "dayun": "起运前",
+      "key": "lu_chong",
+      "name": "禄被冲",
+      "school": "段建业《盲派命理》",
+      "canonical_event": "移居 / 工作变动 / 关键关系切换，或身体上有意外（轻则磕碰，重则大病大手术）",
+      "dimensions": [
+        {
+          "dim": "spirit",
+          "sign": -1
+        }
+      ],
+      "intensity": "重",
+      "amplifier": {
+        "spirit": -8
+      },
+      "evidence": "日干庚的禄位=申，流年支=寅（申寅相冲）",
+      "reference": "段建业《盲派命理》",
+      "falsifiability": "如果该年既无明显的居所 / 职业切换，又无身体上的强变动，这条就是错的"
+    },
+    {
+      "year": 1987,
+      "age": 5,
+      "ganzhi": "丁卯",
+      "dayun": "起运前",
+      "key": "yangren_chong",
+      "name": "羊刃逢冲",
+      "school": "盲派民间口诀",
+      "canonical_event": "突发性事件多发——意外、争执、强烈情绪爆发，或主动做出激烈的决定",
+      "dimensions": [
+        {
+          "dim": "spirit",
+          "sign": -1
+        }
+      ],
+      "intensity": "中",
+      "amplifier": {
+        "spirit": -4
+      },
+      "evidence": "日干庚的羊刃=酉，流年支=卯（酉卯相冲）",
+      "reference": "盲派民间口诀",
+      "falsifiability": "如果该年没有任何突发性事件 / 强烈情绪爆发 / 激烈决定，这条就是错的"
+    },
+    {
+      "year": 1989,
+      "age": 7,
+      "ganzhi": "己巳",
+      "dayun": "起运前",
+      "key": "guan_sha_hun_za",
+      "name": "官杀混杂",
+      "school": "《滴天髓》《盲派命理》通用",
+      "canonical_event": "身份 / 职业 / 婚姻同时承受多重压力，左右为难、不易决断；女命常应婚姻波折",
+      "dimensions": [
+        {
+          "dim": "spirit",
+          "sign": -1
+        }
+      ],
+      "intensity": "中",
+      "amplifier": {
+        "spirit": -4
+      },
+      "evidence": "原局有正官无七杀，流年地支巳主气=七杀 → 补出七杀 ",
+      "reference": "《滴天髓》《盲派命理》通用",
+      "falsifiability": "如果该年并无『被多重身份 / 责任挤压』的明显感受，这条就是错的"
+    },
+    {
+      "year": 1990,
+      "age": 8,
+      "ganzhi": "庚午",
+      "dayun": "壬子",
+      "key": "fuyin_yingqi",
+      "name": "伏吟应期",
+      "school": "盲派应期模型",
+      "canonical_event": "旧事重演 / 必须直面同一类课题；情绪上多内省、纠结、'怎么又是这个'",
+      "dimensions": [
+        {
+          "dim": "spirit",
+          "sign": -1
+        }
+      ],
+      "intensity": "中",
+      "amplifier": {
+        "spirit": -4
+      },
+      "evidence": "流年庚午 与 日柱伏吟",
+      "reference": "盲派应期模型",
+      "falsifiability": "如果该年并未出现重复性的旧事 / 旧关系 / 旧课题再现，这条就是错的"
+    },
+    {
+      "year": 1996,
+      "age": 14,
+      "ganzhi": "丙子",
+      "dayun": "壬子",
+      "key": "guan_sha_hun_za",
+      "name": "官杀混杂",
+      "school": "《滴天髓》《盲派命理》通用",
+      "canonical_event": "身份 / 职业 / 婚姻同时承受多重压力，左右为难、不易决断；女命常应婚姻波折",
+      "dimensions": [
+        {
+          "dim": "spirit",
+          "sign": -1
+        }
+      ],
+      "intensity": "中",
+      "amplifier": {
+        "spirit": -4
+      },
+      "evidence": "原局有正官无七杀，流年天干丙=七杀 → 补出七杀 ",
+      "reference": "《滴天髓》《盲派命理》通用",
+      "falsifiability": "如果该年并无『被多重身份 / 责任挤压』的明显感受，这条就是错的"
+    },
+    {
+      "year": 1996,
+      "age": 14,
+      "ganzhi": "丙子",
+      "dayun": "壬子",
+      "key": "fanyin_yingqi",
+      "name": "反吟应期",
+      "school": "盲派应期模型",
+      "canonical_event": "天克地冲应期：身体 / 居所 / 关系层面的剧变，常应'一翻一覆'——先得后失或先失后得",
+      "dimensions": [
+        {
+          "dim": "spirit",
+          "sign": -1
+        },
+        {
+          "dim": "wealth",
+          "sign": 0
+        }
+      ],
+      "intensity": "重",
+      "amplifier": {
+        "spirit": -8,
+        "wealth": 0
+      },
+      "evidence": "流年丙子 与 日柱庚午 天克地冲",
+      "reference": "盲派应期模型",
+      "falsifiability": "如果该年并无身体 / 居所 / 关系的剧变事件（哪怕是先得后失），这条就是错的"
+    },
+    {
+      "year": 1997,
+      "age": 15,
+      "ganzhi": "丁丑",
+      "dayun": "壬子",
+      "key": "fuyin_yingqi",
+      "name": "伏吟应期",
+      "school": "盲派应期模型",
+      "canonical_event": "旧事重演 / 必须直面同一类课题；情绪上多内省、纠结、'怎么又是这个'",
+      "dimensions": [
+        {
+          "dim": "spirit",
+          "sign": -1
+        }
+      ],
+      "intensity": "中",
+      "amplifier": {
+        "spirit": -4
+      },
+      "evidence": "流年丁丑 与 时柱伏吟",
+      "reference": "盲派应期模型",
+      "falsifiability": "如果该年并未出现重复性的旧事 / 旧关系 / 旧课题再现，这条就是错的"
+    },
+    {
+      "year": 1998,
+      "age": 16,
+      "ganzhi": "戊寅",
+      "dayun": "壬子",
+      "key": "lu_chong",
+      "name": "禄被冲",
+      "school": "段建业《盲派命理》",
+      "canonical_event": "移居 / 工作变动 / 关键关系切换，或身体上有意外（轻则磕碰，重则大病大手术）",
+      "dimensions": [
+        {
+          "dim": "spirit",
+          "sign": -1
+        }
+      ],
+      "intensity": "重",
+      "amplifier": {
+        "spirit": -8
+      },
+      "evidence": "日干庚的禄位=申，流年支=寅（申寅相冲）",
+      "reference": "段建业《盲派命理》",
+      "falsifiability": "如果该年既无明显的居所 / 职业切换，又无身体上的强变动，这条就是错的"
+    },
+    {
+      "year": 1999,
+      "age": 17,
+      "ganzhi": "己卯",
+      "dayun": "壬子",
+      "key": "yangren_chong",
+      "name": "羊刃逢冲",
+      "school": "盲派民间口诀",
+      "canonical_event": "突发性事件多发——意外、争执、强烈情绪爆发，或主动做出激烈的决定",
+      "dimensions": [
+        {
+          "dim": "spirit",
+          "sign": -1
+        }
+      ],
+      "intensity": "中",
+      "amplifier": {
+        "spirit": -4
+      },
+      "evidence": "日干庚的羊刃=酉，流年支=卯（酉卯相冲）",
+      "reference": "盲派民间口诀",
+      "falsifiability": "如果该年没有任何突发性事件 / 强烈情绪爆发 / 激烈决定，这条就是错的"
+    },
+    {
+      "year": 2001,
+      "age": 19,
+      "ganzhi": "辛巳",
+      "dayun": "辛亥",
+      "key": "guan_sha_hun_za",
+      "name": "官杀混杂",
+      "school": "《滴天髓》《盲派命理》通用",
+      "canonical_event": "身份 / 职业 / 婚姻同时承受多重压力，左右为难、不易决断；女命常应婚姻波折",
+      "dimensions": [
+        {
+          "dim": "spirit",
+          "sign": -1
+        }
+      ],
+      "intensity": "中",
+      "amplifier": {
+        "spirit": -4
+      },
+      "evidence": "原局有正官无七杀，流年地支巳主气=七杀 → 补出七杀 ",
+      "reference": "《滴天髓》《盲派命理》通用",
+      "falsifiability": "如果该年并无『被多重身份 / 责任挤压』的明显感受，这条就是错的"
+    },
+    {
+      "year": 2006,
+      "age": 24,
+      "ganzhi": "丙戌",
+      "dayun": "辛亥",
+      "key": "guan_sha_hun_za",
+      "name": "官杀混杂",
+      "school": "《滴天髓》《盲派命理》通用",
+      "canonical_event": "身份 / 职业 / 婚姻同时承受多重压力，左右为难、不易决断；女命常应婚姻波折",
+      "dimensions": [
+        {
+          "dim": "spirit",
+          "sign": -1
+        }
+      ],
+      "intensity": "中",
+      "amplifier": {
+        "spirit": -4
+      },
+      "evidence": "原局有正官无七杀，流年天干丙=七杀 → 补出七杀 ",
+      "reference": "《滴天髓》《盲派命理》通用",
+      "falsifiability": "如果该年并无『被多重身份 / 责任挤压』的明显感受，这条就是错的"
+    },
+    {
+      "year": 2010,
+      "age": 28,
+      "ganzhi": "庚寅",
+      "dayun": "庚戌",
+      "key": "lu_chong",
+      "name": "禄被冲",
+      "school": "段建业《盲派命理》",
+      "canonical_event": "移居 / 工作变动 / 关键关系切换，或身体上有意外（轻则磕碰，重则大病大手术）",
+      "dimensions": [
+        {
+          "dim": "spirit",
+          "sign": -1
+        }
+      ],
+      "intensity": "重",
+      "amplifier": {
+        "spirit": -8
+      },
+      "evidence": "日干庚的禄位=申，流年支=寅（申寅相冲）",
+      "reference": "段建业《盲派命理》",
+      "falsifiability": "如果该年既无明显的居所 / 职业切换，又无身体上的强变动，这条就是错的"
+    },
+    {
+      "year": 2011,
+      "age": 29,
+      "ganzhi": "辛卯",
+      "dayun": "庚戌",
+      "key": "yangren_chong",
+      "name": "羊刃逢冲",
+      "school": "盲派民间口诀",
+      "canonical_event": "突发性事件多发——意外、争执、强烈情绪爆发，或主动做出激烈的决定",
+      "dimensions": [
+        {
+          "dim": "spirit",
+          "sign": -1
+        }
+      ],
+      "intensity": "中",
+      "amplifier": {
+        "spirit": -4
+      },
+      "evidence": "日干庚的羊刃=酉，流年支=卯（酉卯相冲）",
+      "reference": "盲派民间口诀",
+      "falsifiability": "如果该年没有任何突发性事件 / 强烈情绪爆发 / 激烈决定，这条就是错的"
+    },
+    {
+      "year": 2013,
+      "age": 31,
+      "ganzhi": "癸巳",
+      "dayun": "庚戌",
+      "key": "guan_sha_hun_za",
+      "name": "官杀混杂",
+      "school": "《滴天髓》《盲派命理》通用",
+      "canonical_event": "身份 / 职业 / 婚姻同时承受多重压力，左右为难、不易决断；女命常应婚姻波折",
+      "dimensions": [
+        {
+          "dim": "spirit",
+          "sign": -1
+        }
+      ],
+      "intensity": "中",
+      "amplifier": {
+        "spirit": -4
+      },
+      "evidence": "原局有正官无七杀，流年地支巳主气=七杀 → 补出七杀 ",
+      "reference": "《滴天髓》《盲派命理》通用",
+      "falsifiability": "如果该年并无『被多重身份 / 责任挤压』的明显感受，这条就是错的"
+    },
+    {
+      "year": 2016,
+      "age": 34,
+      "ganzhi": "丙申",
+      "dayun": "庚戌",
+      "key": "guan_sha_hun_za",
+      "name": "官杀混杂",
+      "school": "《滴天髓》《盲派命理》通用",
+      "canonical_event": "身份 / 职业 / 婚姻同时承受多重压力，左右为难、不易决断；女命常应婚姻波折",
+      "dimensions": [
+        {
+          "dim": "spirit",
+          "sign": -1
+        }
+      ],
+      "intensity": "中",
+      "amplifier": {
+        "spirit": -4
+      },
+      "evidence": "原局有正官无七杀，流年天干丙=七杀 → 补出七杀 ",
+      "reference": "《滴天髓》《盲派命理》通用",
+      "falsifiability": "如果该年并无『被多重身份 / 责任挤压』的明显感受，这条就是错的"
+    },
+    {
+      "year": 2022,
+      "age": 40,
+      "ganzhi": "壬寅",
+      "dayun": "己酉",
+      "key": "lu_chong",
+      "name": "禄被冲",
+      "school": "段建业《盲派命理》",
+      "canonical_event": "移居 / 工作变动 / 关键关系切换，或身体上有意外（轻则磕碰，重则大病大手术）",
+      "dimensions": [
+        {
+          "dim": "spirit",
+          "sign": -1
+        }
+      ],
+      "intensity": "重",
+      "amplifier": {
+        "spirit": -8
+      },
+      "evidence": "日干庚的禄位=申，流年支=寅（申寅相冲）",
+      "reference": "段建业《盲派命理》",
+      "falsifiability": "如果该年既无明显的居所 / 职业切换，又无身体上的强变动，这条就是错的"
+    },
+    {
+      "year": 2023,
+      "age": 41,
+      "ganzhi": "癸卯",
+      "dayun": "己酉",
+      "key": "yangren_chong",
+      "name": "羊刃逢冲",
+      "school": "盲派民间口诀",
+      "canonical_event": "突发性事件多发——意外、争执、强烈情绪爆发，或主动做出激烈的决定",
+      "dimensions": [
+        {
+          "dim": "spirit",
+          "sign": -1
+        }
+      ],
+      "intensity": "中",
+      "amplifier": {
+        "spirit": -4
+      },
+      "evidence": "日干庚的羊刃=酉，流年支=卯（酉卯相冲）",
+      "reference": "盲派民间口诀",
+      "falsifiability": "如果该年没有任何突发性事件 / 强烈情绪爆发 / 激烈决定，这条就是错的"
+    },
+    {
+      "year": 2025,
+      "age": 43,
+      "ganzhi": "乙巳",
+      "dayun": "己酉",
+      "key": "guan_sha_hun_za",
+      "name": "官杀混杂",
+      "school": "《滴天髓》《盲派命理》通用",
+      "canonical_event": "身份 / 职业 / 婚姻同时承受多重压力，左右为难、不易决断；女命常应婚姻波折",
+      "dimensions": [
+        {
+          "dim": "spirit",
+          "sign": -1
+        }
+      ],
+      "intensity": "中",
+      "amplifier": {
+        "spirit": -4
+      },
+      "evidence": "原局有正官无七杀，流年地支巳主气=七杀 → 补出七杀 ",
+      "reference": "《滴天髓》《盲派命理》通用",
+      "falsifiability": "如果该年并无『被多重身份 / 责任挤压』的明显感受，这条就是错的"
+    },
+    {
+      "year": 2026,
+      "age": 44,
+      "ganzhi": "丙午",
+      "dayun": "己酉",
+      "key": "guan_sha_hun_za",
+      "name": "官杀混杂",
+      "school": "《滴天髓》《盲派命理》通用",
+      "canonical_event": "身份 / 职业 / 婚姻同时承受多重压力，左右为难、不易决断；女命常应婚姻波折",
+      "dimensions": [
+        {
+          "dim": "spirit",
+          "sign": -1
+        }
+      ],
+      "intensity": "中",
+      "amplifier": {
+        "spirit": -4
+      },
+      "evidence": "原局有正官无七杀，流年天干丙=七杀 → 补出七杀 ",
+      "reference": "《滴天髓》《盲派命理》通用",
+      "falsifiability": "如果该年并无『被多重身份 / 责任挤压』的明显感受，这条就是错的"
+    },
+    {
+      "year": 2033,
+      "age": 51,
+      "ganzhi": "癸丑",
+      "dayun": "戊申",
+      "key": "fuyin_yingqi",
+      "name": "伏吟应期",
+      "school": "盲派应期模型",
+      "canonical_event": "旧事重演 / 必须直面同一类课题；情绪上多内省、纠结、'怎么又是这个'",
+      "dimensions": [
+        {
+          "dim": "spirit",
+          "sign": -1
+        }
+      ],
+      "intensity": "中",
+      "amplifier": {
+        "spirit": -4
+      },
+      "evidence": "流年癸丑 与 月柱伏吟",
+      "reference": "盲派应期模型",
+      "falsifiability": "如果该年并未出现重复性的旧事 / 旧关系 / 旧课题再现，这条就是错的"
+    },
+    {
+      "year": 2034,
+      "age": 52,
+      "ganzhi": "甲寅",
+      "dayun": "戊申",
+      "key": "lu_chong",
+      "name": "禄被冲",
+      "school": "段建业《盲派命理》",
+      "canonical_event": "移居 / 工作变动 / 关键关系切换，或身体上有意外（轻则磕碰，重则大病大手术）",
+      "dimensions": [
+        {
+          "dim": "spirit",
+          "sign": -1
+        }
+      ],
+      "intensity": "重",
+      "amplifier": {
+        "spirit": -8
+      },
+      "evidence": "日干庚的禄位=申，流年支=寅（申寅相冲）",
+      "reference": "段建业《盲派命理》",
+      "falsifiability": "如果该年既无明显的居所 / 职业切换，又无身体上的强变动，这条就是错的"
+    },
+    {
+      "year": 2035,
+      "age": 53,
+      "ganzhi": "乙卯",
+      "dayun": "戊申",
+      "key": "yangren_chong",
+      "name": "羊刃逢冲",
+      "school": "盲派民间口诀",
+      "canonical_event": "突发性事件多发——意外、争执、强烈情绪爆发，或主动做出激烈的决定",
+      "dimensions": [
+        {
+          "dim": "spirit",
+          "sign": -1
+        }
+      ],
+      "intensity": "中",
+      "amplifier": {
+        "spirit": -4
+      },
+      "evidence": "日干庚的羊刃=酉，流年支=卯（酉卯相冲）",
+      "reference": "盲派民间口诀",
+      "falsifiability": "如果该年没有任何突发性事件 / 强烈情绪爆发 / 激烈决定，这条就是错的"
+    },
+    {
+      "year": 2036,
+      "age": 54,
+      "ganzhi": "丙辰",
+      "dayun": "戊申",
+      "key": "guan_sha_hun_za",
+      "name": "官杀混杂",
+      "school": "《滴天髓》《盲派命理》通用",
+      "canonical_event": "身份 / 职业 / 婚姻同时承受多重压力，左右为难、不易决断；女命常应婚姻波折",
+      "dimensions": [
+        {
+          "dim": "spirit",
+          "sign": -1
+        }
+      ],
+      "intensity": "中",
+      "amplifier": {
+        "spirit": -4
+      },
+      "evidence": "原局有正官无七杀，流年天干丙=七杀 → 补出七杀 ",
+      "reference": "《滴天髓》《盲派命理》通用",
+      "falsifiability": "如果该年并无『被多重身份 / 责任挤压』的明显感受，这条就是错的"
+    },
+    {
+      "year": 2037,
+      "age": 55,
+      "ganzhi": "丁巳",
+      "dayun": "戊申",
+      "key": "guan_sha_hun_za",
+      "name": "官杀混杂",
+      "school": "《滴天髓》《盲派命理》通用",
+      "canonical_event": "身份 / 职业 / 婚姻同时承受多重压力，左右为难、不易决断；女命常应婚姻波折",
+      "dimensions": [
+        {
+          "dim": "spirit",
+          "sign": -1
+        }
+      ],
+      "intensity": "中",
+      "amplifier": {
+        "spirit": -4
+      },
+      "evidence": "原局有正官无七杀，流年地支巳主气=七杀 → 补出七杀 ",
+      "reference": "《滴天髓》《盲派命理》通用",
+      "falsifiability": "如果该年并无『被多重身份 / 责任挤压』的明显感受，这条就是错的"
+    },
+    {
+      "year": 2042,
+      "age": 60,
+      "ganzhi": "壬戌",
+      "dayun": "丁未",
+      "key": "fuyin_yingqi",
+      "name": "伏吟应期",
+      "school": "盲派应期模型",
+      "canonical_event": "旧事重演 / 必须直面同一类课题；情绪上多内省、纠结、'怎么又是这个'",
+      "dimensions": [
+        {
+          "dim": "spirit",
+          "sign": -1
+        }
+      ],
+      "intensity": "中",
+      "amplifier": {
+        "spirit": -4
+      },
+      "evidence": "流年壬戌 与 年柱伏吟",
+      "reference": "盲派应期模型",
+      "falsifiability": "如果该年并未出现重复性的旧事 / 旧关系 / 旧课题再现，这条就是错的"
+    }
+  ],
+  "events_count_by_key": {
+    "shang_guan_jian_guan": 0,
+    "guan_sha_hun_za": 11,
+    "bi_jie_duo_cai": 0,
+    "lu_chong": 5,
+    "yangren_chong": 5,
+    "shi_shen_zhi_sha": 0,
+    "qi_sha_feng_yin": 0,
+    "shang_guan_shang_jin": 0,
+    "fanyin_yingqi": 2,
+    "fuyin_yingqi": 5,
+    "cai_ku_chong_kai": 0
+  }
+}

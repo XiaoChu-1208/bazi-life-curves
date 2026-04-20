@@ -1,0 +1,118 @@
+# 历史人物八字回测数据集
+# 用于在算法改动后验证基础命中率，防止退化。
+# 仅收录公开八字 + 公开史实节点。不含私人信息。
+#
+# notable_years schema:
+#   year: 公历年份
+#   dimension: spirit / wealth / fame
+#   direction: up / down / flat
+#   magnitude: low / medium / high
+#   note: 史实简注（不参与计算，仅供阅读）
+
+- id: jobs_steve
+  source: "公开资料：1955-02-24 19:15 加州出生"
+  pillars: "乙未 戊寅 甲戌 甲戌"
+  gender: M
+  birth_year: 1955
+  notable_years:
+    - year: 1976
+      dimension: fame
+      direction: up
+      magnitude: high
+      note: "Apple 成立"
+    - year: 1985
+      dimension: fame
+      direction: down
+      magnitude: high
+      note: "被 Apple 董事会驱逐"
+    - year: 1997
+      dimension: fame
+      direction: up
+      magnitude: high
+      note: "回归 Apple 任 iCEO"
+    - year: 2007
+      dimension: wealth
+      direction: up
+      magnitude: high
+      note: "iPhone 发布，市值飞跃"
+    - year: 2007
+      dimension: fame
+      direction: up
+      magnitude: high
+
+- id: ma_jack
+  source: "公开资料：1964-09-10 杭州出生（约 9-10 月）"
+  pillars: "甲辰 癸酉 癸丑 戊午"
+  gender: M
+  birth_year: 1964
+  notable_years:
+    - year: 1999
+      dimension: wealth
+      direction: up
+      magnitude: medium
+      note: "阿里巴巴成立"
+    - year: 2014
+      dimension: wealth
+      direction: up
+      magnitude: high
+      note: "阿里巴巴 NYSE IPO"
+    - year: 2014
+      dimension: fame
+      direction: up
+      magnitude: high
+    - year: 2020
+      dimension: fame
+      direction: down
+      magnitude: high
+      note: "蚂蚁 IPO 暂停 + 公开露面减少"
+
+- id: buffet_warren
+  source: "公开资料：1930-08-30 奥马哈出生"
+  pillars: "庚午 甲申 庚辰 庚辰"
+  gender: M
+  birth_year: 1930
+  notable_years:
+    - year: 1965
+      dimension: wealth
+      direction: up
+      magnitude: medium
+      note: "收购 Berkshire Hathaway"
+    - year: 1990
+      dimension: fame
+      direction: up
+      magnitude: medium
+      note: "广为人知，获大量曝光"
+    - year: 2008
+      dimension: wealth
+      direction: down
+      magnitude: medium
+      note: "金融危机账面损失（虽然战略上抄底成功）"
+
+- id: einstein_a
+  source: "公开资料：1879-03-14 11:30 乌尔姆出生"
+  pillars: "己卯 丁卯 庚午 壬午"
+  gender: M
+  birth_year: 1879
+  notable_years:
+    - year: 1905
+      dimension: fame
+      direction: up
+      magnitude: high
+      note: "奇迹年，4 篇论文发表"
+    - year: 1921
+      dimension: fame
+      direction: up
+      magnitude: high
+      note: "诺贝尔物理学奖"
+    - year: 1933
+      dimension: spirit
+      direction: down
+      magnitude: medium
+      note: "流亡美国，离开欧洲"
+
+- id: example_blank
+  source: "占位用：用户可在此添加自己的八字 + 已发生年份做个人化校准"
+  pillars: "甲子 丙寅 戊午 庚申"
+  gender: M
+  birth_year: 1924
+  notable_years: []

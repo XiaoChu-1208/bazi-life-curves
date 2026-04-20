@@ -1,0 +1,1238 @@
+{
+  "version": 1,
+  "school_position": "mangpai (盲派) — 不进 25% 打分融合，仅做应事断 + 烈度修正",
+  "intensity_amplifier_table": {
+    "重": 8,
+    "中": 4,
+    "轻": 2
+  },
+  "static_markers": [],
+  "events": [
+    {
+      "year": 1977,
+      "age": 0,
+      "ganzhi": "丁巳",
+      "dayun": "起运前",
+      "key": "qi_sha_feng_yin",
+      "name": "七杀逢印（杀印相生）",
+      "school": "盲派 / 格局派共认",
+      "canonical_event": "贵人扶持 / 上级提拔 / 进入更高的体系；压力被转化为身份提升",
+      "dimensions": [
+        {
+          "dim": "fame",
+          "sign": 1
+        }
+      ],
+      "intensity": "中",
+      "amplifier": {
+        "fame": 4
+      },
+      "evidence": "原局有七杀，流年丁=正印",
+      "reference": "盲派 / 格局派共认",
+      "falsifiability": "如果该年没有贵人 / 上级 / 体系层面的提拔或接纳，这条就是错的"
+    },
+    {
+      "year": 1977,
+      "age": 0,
+      "ganzhi": "丁巳",
+      "dayun": "起运前",
+      "key": "fuyin_yingqi",
+      "name": "伏吟应期",
+      "school": "盲派应期模型",
+      "canonical_event": "旧事重演 / 必须直面同一类课题；情绪上多内省、纠结、'怎么又是这个'",
+      "dimensions": [
+        {
+          "dim": "spirit",
+          "sign": -1
+        }
+      ],
+      "intensity": "中",
+      "amplifier": {
+        "spirit": -4
+      },
+      "evidence": "流年丁巳 与 年柱伏吟",
+      "reference": "盲派应期模型",
+      "falsifiability": "如果该年并未出现重复性的旧事 / 旧关系 / 旧课题再现，这条就是错的"
+    },
+    {
+      "year": 1980,
+      "age": 3,
+      "ganzhi": "庚申",
+      "dayun": "起运前",
+      "key": "shi_shen_zhi_sha",
+      "name": "食神制杀",
+      "school": "盲派 / 格局派共认",
+      "canonical_event": "把外部压力 / 挑战转化为产出（作品、项目、决策成果），化煞为权",
+      "dimensions": [
+        {
+          "dim": "fame",
+          "sign": 1
+        },
+        {
+          "dim": "wealth",
+          "sign": 1
+        }
+      ],
+      "intensity": "中",
+      "amplifier": {
+        "fame": 4,
+        "wealth": 4
+      },
+      "evidence": "原局有七杀，流年庚=食神",
+      "reference": "盲派 / 格局派共认",
+      "falsifiability": "如果该年并未产出明显的'用作品 / 项目化解压力'的事件，这条就是错的"
+    },
+    {
+      "year": 1980,
+      "age": 3,
+      "ganzhi": "庚申",
+      "dayun": "起运前",
+      "key": "fuyin_yingqi",
+      "name": "伏吟应期",
+      "school": "盲派应期模型",
+      "canonical_event": "旧事重演 / 必须直面同一类课题；情绪上多内省、纠结、'怎么又是这个'",
+      "dimensions": [
+        {
+          "dim": "spirit",
+          "sign": -1
+        }
+      ],
+      "intensity": "中",
+      "amplifier": {
+        "spirit": -4
+      },
+      "evidence": "流年庚申 与 时柱伏吟",
+      "reference": "盲派应期模型",
+      "falsifiability": "如果该年并未出现重复性的旧事 / 旧关系 / 旧课题再现，这条就是错的"
+    },
+    {
+      "year": 1982,
+      "age": 5,
+      "ganzhi": "壬戌",
+      "dayun": "起运前",
+      "key": "cai_ku_chong_kai",
+      "name": "财库被冲开",
+      "school": "盲派 / 格局派共认",
+      "canonical_event": "财务结构跳档：要么得财（库开则发），要么破财（开出忌神字），具体方向看本命用神",
+      "dimensions": [
+        {
+          "dim": "wealth",
+          "sign": 1
+        }
+      ],
+      "intensity": "重",
+      "amplifier": {
+        "wealth": 8
+      },
+      "evidence": "辰(癸正财库) 被流年戌冲开; 辰(癸正财库) 被流年戌冲开",
+      "reference": "盲派 / 格局派共认",
+      "falsifiability": "如果该年财务结构毫无波动（既无大笔进出也无资产形态变化），这条就是错的"
+    },
+    {
+      "year": 1983,
+      "age": 6,
+      "ganzhi": "癸亥",
+      "dayun": "起运前",
+      "key": "lu_chong",
+      "name": "禄被冲",
+      "school": "段建业《盲派命理》",
+      "canonical_event": "移居 / 工作变动 / 关键关系切换，或身体上有意外（轻则磕碰，重则大病大手术）",
+      "dimensions": [
+        {
+          "dim": "spirit",
+          "sign": -1
+        }
+      ],
+      "intensity": "重",
+      "amplifier": {
+        "spirit": -8
+      },
+      "evidence": "日干戊的禄位=巳，流年支=亥（巳亥相冲）",
+      "reference": "段建业《盲派命理》",
+      "falsifiability": "如果该年既无明显的居所 / 职业切换，又无身体上的强变动，这条就是错的"
+    },
+    {
+      "year": 1984,
+      "age": 7,
+      "ganzhi": "甲子",
+      "dayun": "起运前",
+      "key": "yangren_chong",
+      "name": "羊刃逢冲",
+      "school": "盲派民间口诀",
+      "canonical_event": "突发性事件多发——意外、争执、强烈情绪爆发，或主动做出激烈的决定",
+      "dimensions": [
+        {
+          "dim": "spirit",
+          "sign": -1
+        }
+      ],
+      "intensity": "中",
+      "amplifier": {
+        "spirit": -4
+      },
+      "evidence": "日干戊的羊刃=午，流年支=子（午子相冲）",
+      "reference": "盲派民间口诀",
+      "falsifiability": "如果该年没有任何突发性事件 / 强烈情绪爆发 / 激烈决定，这条就是错的"
+    },
+    {
+      "year": 1985,
+      "age": 8,
+      "ganzhi": "乙丑",
+      "dayun": "癸卯",
+      "key": "guan_sha_hun_za",
+      "name": "官杀混杂",
+      "school": "《滴天髓》《盲派命理》通用",
+      "canonical_event": "身份 / 职业 / 婚姻同时承受多重压力，左右为难、不易决断；女命常应婚姻波折",
+      "dimensions": [
+        {
+          "dim": "spirit",
+          "sign": -1
+        }
+      ],
+      "intensity": "中",
+      "amplifier": {
+        "spirit": -4
+      },
+      "evidence": "原局有七杀无正官，流年天干乙=正官 → 补出正官 （大运同向加成：大运地支卯主气=正官）",
+      "reference": "《滴天髓》《盲派命理》通用",
+      "falsifiability": "如果该年并无『被多重身份 / 责任挤压』的明显感受，这条就是错的"
+    },
+    {
+      "year": 1986,
+      "age": 9,
+      "ganzhi": "丙寅",
+      "dayun": "癸卯",
+      "key": "qi_sha_feng_yin",
+      "name": "七杀逢印（杀印相生）",
+      "school": "盲派 / 格局派共认",
+      "canonical_event": "贵人扶持 / 上级提拔 / 进入更高的体系；压力被转化为身份提升",
+      "dimensions": [
+        {
+          "dim": "fame",
+          "sign": 1
+        }
+      ],
+      "intensity": "中",
+      "amplifier": {
+        "fame": 4
+      },
+      "evidence": "原局有七杀，流年丙=偏印",
+      "reference": "盲派 / 格局派共认",
+      "falsifiability": "如果该年没有贵人 / 上级 / 体系层面的提拔或接纳，这条就是错的"
+    },
+    {
+      "year": 1987,
+      "age": 10,
+      "ganzhi": "丁卯",
+      "dayun": "癸卯",
+      "key": "guan_sha_hun_za",
+      "name": "官杀混杂",
+      "school": "《滴天髓》《盲派命理》通用",
+      "canonical_event": "身份 / 职业 / 婚姻同时承受多重压力，左右为难、不易决断；女命常应婚姻波折",
+      "dimensions": [
+        {
+          "dim": "spirit",
+          "sign": -1
+        }
+      ],
+      "intensity": "中",
+      "amplifier": {
+        "spirit": -4
+      },
+      "evidence": "原局有七杀无正官，流年地支卯主气=正官 → 补出正官 （大运同向加成：大运地支卯主气=正官）",
+      "reference": "《滴天髓》《盲派命理》通用",
+      "falsifiability": "如果该年并无『被多重身份 / 责任挤压』的明显感受，这条就是错的"
+    },
+    {
+      "year": 1987,
+      "age": 10,
+      "ganzhi": "丁卯",
+      "dayun": "癸卯",
+      "key": "qi_sha_feng_yin",
+      "name": "七杀逢印（杀印相生）",
+      "school": "盲派 / 格局派共认",
+      "canonical_event": "贵人扶持 / 上级提拔 / 进入更高的体系；压力被转化为身份提升",
+      "dimensions": [
+        {
+          "dim": "fame",
+          "sign": 1
+        }
+      ],
+      "intensity": "中",
+      "amplifier": {
+        "fame": 4
+      },
+      "evidence": "原局有七杀，流年丁=正印",
+      "reference": "盲派 / 格局派共认",
+      "falsifiability": "如果该年没有贵人 / 上级 / 体系层面的提拔或接纳，这条就是错的"
+    },
+    {
+      "year": 1990,
+      "age": 13,
+      "ganzhi": "庚午",
+      "dayun": "癸卯",
+      "key": "shi_shen_zhi_sha",
+      "name": "食神制杀",
+      "school": "盲派 / 格局派共认",
+      "canonical_event": "把外部压力 / 挑战转化为产出（作品、项目、决策成果），化煞为权",
+      "dimensions": [
+        {
+          "dim": "fame",
+          "sign": 1
+        },
+        {
+          "dim": "wealth",
+          "sign": 1
+        }
+      ],
+      "intensity": "中",
+      "amplifier": {
+        "fame": 4,
+        "wealth": 4
+      },
+      "evidence": "原局有七杀，流年庚=食神",
+      "reference": "盲派 / 格局派共认",
+      "falsifiability": "如果该年并未产出明显的'用作品 / 项目化解压力'的事件，这条就是错的"
+    },
+    {
+      "year": 1992,
+      "age": 15,
+      "ganzhi": "壬申",
+      "dayun": "癸卯",
+      "key": "fanyin_yingqi",
+      "name": "反吟应期",
+      "school": "盲派应期模型",
+      "canonical_event": "天克地冲应期：身体 / 居所 / 关系层面的剧变，常应'一翻一覆'——先得后失或先失后得",
+      "dimensions": [
+        {
+          "dim": "spirit",
+          "sign": -1
+        },
+        {
+          "dim": "wealth",
+          "sign": 0
+        }
+      ],
+      "intensity": "重",
+      "amplifier": {
+        "spirit": -8,
+        "wealth": 0
+      },
+      "evidence": "流年壬申 与 日柱戊寅 天克地冲",
+      "reference": "盲派应期模型",
+      "falsifiability": "如果该年并无身体 / 居所 / 关系的剧变事件（哪怕是先得后失），这条就是错的"
+    },
+    {
+      "year": 1994,
+      "age": 17,
+      "ganzhi": "甲戌",
+      "dayun": "癸卯",
+      "key": "cai_ku_chong_kai",
+      "name": "财库被冲开",
+      "school": "盲派 / 格局派共认",
+      "canonical_event": "财务结构跳档：要么得财（库开则发），要么破财（开出忌神字），具体方向看本命用神",
+      "dimensions": [
+        {
+          "dim": "wealth",
+          "sign": 1
+        }
+      ],
+      "intensity": "重",
+      "amplifier": {
+        "wealth": 8
+      },
+      "evidence": "辰(癸正财库) 被流年戌冲开",
+      "reference": "盲派 / 格局派共认",
+      "falsifiability": "如果该年财务结构毫无波动（既无大笔进出也无资产形态变化），这条就是错的"
+    },
+    {
+      "year": 1995,
+      "age": 18,
+      "ganzhi": "乙亥",
+      "dayun": "壬寅",
+      "key": "guan_sha_hun_za",
+      "name": "官杀混杂",
+      "school": "《滴天髓》《盲派命理》通用",
+      "canonical_event": "身份 / 职业 / 婚姻同时承受多重压力，左右为难、不易决断；女命常应婚姻波折",
+      "dimensions": [
+        {
+          "dim": "spirit",
+          "sign": -1
+        }
+      ],
+      "intensity": "中",
+      "amplifier": {
+        "spirit": -4
+      },
+      "evidence": "原局有七杀无正官，流年天干乙=正官 → 补出正官 ",
+      "reference": "《滴天髓》《盲派命理》通用",
+      "falsifiability": "如果该年并无『被多重身份 / 责任挤压』的明显感受，这条就是错的"
+    },
+    {
+      "year": 1995,
+      "age": 18,
+      "ganzhi": "乙亥",
+      "dayun": "壬寅",
+      "key": "lu_chong",
+      "name": "禄被冲",
+      "school": "段建业《盲派命理》",
+      "canonical_event": "移居 / 工作变动 / 关键关系切换，或身体上有意外（轻则磕碰，重则大病大手术）",
+      "dimensions": [
+        {
+          "dim": "spirit",
+          "sign": -1
+        }
+      ],
+      "intensity": "重",
+      "amplifier": {
+        "spirit": -8
+      },
+      "evidence": "日干戊的禄位=巳，流年支=亥（巳亥相冲）",
+      "reference": "段建业《盲派命理》",
+      "falsifiability": "如果该年既无明显的居所 / 职业切换，又无身体上的强变动，这条就是错的"
+    },
+    {
+      "year": 1996,
+      "age": 19,
+      "ganzhi": "丙子",
+      "dayun": "壬寅",
+      "key": "yangren_chong",
+      "name": "羊刃逢冲",
+      "school": "盲派民间口诀",
+      "canonical_event": "突发性事件多发——意外、争执、强烈情绪爆发，或主动做出激烈的决定",
+      "dimensions": [
+        {
+          "dim": "spirit",
+          "sign": -1
+        }
+      ],
+      "intensity": "中",
+      "amplifier": {
+        "spirit": -4
+      },
+      "evidence": "日干戊的羊刃=午，流年支=子（午子相冲）",
+      "reference": "盲派民间口诀",
+      "falsifiability": "如果该年没有任何突发性事件 / 强烈情绪爆发 / 激烈决定，这条就是错的"
+    },
+    {
+      "year": 1996,
+      "age": 19,
+      "ganzhi": "丙子",
+      "dayun": "壬寅",
+      "key": "qi_sha_feng_yin",
+      "name": "七杀逢印（杀印相生）",
+      "school": "盲派 / 格局派共认",
+      "canonical_event": "贵人扶持 / 上级提拔 / 进入更高的体系；压力被转化为身份提升",
+      "dimensions": [
+        {
+          "dim": "fame",
+          "sign": 1
+        }
+      ],
+      "intensity": "中",
+      "amplifier": {
+        "fame": 4
+      },
+      "evidence": "原局有七杀，流年丙=偏印",
+      "reference": "盲派 / 格局派共认",
+      "falsifiability": "如果该年没有贵人 / 上级 / 体系层面的提拔或接纳，这条就是错的"
+    },
+    {
+      "year": 1997,
+      "age": 20,
+      "ganzhi": "丁丑",
+      "dayun": "壬寅",
+      "key": "qi_sha_feng_yin",
+      "name": "七杀逢印（杀印相生）",
+      "school": "盲派 / 格局派共认",
+      "canonical_event": "贵人扶持 / 上级提拔 / 进入更高的体系；压力被转化为身份提升",
+      "dimensions": [
+        {
+          "dim": "fame",
+          "sign": 1
+        }
+      ],
+      "intensity": "中",
+      "amplifier": {
+        "fame": 4
+      },
+      "evidence": "原局有七杀，流年丁=正印",
+      "reference": "盲派 / 格局派共认",
+      "falsifiability": "如果该年没有贵人 / 上级 / 体系层面的提拔或接纳，这条就是错的"
+    },
+    {
+      "year": 1998,
+      "age": 21,
+      "ganzhi": "戊寅",
+      "dayun": "壬寅",
+      "key": "fuyin_yingqi",
+      "name": "伏吟应期",
+      "school": "盲派应期模型",
+      "canonical_event": "旧事重演 / 必须直面同一类课题；情绪上多内省、纠结、'怎么又是这个'",
+      "dimensions": [
+        {
+          "dim": "spirit",
+          "sign": -1
+        }
+      ],
+      "intensity": "中",
+      "amplifier": {
+        "spirit": -4
+      },
+      "evidence": "流年戊寅 与 日柱伏吟",
+      "reference": "盲派应期模型",
+      "falsifiability": "如果该年并未出现重复性的旧事 / 旧关系 / 旧课题再现，这条就是错的"
+    },
+    {
+      "year": 1999,
+      "age": 22,
+      "ganzhi": "己卯",
+      "dayun": "壬寅",
+      "key": "guan_sha_hun_za",
+      "name": "官杀混杂",
+      "school": "《滴天髓》《盲派命理》通用",
+      "canonical_event": "身份 / 职业 / 婚姻同时承受多重压力，左右为难、不易决断；女命常应婚姻波折",
+      "dimensions": [
+        {
+          "dim": "spirit",
+          "sign": -1
+        }
+      ],
+      "intensity": "中",
+      "amplifier": {
+        "spirit": -4
+      },
+      "evidence": "原局有七杀无正官，流年地支卯主气=正官 → 补出正官 ",
+      "reference": "《滴天髓》《盲派命理》通用",
+      "falsifiability": "如果该年并无『被多重身份 / 责任挤压』的明显感受，这条就是错的"
+    },
+    {
+      "year": 2000,
+      "age": 23,
+      "ganzhi": "庚辰",
+      "dayun": "壬寅",
+      "key": "shi_shen_zhi_sha",
+      "name": "食神制杀",
+      "school": "盲派 / 格局派共认",
+      "canonical_event": "把外部压力 / 挑战转化为产出（作品、项目、决策成果），化煞为权",
+      "dimensions": [
+        {
+          "dim": "fame",
+          "sign": 1
+        },
+        {
+          "dim": "wealth",
+          "sign": 1
+        }
+      ],
+      "intensity": "中",
+      "amplifier": {
+        "fame": 4,
+        "wealth": 4
+      },
+      "evidence": "原局有七杀，流年庚=食神",
+      "reference": "盲派 / 格局派共认",
+      "falsifiability": "如果该年并未产出明显的'用作品 / 项目化解压力'的事件，这条就是错的"
+    },
+    {
+      "year": 2004,
+      "age": 27,
+      "ganzhi": "甲申",
+      "dayun": "壬寅",
+      "key": "fanyin_yingqi",
+      "name": "反吟应期",
+      "school": "盲派应期模型",
+      "canonical_event": "天克地冲应期：身体 / 居所 / 关系层面的剧变，常应'一翻一覆'——先得后失或先失后得",
+      "dimensions": [
+        {
+          "dim": "spirit",
+          "sign": -1
+        },
+        {
+          "dim": "wealth",
+          "sign": 0
+        }
+      ],
+      "intensity": "重",
+      "amplifier": {
+        "spirit": -8,
+        "wealth": 0
+      },
+      "evidence": "流年甲申 与 日柱戊寅 天克地冲",
+      "reference": "盲派应期模型",
+      "falsifiability": "如果该年并无身体 / 居所 / 关系的剧变事件（哪怕是先得后失），这条就是错的"
+    },
+    {
+      "year": 2005,
+      "age": 28,
+      "ganzhi": "乙酉",
+      "dayun": "辛丑",
+      "key": "guan_sha_hun_za",
+      "name": "官杀混杂",
+      "school": "《滴天髓》《盲派命理》通用",
+      "canonical_event": "身份 / 职业 / 婚姻同时承受多重压力，左右为难、不易决断；女命常应婚姻波折",
+      "dimensions": [
+        {
+          "dim": "spirit",
+          "sign": -1
+        }
+      ],
+      "intensity": "中",
+      "amplifier": {
+        "spirit": -4
+      },
+      "evidence": "原局有七杀无正官，流年天干乙=正官 → 补出正官 ",
+      "reference": "《滴天髓》《盲派命理》通用",
+      "falsifiability": "如果该年并无『被多重身份 / 责任挤压』的明显感受，这条就是错的"
+    },
+    {
+      "year": 2006,
+      "age": 29,
+      "ganzhi": "丙戌",
+      "dayun": "辛丑",
+      "key": "qi_sha_feng_yin",
+      "name": "七杀逢印（杀印相生）",
+      "school": "盲派 / 格局派共认",
+      "canonical_event": "贵人扶持 / 上级提拔 / 进入更高的体系；压力被转化为身份提升",
+      "dimensions": [
+        {
+          "dim": "fame",
+          "sign": 1
+        }
+      ],
+      "intensity": "中",
+      "amplifier": {
+        "fame": 4
+      },
+      "evidence": "原局有七杀，流年丙=偏印",
+      "reference": "盲派 / 格局派共认",
+      "falsifiability": "如果该年没有贵人 / 上级 / 体系层面的提拔或接纳，这条就是错的"
+    },
+    {
+      "year": 2006,
+      "age": 29,
+      "ganzhi": "丙戌",
+      "dayun": "辛丑",
+      "key": "cai_ku_chong_kai",
+      "name": "财库被冲开",
+      "school": "盲派 / 格局派共认",
+      "canonical_event": "财务结构跳档：要么得财（库开则发），要么破财（开出忌神字），具体方向看本命用神",
+      "dimensions": [
+        {
+          "dim": "wealth",
+          "sign": 1
+        }
+      ],
+      "intensity": "重",
+      "amplifier": {
+        "wealth": 8
+      },
+      "evidence": "辰(癸正财库) 被流年戌冲开",
+      "reference": "盲派 / 格局派共认",
+      "falsifiability": "如果该年财务结构毫无波动（既无大笔进出也无资产形态变化），这条就是错的"
+    },
+    {
+      "year": 2007,
+      "age": 30,
+      "ganzhi": "丁亥",
+      "dayun": "辛丑",
+      "key": "lu_chong",
+      "name": "禄被冲",
+      "school": "段建业《盲派命理》",
+      "canonical_event": "移居 / 工作变动 / 关键关系切换，或身体上有意外（轻则磕碰，重则大病大手术）",
+      "dimensions": [
+        {
+          "dim": "spirit",
+          "sign": -1
+        }
+      ],
+      "intensity": "重",
+      "amplifier": {
+        "spirit": -8
+      },
+      "evidence": "日干戊的禄位=巳，流年支=亥（巳亥相冲）",
+      "reference": "段建业《盲派命理》",
+      "falsifiability": "如果该年既无明显的居所 / 职业切换，又无身体上的强变动，这条就是错的"
+    },
+    {
+      "year": 2007,
+      "age": 30,
+      "ganzhi": "丁亥",
+      "dayun": "辛丑",
+      "key": "qi_sha_feng_yin",
+      "name": "七杀逢印（杀印相生）",
+      "school": "盲派 / 格局派共认",
+      "canonical_event": "贵人扶持 / 上级提拔 / 进入更高的体系；压力被转化为身份提升",
+      "dimensions": [
+        {
+          "dim": "fame",
+          "sign": 1
+        }
+      ],
+      "intensity": "中",
+      "amplifier": {
+        "fame": 4
+      },
+      "evidence": "原局有七杀，流年丁=正印",
+      "reference": "盲派 / 格局派共认",
+      "falsifiability": "如果该年没有贵人 / 上级 / 体系层面的提拔或接纳，这条就是错的"
+    },
+    {
+      "year": 2008,
+      "age": 31,
+      "ganzhi": "戊子",
+      "dayun": "辛丑",
+      "key": "yangren_chong",
+      "name": "羊刃逢冲",
+      "school": "盲派民间口诀",
+      "canonical_event": "突发性事件多发——意外、争执、强烈情绪爆发，或主动做出激烈的决定",
+      "dimensions": [
+        {
+          "dim": "spirit",
+          "sign": -1
+        }
+      ],
+      "intensity": "中",
+      "amplifier": {
+        "spirit": -4
+      },
+      "evidence": "日干戊的羊刃=午，流年支=子（午子相冲）",
+      "reference": "盲派民间口诀",
+      "falsifiability": "如果该年没有任何突发性事件 / 强烈情绪爆发 / 激烈决定，这条就是错的"
+    },
+    {
+      "year": 2010,
+      "age": 33,
+      "ganzhi": "庚寅",
+      "dayun": "辛丑",
+      "key": "shi_shen_zhi_sha",
+      "name": "食神制杀",
+      "school": "盲派 / 格局派共认",
+      "canonical_event": "把外部压力 / 挑战转化为产出（作品、项目、决策成果），化煞为权",
+      "dimensions": [
+        {
+          "dim": "fame",
+          "sign": 1
+        },
+        {
+          "dim": "wealth",
+          "sign": 1
+        }
+      ],
+      "intensity": "中",
+      "amplifier": {
+        "fame": 4,
+        "wealth": 4
+      },
+      "evidence": "原局有七杀，流年庚=食神",
+      "reference": "盲派 / 格局派共认",
+      "falsifiability": "如果该年并未产出明显的'用作品 / 项目化解压力'的事件，这条就是错的"
+    },
+    {
+      "year": 2011,
+      "age": 34,
+      "ganzhi": "辛卯",
+      "dayun": "辛丑",
+      "key": "guan_sha_hun_za",
+      "name": "官杀混杂",
+      "school": "《滴天髓》《盲派命理》通用",
+      "canonical_event": "身份 / 职业 / 婚姻同时承受多重压力，左右为难、不易决断；女命常应婚姻波折",
+      "dimensions": [
+        {
+          "dim": "spirit",
+          "sign": -1
+        }
+      ],
+      "intensity": "中",
+      "amplifier": {
+        "spirit": -4
+      },
+      "evidence": "原局有七杀无正官，流年地支卯主气=正官 → 补出正官 ",
+      "reference": "《滴天髓》《盲派命理》通用",
+      "falsifiability": "如果该年并无『被多重身份 / 责任挤压』的明显感受，这条就是错的"
+    },
+    {
+      "year": 2015,
+      "age": 38,
+      "ganzhi": "乙未",
+      "dayun": "庚子",
+      "key": "guan_sha_hun_za",
+      "name": "官杀混杂",
+      "school": "《滴天髓》《盲派命理》通用",
+      "canonical_event": "身份 / 职业 / 婚姻同时承受多重压力，左右为难、不易决断；女命常应婚姻波折",
+      "dimensions": [
+        {
+          "dim": "spirit",
+          "sign": -1
+        }
+      ],
+      "intensity": "中",
+      "amplifier": {
+        "spirit": -4
+      },
+      "evidence": "原局有七杀无正官，流年天干乙=正官 → 补出正官 ",
+      "reference": "《滴天髓》《盲派命理》通用",
+      "falsifiability": "如果该年并无『被多重身份 / 责任挤压』的明显感受，这条就是错的"
+    },
+    {
+      "year": 2016,
+      "age": 39,
+      "ganzhi": "丙申",
+      "dayun": "庚子",
+      "key": "qi_sha_feng_yin",
+      "name": "七杀逢印（杀印相生）",
+      "school": "盲派 / 格局派共认",
+      "canonical_event": "贵人扶持 / 上级提拔 / 进入更高的体系；压力被转化为身份提升",
+      "dimensions": [
+        {
+          "dim": "fame",
+          "sign": 1
+        }
+      ],
+      "intensity": "中",
+      "amplifier": {
+        "fame": 4
+      },
+      "evidence": "原局有七杀，流年丙=偏印",
+      "reference": "盲派 / 格局派共认",
+      "falsifiability": "如果该年没有贵人 / 上级 / 体系层面的提拔或接纳，这条就是错的"
+    },
+    {
+      "year": 2017,
+      "age": 40,
+      "ganzhi": "丁酉",
+      "dayun": "庚子",
+      "key": "qi_sha_feng_yin",
+      "name": "七杀逢印（杀印相生）",
+      "school": "盲派 / 格局派共认",
+      "canonical_event": "贵人扶持 / 上级提拔 / 进入更高的体系；压力被转化为身份提升",
+      "dimensions": [
+        {
+          "dim": "fame",
+          "sign": 1
+        }
+      ],
+      "intensity": "中",
+      "amplifier": {
+        "fame": 4
+      },
+      "evidence": "原局有七杀，流年丁=正印",
+      "reference": "盲派 / 格局派共认",
+      "falsifiability": "如果该年没有贵人 / 上级 / 体系层面的提拔或接纳，这条就是错的"
+    },
+    {
+      "year": 2018,
+      "age": 41,
+      "ganzhi": "戊戌",
+      "dayun": "庚子",
+      "key": "cai_ku_chong_kai",
+      "name": "财库被冲开",
+      "school": "盲派 / 格局派共认",
+      "canonical_event": "财务结构跳档：要么得财（库开则发），要么破财（开出忌神字），具体方向看本命用神",
+      "dimensions": [
+        {
+          "dim": "wealth",
+          "sign": 1
+        }
+      ],
+      "intensity": "重",
+      "amplifier": {
+        "wealth": 8
+      },
+      "evidence": "辰(癸正财库) 被流年戌冲开",
+      "reference": "盲派 / 格局派共认",
+      "falsifiability": "如果该年财务结构毫无波动（既无大笔进出也无资产形态变化），这条就是错的"
+    },
+    {
+      "year": 2019,
+      "age": 42,
+      "ganzhi": "己亥",
+      "dayun": "庚子",
+      "key": "lu_chong",
+      "name": "禄被冲",
+      "school": "段建业《盲派命理》",
+      "canonical_event": "移居 / 工作变动 / 关键关系切换，或身体上有意外（轻则磕碰，重则大病大手术）",
+      "dimensions": [
+        {
+          "dim": "spirit",
+          "sign": -1
+        }
+      ],
+      "intensity": "重",
+      "amplifier": {
+        "spirit": -8
+      },
+      "evidence": "日干戊的禄位=巳，流年支=亥（巳亥相冲）",
+      "reference": "段建业《盲派命理》",
+      "falsifiability": "如果该年既无明显的居所 / 职业切换，又无身体上的强变动，这条就是错的"
+    },
+    {
+      "year": 2020,
+      "age": 43,
+      "ganzhi": "庚子",
+      "dayun": "庚子",
+      "key": "yangren_chong",
+      "name": "羊刃逢冲",
+      "school": "盲派民间口诀",
+      "canonical_event": "突发性事件多发——意外、争执、强烈情绪爆发，或主动做出激烈的决定",
+      "dimensions": [
+        {
+          "dim": "spirit",
+          "sign": -1
+        }
+      ],
+      "intensity": "中",
+      "amplifier": {
+        "spirit": -4
+      },
+      "evidence": "日干戊的羊刃=午，流年支=子（午子相冲）",
+      "reference": "盲派民间口诀",
+      "falsifiability": "如果该年没有任何突发性事件 / 强烈情绪爆发 / 激烈决定，这条就是错的"
+    },
+    {
+      "year": 2020,
+      "age": 43,
+      "ganzhi": "庚子",
+      "dayun": "庚子",
+      "key": "shi_shen_zhi_sha",
+      "name": "食神制杀",
+      "school": "盲派 / 格局派共认",
+      "canonical_event": "把外部压力 / 挑战转化为产出（作品、项目、决策成果），化煞为权",
+      "dimensions": [
+        {
+          "dim": "fame",
+          "sign": 1
+        },
+        {
+          "dim": "wealth",
+          "sign": 1
+        }
+      ],
+      "intensity": "中",
+      "amplifier": {
+        "fame": 4,
+        "wealth": 4
+      },
+      "evidence": "原局有七杀，流年庚=食神，且大运庚也是食神，化煞力度倍增",
+      "reference": "盲派 / 格局派共认",
+      "falsifiability": "如果该年并未产出明显的'用作品 / 项目化解压力'的事件，这条就是错的"
+    },
+    {
+      "year": 2023,
+      "age": 46,
+      "ganzhi": "癸卯",
+      "dayun": "庚子",
+      "key": "guan_sha_hun_za",
+      "name": "官杀混杂",
+      "school": "《滴天髓》《盲派命理》通用",
+      "canonical_event": "身份 / 职业 / 婚姻同时承受多重压力，左右为难、不易决断；女命常应婚姻波折",
+      "dimensions": [
+        {
+          "dim": "spirit",
+          "sign": -1
+        }
+      ],
+      "intensity": "中",
+      "amplifier": {
+        "spirit": -4
+      },
+      "evidence": "原局有七杀无正官，流年地支卯主气=正官 → 补出正官 ",
+      "reference": "《滴天髓》《盲派命理》通用",
+      "falsifiability": "如果该年并无『被多重身份 / 责任挤压』的明显感受，这条就是错的"
+    },
+    {
+      "year": 2024,
+      "age": 47,
+      "ganzhi": "甲辰",
+      "dayun": "庚子",
+      "key": "fuyin_yingqi",
+      "name": "伏吟应期",
+      "school": "盲派应期模型",
+      "canonical_event": "旧事重演 / 必须直面同一类课题；情绪上多内省、纠结、'怎么又是这个'",
+      "dimensions": [
+        {
+          "dim": "spirit",
+          "sign": -1
+        }
+      ],
+      "intensity": "中",
+      "amplifier": {
+        "spirit": -4
+      },
+      "evidence": "流年甲辰 与 月柱伏吟",
+      "reference": "盲派应期模型",
+      "falsifiability": "如果该年并未出现重复性的旧事 / 旧关系 / 旧课题再现，这条就是错的"
+    },
+    {
+      "year": 2025,
+      "age": 48,
+      "ganzhi": "乙巳",
+      "dayun": "己亥",
+      "key": "guan_sha_hun_za",
+      "name": "官杀混杂",
+      "school": "《滴天髓》《盲派命理》通用",
+      "canonical_event": "身份 / 职业 / 婚姻同时承受多重压力，左右为难、不易决断；女命常应婚姻波折",
+      "dimensions": [
+        {
+          "dim": "spirit",
+          "sign": -1
+        }
+      ],
+      "intensity": "中",
+      "amplifier": {
+        "spirit": -4
+      },
+      "evidence": "原局有七杀无正官，流年天干乙=正官 → 补出正官 ",
+      "reference": "《滴天髓》《盲派命理》通用",
+      "falsifiability": "如果该年并无『被多重身份 / 责任挤压』的明显感受，这条就是错的"
+    },
+    {
+      "year": 2026,
+      "age": 49,
+      "ganzhi": "丙午",
+      "dayun": "己亥",
+      "key": "qi_sha_feng_yin",
+      "name": "七杀逢印（杀印相生）",
+      "school": "盲派 / 格局派共认",
+      "canonical_event": "贵人扶持 / 上级提拔 / 进入更高的体系；压力被转化为身份提升",
+      "dimensions": [
+        {
+          "dim": "fame",
+          "sign": 1
+        }
+      ],
+      "intensity": "中",
+      "amplifier": {
+        "fame": 4
+      },
+      "evidence": "原局有七杀，流年丙=偏印",
+      "reference": "盲派 / 格局派共认",
+      "falsifiability": "如果该年没有贵人 / 上级 / 体系层面的提拔或接纳，这条就是错的"
+    },
+    {
+      "year": 2027,
+      "age": 50,
+      "ganzhi": "丁未",
+      "dayun": "己亥",
+      "key": "qi_sha_feng_yin",
+      "name": "七杀逢印（杀印相生）",
+      "school": "盲派 / 格局派共认",
+      "canonical_event": "贵人扶持 / 上级提拔 / 进入更高的体系；压力被转化为身份提升",
+      "dimensions": [
+        {
+          "dim": "fame",
+          "sign": 1
+        }
+      ],
+      "intensity": "中",
+      "amplifier": {
+        "fame": 4
+      },
+      "evidence": "原局有七杀，流年丁=正印",
+      "reference": "盲派 / 格局派共认",
+      "falsifiability": "如果该年没有贵人 / 上级 / 体系层面的提拔或接纳，这条就是错的"
+    },
+    {
+      "year": 2030,
+      "age": 53,
+      "ganzhi": "庚戌",
+      "dayun": "己亥",
+      "key": "shi_shen_zhi_sha",
+      "name": "食神制杀",
+      "school": "盲派 / 格局派共认",
+      "canonical_event": "把外部压力 / 挑战转化为产出（作品、项目、决策成果），化煞为权",
+      "dimensions": [
+        {
+          "dim": "fame",
+          "sign": 1
+        },
+        {
+          "dim": "wealth",
+          "sign": 1
+        }
+      ],
+      "intensity": "中",
+      "amplifier": {
+        "fame": 4,
+        "wealth": 4
+      },
+      "evidence": "原局有七杀，流年庚=食神",
+      "reference": "盲派 / 格局派共认",
+      "falsifiability": "如果该年并未产出明显的'用作品 / 项目化解压力'的事件，这条就是错的"
+    },
+    {
+      "year": 2030,
+      "age": 53,
+      "ganzhi": "庚戌",
+      "dayun": "己亥",
+      "key": "cai_ku_chong_kai",
+      "name": "财库被冲开",
+      "school": "盲派 / 格局派共认",
+      "canonical_event": "财务结构跳档：要么得财（库开则发），要么破财（开出忌神字），具体方向看本命用神",
+      "dimensions": [
+        {
+          "dim": "wealth",
+          "sign": 1
+        }
+      ],
+      "intensity": "重",
+      "amplifier": {
+        "wealth": 8
+      },
+      "evidence": "辰(癸正财库) 被流年戌冲开",
+      "reference": "盲派 / 格局派共认",
+      "falsifiability": "如果该年财务结构毫无波动（既无大笔进出也无资产形态变化），这条就是错的"
+    },
+    {
+      "year": 2031,
+      "age": 54,
+      "ganzhi": "辛亥",
+      "dayun": "己亥",
+      "key": "lu_chong",
+      "name": "禄被冲",
+      "school": "段建业《盲派命理》",
+      "canonical_event": "移居 / 工作变动 / 关键关系切换，或身体上有意外（轻则磕碰，重则大病大手术）",
+      "dimensions": [
+        {
+          "dim": "spirit",
+          "sign": -1
+        }
+      ],
+      "intensity": "重",
+      "amplifier": {
+        "spirit": -8
+      },
+      "evidence": "日干戊的禄位=巳，流年支=亥（巳亥相冲）",
+      "reference": "段建业《盲派命理》",
+      "falsifiability": "如果该年既无明显的居所 / 职业切换，又无身体上的强变动，这条就是错的"
+    },
+    {
+      "year": 2032,
+      "age": 55,
+      "ganzhi": "壬子",
+      "dayun": "己亥",
+      "key": "yangren_chong",
+      "name": "羊刃逢冲",
+      "school": "盲派民间口诀",
+      "canonical_event": "突发性事件多发——意外、争执、强烈情绪爆发，或主动做出激烈的决定",
+      "dimensions": [
+        {
+          "dim": "spirit",
+          "sign": -1
+        }
+      ],
+      "intensity": "中",
+      "amplifier": {
+        "spirit": -4
+      },
+      "evidence": "日干戊的羊刃=午，流年支=子（午子相冲）",
+      "reference": "盲派民间口诀",
+      "falsifiability": "如果该年没有任何突发性事件 / 强烈情绪爆发 / 激烈决定，这条就是错的"
+    },
+    {
+      "year": 2035,
+      "age": 58,
+      "ganzhi": "乙卯",
+      "dayun": "戊戌",
+      "key": "guan_sha_hun_za",
+      "name": "官杀混杂",
+      "school": "《滴天髓》《盲派命理》通用",
+      "canonical_event": "身份 / 职业 / 婚姻同时承受多重压力，左右为难、不易决断；女命常应婚姻波折",
+      "dimensions": [
+        {
+          "dim": "spirit",
+          "sign": -1
+        }
+      ],
+      "intensity": "中",
+      "amplifier": {
+        "spirit": -4
+      },
+      "evidence": "原局有七杀无正官，流年天干乙=正官; 流年地支卯主气=正官 → 补出正官 ",
+      "reference": "《滴天髓》《盲派命理》通用",
+      "falsifiability": "如果该年并无『被多重身份 / 责任挤压』的明显感受，这条就是错的"
+    },
+    {
+      "year": 2036,
+      "age": 59,
+      "ganzhi": "丙辰",
+      "dayun": "戊戌",
+      "key": "qi_sha_feng_yin",
+      "name": "七杀逢印（杀印相生）",
+      "school": "盲派 / 格局派共认",
+      "canonical_event": "贵人扶持 / 上级提拔 / 进入更高的体系；压力被转化为身份提升",
+      "dimensions": [
+        {
+          "dim": "fame",
+          "sign": 1
+        }
+      ],
+      "intensity": "中",
+      "amplifier": {
+        "fame": 4
+      },
+      "evidence": "原局有七杀，流年丙=偏印",
+      "reference": "盲派 / 格局派共认",
+      "falsifiability": "如果该年没有贵人 / 上级 / 体系层面的提拔或接纳，这条就是错的"
+    },
+    {
+      "year": 2037,
+      "age": 60,
+      "ganzhi": "丁巳",
+      "dayun": "戊戌",
+      "key": "qi_sha_feng_yin",
+      "name": "七杀逢印（杀印相生）",
+      "school": "盲派 / 格局派共认",
+      "canonical_event": "贵人扶持 / 上级提拔 / 进入更高的体系；压力被转化为身份提升",
+      "dimensions": [
+        {
+          "dim": "fame",
+          "sign": 1
+        }
+      ],
+      "intensity": "中",
+      "amplifier": {
+        "fame": 4
+      },
+      "evidence": "原局有七杀，流年丁=正印",
+      "reference": "盲派 / 格局派共认",
+      "falsifiability": "如果该年没有贵人 / 上级 / 体系层面的提拔或接纳，这条就是错的"
+    },
+    {
+      "year": 2037,
+      "age": 60,
+      "ganzhi": "丁巳",
+      "dayun": "戊戌",
+      "key": "fuyin_yingqi",
+      "name": "伏吟应期",
+      "school": "盲派应期模型",
+      "canonical_event": "旧事重演 / 必须直面同一类课题；情绪上多内省、纠结、'怎么又是这个'",
+      "dimensions": [
+        {
+          "dim": "spirit",
+          "sign": -1
+        }
+      ],
+      "intensity": "中",
+      "amplifier": {
+        "spirit": -4
+      },
+      "evidence": "流年丁巳 与 年柱伏吟",
+      "reference": "盲派应期模型",
+      "falsifiability": "如果该年并未出现重复性的旧事 / 旧关系 / 旧课题再现，这条就是错的"
+    }
+  ],
+  "events_count_by_key": {
+    "shang_guan_jian_guan": 0,
+    "guan_sha_hun_za": 10,
+    "bi_jie_duo_cai": 0,
+    "lu_chong": 5,
+    "yangren_chong": 5,
+    "shi_shen_zhi_sha": 6,
+    "qi_sha_feng_yin": 13,
+    "shang_guan_shang_jin": 0,
+    "fanyin_yingqi": 2,
+    "fuyin_yingqi": 5,
+    "cai_ku_chong_kai": 5
+  }
+}
