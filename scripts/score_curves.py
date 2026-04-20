@@ -1155,6 +1155,86 @@ def apply_phase_override(bazi: dict, phase_id: str) -> dict:
     return bazi
 
 
+# ============================================================
+# v9 PR-4 · HS-R7 守卫 + 反身性话术
+# ============================================================
+
+class MissingHSR7Disclosure(RuntimeError):
+    """v9 PR-4: HS-R7 三声明缺失时,严格模式下抛出此异常."""
+
+
+HSR7_REQUIRED_FIELDS = {
+    "narrative_caution": "5.5 叙事审慎前置声明",
+    "phase_composition": "5.3 复合相位常态化",
+    "alternative_readings": "5.10 多流派备解",
+    "must_be_true": "5.2 phase-必然预测协议",
+}
+
+HSR7_DISCLOSURE_TEXT = {
+    "limitations": (
+        "本 skill 的判定基于公历出生数据 + 真太阳时校正(±5 秒) + 当前 N 个特殊格 + "
+        "K 个事件锚点(Bayes 后验更新)。它不能判定: (1) 未提供给算法的人生面向; "
+        "(2) 算法 catalog 之外的更细分的'格中之格'; "
+        "(3) 灵魂层 / 因果层 / 命运感 / 自由意志 等元层议题."
+    ),
+    "reflexivity": (
+        "任何'未来某年会发生 X'的预测都具有反身性 — 你听完它会调整行为, "
+        "调整之后的人生不再是这个 phase 的纯粹运行. "
+        "把预测当作'决策时的参考维度之一', 不当作'必然发生的剧本'."
+    ),
+    "user_authority": (
+        "算法可以在 95% 置信度下输出某个 phase. 但你和你身边的人对自己人生的认识, "
+        "永远比 8 题问卷 + N 个格能覆盖的更深. "
+        "任何与你强烈直觉冲突的判定, 优先相信你的直觉, 回头让算法补 anchor 重算."
+    ),
+}
+
+
+def hsr7_audit(bazi: dict, curves: dict, strict: bool | None = None) -> dict:
+    """v9 PR-4: 检查 HS-R7 三声明 + 心智模型 5.x 字段是否齐全.
+
+    strict=None: 读 BAZI_STRICT_HSR7 env (默认 0=warning).
+    strict=True: 缺失字段直接 raise MissingHSR7Disclosure.
+    strict=False: 仅在返回 dict 中报告 missing.
+
+    Returns: {missing: List[str], hsr7_disclosure: Dict, ...}
+    """
+    if strict is None:
+        import os
+        strict = os.environ.get("BAZI_STRICT_HSR7") == "1"
+
+    phase = bazi.get("phase") or {}
+    missing = []
+    for field, desc in HSR7_REQUIRED_FIELDS.items():
+        if field not in phase and field not in bazi:
+            missing.append(f"{field} ({desc})")
+
+    audit = {
+        "version": "v9-PR4",
+        "missing_fields": missing,
+        "hsr7_disclosure": dict(HSR7_DISCLOSURE_TEXT),
+        "mind_model_protocol_ref": "references/mind_model_protocol.md",
+    }
+    if missing and strict:
+        raise MissingHSR7Disclosure(
+            "HS-R7 守卫拒绝输出 — 以下心智模型字段缺失:\n  - "
+            + "\n  - ".join(missing)
+            + "\n\n请在 phase_posterior 或 multi_school_vote 阶段补齐, "
+            + "或临时设 BAZI_STRICT_HSR7=0 进入 warning 模式."
+        )
+    return audit
+
+
+def append_reflexivity_disclaimer(text: str) -> str:
+    """v9 PR-4 § 5.9: 高强度断语后强制追加反身性话术."""
+    if not text:
+        return text
+    return text.rstrip() + (
+        "\n\n*此处解读建立在你已提供的事件之上, 不构成对未来的因果决定. "
+        "把它当作一种'你可能正在的解释模式', 而非'你必将经历的剧本'.*"
+    )
+
+
 def _strength_to_dom_wuxing(bazi: dict, dim: str | None) -> str | None:
     """根据 strength 字段或全局 _wuxing_count 推回旺神所属五行。
 
@@ -1436,7 +1516,7 @@ def score(
 
     disputes = _collect_disputes(points, dispute_threshold, base, weights)
 
-    return {
+    result = {
         "version": 3,
         "weights": weights,
         "lambdas": lambdas,
@@ -1471,6 +1551,12 @@ def score(
         ),
         "structural_corrections_applied": sc_applied,
     }
+
+    # v9 PR-4 · HS-R7 守卫 + 反身性话术注入
+    # 默认 warning 模式; BAZI_STRICT_HSR7=1 时缺失字段会 raise.
+    result["hsr7_audit"] = hsr7_audit(bazi, result, strict=None)
+    return result
+
 
 
 def _collect_disputes(
