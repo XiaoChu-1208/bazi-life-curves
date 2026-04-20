@@ -24,6 +24,7 @@ from _bazi_core import (
     select_yongshen,
     get_dayun_sequence,
     compute_qiyun_age_from_gregorian,
+    compute_qiyun_info_from_gregorian,
     liunian_pillar,
     calc_shishen,
     calc_zhi_shishen,
@@ -82,6 +83,8 @@ def solve(
     longitude: float | None = None,
 ) -> dict:
     qiyun_source = "user_specified" if qiyun_age is not None else None
+    qiyun_info: dict | None = None
+    qiyun_start_year: int | None = None
     true_solar_info: dict | None = None
     if pillars_str:
         pillars = parse_pillars(pillars_str)
@@ -89,7 +92,6 @@ def solve(
             raise ValueError("--birth-year required when using --pillars")
         by = birth_year
         if longitude is not None:
-            # pillars 模式下 longitude 仅用于 metadata；不会重算柱位
             true_solar_info = {
                 "longitude": longitude,
                 "warning": "pillars 模式不会用 longitude 重算柱位（柱位已固定）。"
@@ -102,9 +104,10 @@ def solve(
             gregorian_corrected = gregorian
         pillars, by = pillars_from_gregorian(gregorian_corrected, gender)
         if qiyun_age is None:
-            calc = compute_qiyun_age_from_gregorian(gregorian_corrected, gender)
-            if calc is not None:
-                qiyun_age = calc
+            qiyun_info = compute_qiyun_info_from_gregorian(gregorian_corrected, gender)
+            if qiyun_info is not None:
+                qiyun_age = qiyun_info["qiyun_age_xu"]
+                qiyun_start_year = qiyun_info["qiyun_start_year"]
                 qiyun_source = (
                     "lunar_python_精算（已校正真太阳时）" if longitude is not None
                     else "lunar_python_精算"
@@ -118,7 +121,11 @@ def solve(
 
     strength = day_master_strength(pillars)
     yong = select_yongshen(pillars, strength)
-    dayun = get_dayun_sequence(pillars, gender, by, n_yun=8, qiyun_age=qiyun_age)
+    dayun = get_dayun_sequence(
+        pillars, gender, by, n_yun=8,
+        qiyun_age=qiyun_age,
+        qiyun_start_year=qiyun_start_year,
+    )
 
     # 流年表（出生年到 birth_year + n_years）
     liunian = []
@@ -185,6 +192,7 @@ def solve(
         "strongest_wuxing": strongest_wx,
         "qiyun_age": qiyun_age,
         "qiyun_source": qiyun_source,
+        "qiyun_info": qiyun_info,
         "true_solar_time": true_solar_info,
         "dayun": dayun,
         "liunian": liunian,

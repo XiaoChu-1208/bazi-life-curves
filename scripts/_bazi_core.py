@@ -1373,11 +1373,20 @@ def _find_tongguan(pillars: List[Pillar]) -> Optional[str]:
 
 # --- 大运起运 ---
 
-def compute_qiyun_age_from_gregorian(date_str: str, gender: str) -> Optional[int]:
-    """用 lunar-python 精确算起运岁。失败返回 None。
+def compute_qiyun_info_from_gregorian(date_str: str, gender: str) -> Optional[Dict]:
+    """用 lunar-python 精确算起运信息。失败返回 None。
 
     `date_str` 可以是 'YYYY-MM-DD HH:MM' 或 'YYYY-MM-DD'。
-    起运岁 = 距出生最近的节气到出生时刻的距离 / 3 天 = 1 年（顺行 / 逆行依阴阳男女）。
+    起运岁 = 距下一节气（顺行）/上一节气（逆行）到出生时刻的距离 / 3 天 = 1 年。
+
+    返回 dict：
+        {
+          "qiyun_age_xu": int,        # 虚岁起运（lunar-python 的 getStartYear，向下取整）
+          "qiyun_year_offset": float, # 起运实数岁（精确到月），用于推算大运换运年
+          "qiyun_start_year": int,    # 第 1 步大运的精确换运公历年
+          "qiyun_start_solar": str,   # 第 1 步大运的精确换运公历日期 'YYYY-MM-DD HH:MM:SS'
+          "qiyun_age_real": int,      # 实岁起运（年数部分，向下取整），= qiyun_start_year - birth_year
+        }
     """
     try:
         from lunar_python import Solar
@@ -1395,11 +1404,28 @@ def compute_qiyun_age_from_gregorian(date_str: str, gender: str) -> Optional[int
         ec = lunar.getEightChar()
         gender_int = 1 if gender.upper() in ("M", "MALE", "男") else 0
         yun = ec.getYun(gender_int)
-        # getStartYear() = 起运虚岁；起运实岁 ≈ 虚岁 - 1
-        # 实测对真太阳时影响不大；这里返回虚岁（中国传统命书一致）
-        return int(yun.getStartYear())
+        start_solar = yun.getStartSolar()
+        start_year_real = int(start_solar.getYear())
+        return {
+            "qiyun_age_xu": int(yun.getStartYear()),
+            "qiyun_year_offset": (
+                int(yun.getStartYear()) + int(yun.getStartMonth()) / 12.0
+                + int(yun.getStartDay()) / 365.25
+            ),
+            "qiyun_start_year": start_year_real,
+            "qiyun_start_solar": start_solar.toYmdHms(),
+            "qiyun_age_real": start_year_real - y,
+        }
     except Exception:
         return None
+
+
+def compute_qiyun_age_from_gregorian(date_str: str, gender: str) -> Optional[int]:
+    """[向后兼容] 返回起运虚岁。新代码请用 compute_qiyun_info_from_gregorian。"""
+    info = compute_qiyun_info_from_gregorian(date_str, gender)
+    if info is None:
+        return None
+    return info["qiyun_age_xu"]
 
 
 def get_dayun_sequence(
@@ -1408,6 +1434,7 @@ def get_dayun_sequence(
     birth_year: int,
     n_yun: int = 8,
     qiyun_age: int = 8,
+    qiyun_start_year: Optional[int] = None,
 ) -> List[Dict]:
     """生成大运序列。
 
@@ -1415,6 +1442,12 @@ def get_dayun_sequence(
     用户手动指定 `--qiyun-age`）。pillars 模式没有时分秒信息时，本函数无法精算，
     会沿用调用方传入的默认值（8 岁）—— 此时强烈建议用户从校验环节确认起运。
     方向按阴阳男女判断（阳男阴女顺行，阴男阳女逆行）。
+
+    `qiyun_start_year`（v7.7 新增）：第 1 步大运的精确换运公历年（来自
+    lunar-python 的 yun.getStartSolar().getYear()）。若提供则**优先使用**，
+    避免「虚岁向下取整 + birth_year + qiyun_age 简化算法」造成的 ±1 年偏差
+    （典型场景：起运 9 年 5 个月，简化算法会输出 1996+9=2005，但实际换运在
+    2006-05，其他主流软件都标 2006）。
 
     返回格式：[{ index, gan, zhi, start_age, start_year, end_age, end_year }, ...]
     """
@@ -1426,9 +1459,16 @@ def get_dayun_sequence(
     male = gender.upper() in ("M", "MALE", "男")
     forward = (yang and male) or (not yang and not male)
 
-    # Find indices
     g_idx = GAN.index(month_gan)
     z_idx = ZHI.index(month_zhi)
+
+    # 优先使用精确换运年；否则退回简化算法
+    if qiyun_start_year is not None:
+        first_start_year = qiyun_start_year
+        first_start_age = qiyun_start_year - birth_year
+    else:
+        first_start_age = qiyun_age
+        first_start_year = birth_year + qiyun_age
 
     seq = []
     for i in range(n_yun):
@@ -1439,8 +1479,8 @@ def get_dayun_sequence(
         else:
             ng = GAN[(g_idx - step) % 10]
             nz = ZHI[(z_idx - step) % 12]
-        start_age = qiyun_age + i * 10
-        start_year = birth_year + start_age
+        start_age = first_start_age + i * 10
+        start_year = first_start_year + i * 10
         seq.append({
             "index": i,
             "gan": ng,
