@@ -682,10 +682,17 @@ HTML 渲染单盘要 5–15 秒、合盘也要 3–5 秒，用户没要的时候
 ```
 if Step 2.7 == B AND 当前宿主 ∈ {Claude Desktop, Claude Web, claude.ai}:
     # 把已流式输出的所有节点汇总成 analysis.json
+    # ⚠ v9.1 强约束: analysis.json 必须包含模板里实际引用的所有字段, 否则前端会
+    #    显示"（此处由 LLM 写入...）"占位符, 用户感受为"工具又没写完"。
+    #    必填: overall / life_review.{spirit,wealth,fame} / key_years (≥ 1) /
+    #          每段大运的 dayun_reviews[label] / 每个 era_window 的 era_narratives[id]
+    # 用 --strict-llm 让 render 在漏写时直接 fail, 强制 Agent 补全后重渲;
+    # 不允许"渲染成功但页面留白"作为可交付状态。
     python scripts/render_artifact.py \
       --curves curves.json \
       --analysis analysis.json \         # 把 3a 各节 markdown 注入 details 折叠区
-      --out chart.html
+      --out chart.html \
+      --strict-llm
     # 把 chart.html 内容用 artifact 块返回（type="text/html"）
     # 此时用户已经读完所有文字分析，HTML 是"锦上添花"，不再有"等图"焦虑
 
