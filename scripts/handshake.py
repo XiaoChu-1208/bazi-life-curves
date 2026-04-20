@@ -440,6 +440,201 @@ def build_emotion_pair(bazi: dict) -> List[dict]:
     return out
 
 
+# ---------- v7.4 #3 · R0 反迎合（counter-claim probes） ----------
+#
+# 设计思路：用户答 R0 时容易"迎合性"答 yes（命局推什么就说什么）。
+# 解药是「对称探针」—— 给每条 R0 候选生成一条**完全反向**的陈述当 probe，
+# 用户对正向答"对"且对反向 probe 也答"对" → 触发 sycophancy 警告，R0 命中率打折。
+#
+# 反向陈述生成规则：
+#   ① 偏好类型：在 5 种 wuxing type 里挑一个跟命局推的"五行最远"的另一种，
+#               + 在 10 种 spouse_palace_trait 里挑跟命局推的反向（如 比肩→七杀 / 食神→偏印）
+#   ② 对方反应模式：把"主动 / 单方面争取 / 暧昧 / 默默关注"几种描述里挑跟命局推的反向
+
+# 五行远近表（用于挑反向五行：a 的反向 = 跟 a 在五行循环里距离最远的）
+_WUXING_OPPOSITE = {
+    "金": "木",   # 金克木，相克对
+    "木": "金",
+    "水": "火",   # 水克火，相克对
+    "火": "水",
+    "土": "水",   # 土克水
+}
+
+# 配偶宫十神反向表（按"硬度"对偶：硬↔软）
+_SPOUSE_SHISHEN_OPPOSITE = {
+    "比肩": "正官",   # 同辈感 ↔ 有规矩有底线
+    "劫财": "正印",   # 势均力敌 ↔ 比你成熟知性
+    "食神": "七杀",   # 松弛享受 ↔ 强势压迫感
+    "伤官": "正财",   # 有锋芒切磋 ↔ 踏实可预期
+    "正财": "伤官",
+    "偏财": "正官",   # 灵活有手段 ↔ 正派得体
+    "正官": "比肩",
+    "七杀": "食神",
+    "正印": "劫财",
+    "偏印": "正财",   # 独特偏门才华 ↔ 踏实可预期
+}
+
+
+def _build_emotion_preference_counter(bazi: dict, original: dict) -> Optional[dict]:
+    """R0 ① 偏好类型 · 反向探针：故意挑跟命局推的"完全相反"的 wuxing + 配偶宫十神。
+
+    用户答原 R0 ① "对" 且答此 counter probe 也 "对" → 在迎合（不可能两个都对）。
+    """
+    if original is None:
+        return None
+    orient = bazi.get("orientation", "hetero").lower()
+    if orient == "none":
+        # none 取向题①已经走"自我亲密能量"，反向 probe 是"长期独处会强烈感到空虚"
+        return {
+            "category": "关系①·反向探针（防迎合）",
+            "side": "preference_counter",
+            "claim": (
+                "（反向探针）你长期独处时强烈感到空虚 / 必须靠他人 / 关系填补内在不足，"
+                "「自我亲密能量」对你来说不够撑场。"
+            ),
+            "evidence": "orientation=none · 故意构造跟原命局推论相反的陈述",
+            "falsifiability": "如果你确实属于这种状态 → 答「对」即可，那么命局对你 self-centered 的判断就是错的。",
+            "expected_answer_if_consistent": "不对",  # 与原 R0 ① 形成对偶
+            "paired_with": original.get("category"),
+            "score": 7.0,
+        }
+
+    pillars = bazi["pillars"]
+    pillar_info = bazi["pillar_info"]
+    day_zhi = pillars[2]["zhi"]
+    target_shishen = _spouse_shishen_set(bazi)
+
+    # 找命局推的 spouse_wx
+    spouse_wxs: List[str] = []
+    for pi in pillar_info:
+        if pi.get("gan_shishen") in target_shishen:
+            spouse_wxs.append(pi["gan_wuxing"])
+        if pi.get("zhi_shishen") in target_shishen:
+            spouse_wxs.append(pi["zhi_wuxing"])
+    spouse_wx = spouse_wxs[0] if spouse_wxs else None
+
+    # 反向 wuxing
+    counter_wx = _WUXING_OPPOSITE.get(spouse_wx) if spouse_wx else "土"
+    counter_wx_desc = WUXING_TYPE_DESC.get(counter_wx, "稳重务实型")
+
+    # 反向 palace shishen
+    palace_shishen = None
+    try:
+        from _bazi_core import ZHI_HIDDEN_GAN, calc_shishen
+        main_gan = ZHI_HIDDEN_GAN[day_zhi][0]
+        palace_shishen = calc_shishen(pillars[2]["gan"], main_gan)
+    except Exception:
+        palace_shishen = pillar_info[2].get("zhi_shishen")
+    counter_palace_shishen = _SPOUSE_SHISHEN_OPPOSITE.get(palace_shishen, "正官")
+    counter_palace_desc = SPOUSE_PALACE_TRAIT.get(counter_palace_shishen, "")
+
+    parts: List[str] = [
+        f"【反复被吸引的特质】（反向）你回顾真心心动过的人，往往带有 **{counter_wx_desc}** 的气质"
+    ]
+    if counter_palace_desc:
+        parts.append(f"【偏好的关系互动模式】（反向）{counter_palace_desc}")
+    claim = "（反向探针 · 防迎合）" + "；".join(parts)
+
+    return {
+        "category": "关系①·反向探针（防迎合）",
+        "side": "preference_counter",
+        "claim": claim,
+        "evidence": (
+            f"故意构造的反向陈述：原 spouse_wx={spouse_wx} → 反向={counter_wx}；"
+            f"原 palace={palace_shishen} → 反向={counter_palace_shishen}"
+        ),
+        "falsifiability": (
+            "如果你对原 R0 ① 答「对」，对此反向探针【也】答「对」→ 你在迎合"
+            "（不可能两种相反类型都对），R0 命中率会被打折。"
+            "如果你对原 R0 ① 答「不对」，对此反向探针答「对」→ 真实偏好确实在反向那边，"
+            "命局推的偏好类型读反了。"
+        ),
+        "expected_answer_if_consistent": "不对",
+        "paired_with": original.get("category", "关系①·偏好类型"),
+        "score": 7.0,
+    }
+
+
+def _build_emotion_attitude_counter(bazi: dict, original: dict) -> Optional[dict]:
+    """R0 ② 对方反应模式 · 反向探针。"""
+    if original is None:
+        return None
+    orient = bazi.get("orientation", "hetero").lower()
+    desc = _attitude_descriptor(bazi)
+    spouse_strength = desc["spouse_strength"]
+
+    if orient == "none":
+        return None  # none 取向 R0 ② 已经走"自我亲密能量"，反向题不容易构造
+
+    # 根据原描述类型构造反向
+    if spouse_strength == "strong" and (desc["shishang"] >= 4 or desc["has_peach"]):
+        # 原: 对方主动靠近 → 反: 你单方面争取
+        counter_text = (
+            "你心动过的对象，常常是「你单方面默默关注 / 暗恋几个月对方都没察觉」的局面"
+        )
+    elif spouse_strength == "weak" and desc["bijie"] >= 5:
+        # 原: 你单方面争取 → 反: 对方主动靠近
+        counter_text = (
+            "你心动过的对象，**很多时候是对方主动追你**，你不用怎么费劲对方就明显示好"
+        )
+    elif desc["yin"] >= 6:
+        # 原: 比你成熟想照护你型 → 反: 比你年轻 / 完全同辈平等型主动
+        counter_text = (
+            "你心动过的对象大多比你年轻或更躁动，明显在向你「展示自己 / 求关注」的那一端"
+        )
+    elif spouse_strength == "mid" and desc["shishang"] >= 3:
+        # 原: 暧昧不明 / 对方时进时退 → 反: 关系总是非常清晰
+        counter_text = (
+            "你能吸引到的人对你态度总是非常明确 —— 要么很早就清楚要在一起，要么很早就清楚不会"
+        )
+    elif spouse_strength == "weak" and desc["shishang"] <= 2:
+        # 原: 默默关注 → 反: 对方很容易就被你吸引
+        counter_text = (
+            "你心动的人，通常对你也很容易心动 —— 双方互相喜欢的密度很高"
+        )
+    else:
+        # 原: 介于主动/被动 → 反: 一定是其中一种极端
+        counter_text = (
+            "你心动过的人对你的反应**永远集中在一种极端**：要么全是对方主动，要么全是你单方面默默"
+        )
+
+    return {
+        "category": "关系②·反向探针（防迎合）",
+        "side": "attitude_counter",
+        "claim": f"（反向探针 · 防迎合）{counter_text}",
+        "evidence": f"故意构造跟原 R0 ② 完全反向的陈述（原 spouse_strength={spouse_strength}）",
+        "falsifiability": (
+            "如果你对原 R0 ② 答「对」，对此反向探针【也】答「对」→ 你在迎合（不可能两个都对），"
+            "R0 命中率会被打折。如果你对原 R0 ② 答「不对」、对此反向探针答「对」"
+            " → 命局推的对方态度读反了。"
+        ),
+        "expected_answer_if_consistent": "不对",
+        "paired_with": original.get("category", "关系②·对方反应模式"),
+        "score": 7.0,
+    }
+
+
+def build_emotion_counter_probes(bazi: dict, original_pair: List[dict]) -> List[dict]:
+    """v7.4 #3 · 为 R0 emotion_pair 生成对应的反向探针（counter-claim probes）。
+
+    用法：
+        emotion_pair = build_emotion_pair(bazi)
+        counter_probes = build_emotion_counter_probes(bazi, emotion_pair)
+    """
+    out: List[dict] = []
+    if not original_pair:
+        return out
+    if len(original_pair) >= 1:
+        cp1 = _build_emotion_preference_counter(bazi, original_pair[0])
+        if cp1:
+            out.append(cp1)
+    if len(original_pair) >= 2:
+        cp2 = _build_emotion_attitude_counter(bazi, original_pair[1])
+        if cp2:
+            out.append(cp2)
+    return out
+
+
 YUE_SHISHEN_TRAIT = {
     "比肩": "月柱比肩 → 你的人生主线是「与人共做 / 同辈协作」，但也最容易在合作里被均分掉利益",
     "劫财": "月柱劫财 → 你倾向冒险 / 借力 / 合伙；但要长期警惕「被合伙人吃掉」的结构性风险",
@@ -846,8 +1041,47 @@ R0 命中 → 取向准确度：
   · 1/2 → 取向部分对，做分析时主动告诉用户"配偶星 / 配偶宫读法存在歧义，X 段可能更符合 [另一种取向]"
   · 0/2 → **配偶星 / 配偶宫读法可能反了**，常见原因：性别输错 / 时辰错 / 八字本身不准 → 立刻提醒用户复核
 
+== Round 0 反迎合·交叉验证（v7.4 #3 新增）==
+取 round0_counter_probes 里的 ≤ 2 条（每条原 R0 题对应 1 条反向 probe）。
+**这是为防止"用户迎合性答 yes"设计的**——给每条 R0 推论再附一条**完全相反**的描述，
+两个相反的命题不可能同时为真：
+
+  原 R0 ① "你被吸引的是 [金] 型（干练果决）"  ← 用户答「对」
+  反 ① "你被吸引的是 [木] 型（理想感、温和、成长型）"  ← 用户也答「对」 ⚠ 矛盾 → 迎合标记
+
+抛 counter probes 的位置：在 R0 ② 答完后、R1 之前。可以一起抛 2 条：
+
+----
+为了避免你"迎合性"答题（命局推啥就说啥），我再抛 2 条**故意构造的反向陈述**让你校验。
+你只需对每条回 「对 / 不对 / 部分」，按你真实记忆答即可——
+如果你两条都答「对」，意味着相反的两种描述你都觉得像，逻辑上不可能 → 我会自动给 R0 命中率打折。
+
+⓪'-① 【{round0_counter[0].category}】{round0_counter[0].claim}
+   依据：{round0_counter[0].evidence}
+   可证伪点：{round0_counter[0].falsifiability}
+
+⓪'-② 【{round0_counter[1].category}】{round0_counter[1].claim}
+   依据：{round0_counter[1].evidence}
+   可证伪点：{round0_counter[1].falsifiability}
+----
+
+反迎合判定（机械化在 evaluate_responses 里跑，LLM 不要自己算）：
+  · contradiction（原=对 + 反=对）≥ 1   → consistency_grade = "sycophantic"，R0 命中率 × 0.5
+  · mirror（原=不对 + 反=对）≥ 1 且无 contradiction → consistency_grade = "mirror"，
+    建议触发 --dump-phase-candidates（命局推的偏好/态度方向多半反了）
+  · 其余 → "consistent"
+
+**LLM 输出反迎合结果给用户的固定模板**（evaluation.anti_sycophancy.warning 不为 null 时必须复述）：
+
+----
+反迎合校验结果：[consistency_grade]
+[evaluation.anti_sycophancy.warning]
+[如果 sycophantic：请你重新逐条对比，告诉我哪种描述真的更接近你？]
+[如果 mirror：建议我跑相位反演重新生成 R0 题让你验证，要试吗？]
+----
+
 R0 完成后**不论命中几条**都继续 R1（R0 只是取向校准，R1 才是命局结构校准）。
-两层都过（R0 ≥ 1/2 + R1 ≥ 2/3）才允许进 Step 2.7（询问输出格式）。
+两层都过（R0_adjusted ≥ 1/2 + R1 ≥ 2/3）才允许进 Step 2.7（询问输出格式）。
 
 == Round 1（首轮 3 条 = 三个不同侧面的健康问题，v3 改版）==
 取 round1_candidates 里的 3 条，固定顺序为：
@@ -1167,6 +1401,7 @@ def build(bazi: dict, curves: dict, current_year: int, phase_id: Optional[str] =
     health_triple = build_health_triple(bazi)  # v3 R1 = 健康三问
     emotion_pair = build_emotion_pair(bazi)    # v6 R0 = 反询问·感情画像 2 题
     family_pair = build_family_pair(bazi)      # v7.3 R3 = 反询问·原生家庭画像 2 题
+    emotion_counter = build_emotion_counter_probes(bazi, emotion_pair)  # v7.4 #3 防迎合反向探针
 
     # Round 0: 反询问·感情画像 2 题（v6 新增）—— 最先抛给用户
     # 校验"事件取向"是否符合命局结构 + 协助判断"该走格局派还是扶抑派"
@@ -1224,12 +1459,14 @@ def build(bazi: dict, curves: dict, current_year: int, phase_id: Optional[str] =
             "id": "day_master_dominant", "label": "默认 · 日主主导", "is_inverted": False,
         },
         "round0_candidates": round0,
+        "round0_counter_probes": emotion_counter,  # v7.4 #3 防迎合反向探针
         "round1_candidates": round1,
         "round2_candidates": round2,
         "round3_candidates": round3,
         "candidates_chosen": round0 + round1 + round2 + round3,
         "candidates_pool": {
             "emotion_pair": emotion_pair,
+            "emotion_counter_probes": emotion_counter,
             "health_triple": health_triple,
             "signature_traits": traits,
             "historical_anchors": anchors,
@@ -1299,6 +1536,347 @@ def build(bazi: dict, curves: dict, current_year: int, phase_id: Optional[str] =
     }
 
 
+# ==========================================================================
+# v7.4 · 红线 + 命中率机械化（含 R0/R3 + 反迎合）
+# ==========================================================================
+
+def evaluate_responses(handshake_output: dict, responses: List[dict]) -> dict:
+    """根据用户对 R0/R1/R2/R3 + 反迎合 probe 的回复机械化判定 should_halt / accuracy_grade。
+
+    Args:
+        handshake_output: build() 的输出
+        responses: List of {trait_or_anchor, user_response, user_note?, side?}
+                   side 可选，便于 LLM 显式标注是 R0/R1/R2/R3/R0_counter（防迎合 probe）
+
+    Returns:
+        {
+            "round0_hits": float, "round0_total": int, "round0_misses": int,
+            "round1_hits": float, "round1_total": int, "round1_misses": int,
+            "round2_hits": float, "round2_total": int,
+            "round3_hits": float, "round3_total": int,
+            "anti_sycophancy": {
+                "n_probes_responded": int,
+                "n_contradictions": int,            # 用户答原 R0 = 对 且 答反向 probe 也 = 对
+                "n_mirror_signals": int,            # 用户答原 R0 = 不对 且 答反向 probe = 对（反向才对）
+                "consistency_grade": "consistent" | "sycophantic" | "mirror" | "mixed" | "n/a",
+                "warning": str | None,
+                "round0_adjusted_hits": float,      # 命中率打折结果
+            },
+            "total_hits": float, "total_total": int,
+            "red_lines_triggered": List[str],
+            "should_halt": bool,
+            "accuracy_grade": "high" | "medium" | "low" | "halt",
+            "should_proceed_to_chart": bool,
+            "advisory_caveats": List[str],
+        }
+
+    打分规则：
+      "对"     +1
+      "部分对" +0.5
+      "不对"    0  + 触发红线检查
+      "不知道"  0  不算未命中
+
+    反迎合检测（v7.4 #3 新增）：
+      原 R0 ① 答 = 对 AND 反向 probe ① 答 = 对  →  contradiction +1（不可能两个相反命题都对）
+      原 R0 ② 答 = 对 AND 反向 probe ② 答 = 对  →  contradiction +1
+      contradiction ≥ 1 → consistency_grade = "sycophantic"，R0 命中率 × 0.5（打 5 折）
+      contradiction = 0 AND 至少有一组 (原=不对 + 反向=对) → "mirror"（命局推反了）
+      其余正常 → "consistent"
+    """
+    POSITIVE = {"对", "yes", "y", "true", "对的", "对啊", "完全对"}
+    PARTIAL = {"部分对", "部分", "partial", "差不多", "大致对"}
+    NEGATIVE = {"不对", "no", "n", "false", "错", "完全不对", "反向"}
+    SKIP = {"不知道", "skip", "记不清", "没印象"}
+
+    def _classify(resp: str) -> str:
+        r = (resp or "").strip().lower()
+        if r in POSITIVE or any(r.startswith(p) for p in POSITIVE):
+            return "hit"
+        if r in PARTIAL or any(r.startswith(p) for p in PARTIAL):
+            return "partial"
+        if r in NEGATIVE or any(r.startswith(n) for n in NEGATIVE):
+            return "miss"
+        if r in SKIP:
+            return "skip"
+        return "skip"
+
+    def _match_candidate(needle: str, candidates: List[dict]) -> Optional[dict]:
+        n = (needle or "").strip()
+        if not n:
+            return None
+        for c in candidates:
+            for h in (c.get("category", ""), c.get("claim", ""), c.get("evidence", "")):
+                if not h:
+                    continue
+                if n in h or h.startswith(n[:8]):
+                    return c
+        return None
+
+    r0 = handshake_output.get("round0_candidates", [])
+    r1 = handshake_output.get("round1_candidates", [])
+    r2 = handshake_output.get("round2_candidates", [])
+    r3 = handshake_output.get("round3_candidates", [])
+    r0_counter = handshake_output.get("round0_counter_probes", [])
+
+    r0_hits = r0_misses = r0_partials = 0.0
+    r1_hits = r1_misses = r1_partials = 0.0
+    r2_hits = r2_misses = r2_partials = 0.0
+    r3_hits = r3_misses = r3_partials = 0.0
+    red_lines: List[str] = []
+
+    # 原始答题表（用于反迎合交叉对比）
+    original_r0_answers: Dict[str, str] = {}     # category → kind
+    counter_r0_answers: Dict[str, str] = {}      # paired_with → kind
+
+    for resp in responses:
+        kind = _classify(resp.get("user_response", ""))
+        needle = resp.get("trait_or_anchor", "")
+        side_hint = (resp.get("side") or "").lower()
+
+        # 优先按 side 提示路由（R0/R0_counter/R1/R2/R3）
+        if "r0_counter" in side_hint or "counter" in side_hint:
+            cand = _match_candidate(needle, r0_counter)
+            if cand:
+                counter_r0_answers[cand.get("paired_with", "")] = kind
+            continue
+        if side_hint.startswith("r0"):
+            cand = _match_candidate(needle, r0)
+            if cand:
+                original_r0_answers[cand.get("category", "")] = kind
+                if kind == "hit":
+                    r0_hits += 1
+                elif kind == "partial":
+                    r0_partials += 0.5
+                elif kind == "miss":
+                    r0_misses += 1
+                continue
+        if side_hint.startswith("r3"):
+            cand = _match_candidate(needle, r3)
+            if cand:
+                if kind == "hit":
+                    r3_hits += 1
+                elif kind == "partial":
+                    r3_partials += 0.5
+                elif kind == "miss":
+                    r3_misses += 1
+                    if "整体结构" in cand.get("category", ""):
+                        red_lines.append(
+                            "family_class_negated · 原生家庭整体结构被 ✗ → "
+                            "若 primary_class = illustrious_candidate 须降级，禁用「显赫/名门」措辞"
+                        )
+            continue
+        if side_hint.startswith("r1"):
+            cand = _match_candidate(needle, r1)
+            if cand:
+                if kind == "hit":
+                    r1_hits += 1
+                elif kind == "partial":
+                    r1_partials += 0.5
+                elif kind == "miss":
+                    r1_misses += 1
+                    cat = cand.get("category", "")
+                    if "寒热出汗" in cat or "体质画像" in cat:
+                        red_lines.append(
+                            "physiology_temperature_negated · 健康①·寒热出汗被 ✗ → "
+                            "climate.label 多半判错（时辰可能错 1 小时）"
+                        )
+                    elif "脏腑短板" in cat:
+                        red_lines.append(
+                            "physiology_organ_negated · 健康③·脏腑短板被 ✗ → "
+                            "五行权重多半算偏（常见时辰错）"
+                        )
+            continue
+        if side_hint.startswith("r2"):
+            cand = _match_candidate(needle, r2)
+            if cand:
+                if kind == "hit":
+                    r2_hits += 1
+                elif kind == "partial":
+                    r2_partials += 0.5
+                elif kind == "miss":
+                    r2_misses += 1
+            continue
+
+        # 没有 side 提示 → 按内容 fuzzy 匹配（兼容旧调用方）
+        cand = _match_candidate(needle, r0_counter)
+        if cand:
+            counter_r0_answers[cand.get("paired_with", "")] = kind
+            continue
+        cand = _match_candidate(needle, r0)
+        if cand:
+            original_r0_answers[cand.get("category", "")] = kind
+            if kind == "hit": r0_hits += 1
+            elif kind == "partial": r0_partials += 0.5
+            elif kind == "miss": r0_misses += 1
+            continue
+        cand = _match_candidate(needle, r1)
+        in_r2 = False
+        if cand is None:
+            cand = _match_candidate(needle, r2)
+            in_r2 = cand is not None
+        if cand is None:
+            cand = _match_candidate(needle, r3)
+            if cand:
+                if kind == "hit": r3_hits += 1
+                elif kind == "partial": r3_partials += 0.5
+                elif kind == "miss":
+                    r3_misses += 1
+                    if "整体结构" in cand.get("category", ""):
+                        red_lines.append(
+                            "family_class_negated · 原生家庭整体结构被 ✗ → "
+                            "若 primary_class = illustrious_candidate 须降级"
+                        )
+            continue
+
+        if kind == "hit":
+            if in_r2: r2_hits += 1
+            else: r1_hits += 1
+        elif kind == "partial":
+            if in_r2: r2_partials += 0.5
+            else: r1_partials += 0.5
+        elif kind == "miss":
+            if in_r2: r2_misses += 1
+            else: r1_misses += 1
+            cat = cand.get("category", "")
+            if "寒热出汗" in cat or "体质画像" in cat:
+                red_lines.append(
+                    "physiology_temperature_negated · 健康①·寒热出汗被 ✗ → "
+                    "climate.label 多半判错（时辰可能错 1 小时）"
+                )
+            elif "脏腑短板" in cat:
+                red_lines.append(
+                    "physiology_organ_negated · 健康③·脏腑短板被 ✗ → "
+                    "五行权重多半算偏（常见时辰错）"
+                )
+
+    # ---- v7.4 #3 反迎合交叉检测 ----
+    n_contradictions = 0
+    n_mirror_signals = 0
+    n_probes_responded = len(counter_r0_answers)
+    consistency_grade = "n/a"
+    sycophancy_warning: Optional[str] = None
+
+    for orig_cat, orig_kind in original_r0_answers.items():
+        cnt_kind = counter_r0_answers.get(orig_cat)
+        if cnt_kind is None:
+            continue
+        # 矛盾：原 = 对 且 反向 = 对（不可能两种相反类型都对）
+        if orig_kind == "hit" and cnt_kind == "hit":
+            n_contradictions += 1
+        # 反向信号：原 = 不对 + 反向 = 对（命局推反了，反向才对）
+        elif orig_kind == "miss" and cnt_kind == "hit":
+            n_mirror_signals += 1
+
+    round0_adjusted_hits = r0_hits + r0_partials
+    if n_probes_responded == 0:
+        consistency_grade = "n/a"
+    elif n_contradictions >= 1:
+        consistency_grade = "sycophantic"
+        # 5 折打分：用户两边都说"对"等于没信号
+        round0_adjusted_hits = round((r0_hits + r0_partials) * 0.5, 2)
+        sycophancy_warning = (
+            f"检测到 {n_contradictions} 组矛盾（原 R0 答「对」且反向 probe 也答「对」）—— "
+            "你可能在「迎合性」答题，建议你重新逐条回想：哪种描述真的更接近你？"
+            f"R0 命中率已自动打 5 折（{r0_hits + r0_partials} → {round0_adjusted_hits}）。"
+        )
+    elif n_mirror_signals >= 1 and n_contradictions == 0:
+        consistency_grade = "mirror"
+        sycophancy_warning = (
+            f"检测到 {n_mirror_signals} 个反向信号（原 R0 答「不对」+ 反向 probe 答「对」）"
+            " → 命局推的偏好/态度方向多半是反的。建议触发相位反演 (--dump-phase-candidates)。"
+        )
+    elif n_contradictions == 0 and n_mirror_signals == 0:
+        consistency_grade = "consistent"
+    else:
+        consistency_grade = "mixed"
+
+    r0_total = len(r0)
+    r1_total = len(r1)
+    r2_total = len(r2)
+    r3_total = len(r3)
+
+    r1_score = r1_hits + r1_partials
+    r2_score = r2_hits + r2_partials
+    r3_score = r3_hits + r3_partials
+    total_score = round0_adjusted_hits + r1_score + r2_score
+    total_total = r0_total + r1_total + r2_total
+
+    should_halt = bool(red_lines)
+    advisory_caveats: List[str] = []
+    if sycophancy_warning:
+        advisory_caveats.append(sycophancy_warning)
+
+    if should_halt:
+        accuracy_grade = "halt"
+        should_proceed = False
+    else:
+        # 整体放行：R0_adjusted ≥ 1/2 且（R1 ≥ 2/3 或 R1+R2 ≥ 4/6）
+        r0_pass = round0_adjusted_hits >= 1.0
+        r1_perfect = r1_score >= r1_total - 1e-6 and r1_total >= 1
+        r1_pass = r1_score >= 2
+        cross_pass = (r1_score + r2_score) >= 4
+
+        if r1_perfect and r0_pass:
+            accuracy_grade = "high"
+            should_proceed = True
+        elif r1_pass and r0_pass:
+            accuracy_grade = "high"
+            should_proceed = True
+        elif cross_pass and r0_pass:
+            accuracy_grade = "medium"
+            should_proceed = True
+            advisory_caveats.append(
+                "R1 未达 3/3，请在分析开头明确标注「时辰可能略有偏差，结论以 trend / 大方向 为主」"
+            )
+        elif r0_pass and r1_score >= 2 and r2_score >= 2:
+            accuracy_grade = "medium"
+            should_proceed = True
+            advisory_caveats.append("综合命中刚过线，建议作为参考而非定论")
+        elif round0_adjusted_hits == 0 and r1_score <= 1:
+            accuracy_grade = "low"
+            should_proceed = False
+            advisory_caveats.append(
+                "R0 + R1 双层都不达 → 八字大概率不准（最常见：性别输错 / 时辰差 1 小时），"
+                "建议核对原始数据后重跑。"
+            )
+        else:
+            accuracy_grade = "low"
+            should_proceed = False
+            advisory_caveats.append(
+                "命中率 < 4/6 → 八字判读多半错位，建议核对出生时辰；"
+                "或考虑跑 --dump-phase-candidates 看是否需要相位反演。"
+            )
+
+    return {
+        "round0_hits": round(r0_hits + r0_partials, 2),
+        "round0_total": r0_total,
+        "round0_misses": int(r0_misses),
+        "round1_hits": round(r1_score, 2),
+        "round1_total": r1_total,
+        "round1_misses": int(r1_misses),
+        "round2_hits": round(r2_score, 2),
+        "round2_total": r2_total,
+        "round3_hits": round(r3_score, 2),
+        "round3_total": r3_total,
+        "round3_misses": int(r3_misses),
+        "anti_sycophancy": {
+            "n_probes_responded": n_probes_responded,
+            "n_contradictions": n_contradictions,
+            "n_mirror_signals": n_mirror_signals,
+            "consistency_grade": consistency_grade,
+            "warning": sycophancy_warning,
+            "round0_adjusted_hits": round(round0_adjusted_hits, 2),
+        },
+        "total_hits": round(total_score, 2),
+        "total_total": total_total,
+        "red_lines_triggered": red_lines,
+        "should_halt": should_halt,
+        "accuracy_grade": accuracy_grade,
+        "should_proceed_to_chart": should_proceed,
+        "advisory_caveats": advisory_caveats,
+    }
+
+
 def main():
     ap = argparse.ArgumentParser(description="生成出图前的下马威候选 (handshake.json)")
     ap.add_argument("--bazi", required=True, help="bazi.json 路径")
@@ -1307,6 +1885,11 @@ def main():
     ap.add_argument("--current-year", type=int, default=None,
                     help="当前公历年（用于挑选历史段锚点；默认 today.year）")
     ap.add_argument("--out", default="handshake.json", help="输出路径")
+    ap.add_argument("--user-responses", default=None,
+                    help="v7.4 · 用户对 R0/R1/R2/R3 + 反迎合 probe 的回复 JSON 路径，"
+                         "格式：[{trait_or_anchor, user_response, user_note?, side?}]，"
+                         "side 可选 (r0|r0_counter|r1|r2|r3) 用于精确路由。"
+                         "传入后机械化判定 should_halt / accuracy_grade / red_lines_triggered + 反迎合检测。")
     ap.add_argument("--dump-phase-candidates", action="store_true",
                     help="v7 P1-7 模式 · 不生成 R0/R1/R2 候选，而是 dump 4 类相位反演候选 + LLM 重跑指令；"
                          "用于 R0+R1 命中率 ≤ 2/6 时让 LLM 选反向假设重跑 score_curves。"
@@ -1341,6 +1924,14 @@ def main():
     cy = args.current_year or dt.date.today().year
     curves = json.loads(Path(args.curves).read_text(encoding="utf-8"))
     result = build(bazi, curves, cy, phase_id=args.phase_id)
+
+    # v7.4 · 若传入 --user-responses，机械化评估并写入 evaluation 字段
+    if args.user_responses and Path(args.user_responses).exists():
+        responses = json.loads(Path(args.user_responses).read_text(encoding="utf-8"))
+        if not isinstance(responses, list):
+            responses = responses.get("responses", [])
+        result["evaluation"] = evaluate_responses(result, responses)
+
     Path(args.out).write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")
     phase_msg = ""
     if args.phase_id and args.phase_id != "day_master_dominant":
@@ -1348,14 +1939,27 @@ def main():
         phase_msg = f" · 已按相位反演 [{args.phase_id}] ({ph.get('label')}) 重生成 6 题用作二轮校验"
     n_r3 = len(result.get("round3_candidates", []))
     r3_part = f" + R3={n_r3}（条件触发 · 仅在用户问家庭时抛）" if n_r3 else ""
+    n_counter = len(result.get("round0_counter_probes", []))
+    counter_part = f" + {n_counter} R0_counter（防迎合）" if n_counter else ""
     print(f"[handshake] wrote {args.out}: "
-          f"R0={len(result['round0_candidates'])} + R1={len(result['round1_candidates'])} + R2={len(result['round2_candidates'])}"
+          f"R0={len(result['round0_candidates'])}{counter_part} + R1={len(result['round1_candidates'])} + R2={len(result['round2_candidates'])}"
           f"{r3_part} "
           f"(of {len(result['candidates_pool']['emotion_pair'])} emotion + "
           f"{len(result['candidates_pool']['signature_traits'])} traits + "
           f"{len(result['candidates_pool']['historical_anchors'])} anchors + "
           f"{len(result['candidates_pool'].get('family_pair', []))} family)"
           f"{phase_msg}")
+    if "evaluation" in result:
+        ev = result["evaluation"]
+        anti = ev.get("anti_sycophancy", {})
+        print(f"[handshake] evaluation: R0={ev['round0_hits']}/{ev['round0_total']} "
+              f"R1={ev['round1_hits']}/{ev['round1_total']} R2={ev['round2_hits']}/{ev['round2_total']} "
+              f"R3={ev.get('round3_hits',0)}/{ev.get('round3_total',0)} "
+              f"→ {ev['accuracy_grade']} (proceed={ev['should_proceed_to_chart']})")
+        print(f"[handshake] anti-sycophancy: {anti.get('consistency_grade','n/a')} "
+              f"({anti.get('n_contradictions',0)} contradictions, "
+              f"{anti.get('n_mirror_signals',0)} mirror signals; "
+              f"R0_adjusted={anti.get('round0_adjusted_hits','-')})")
 
 
 if __name__ == "__main__":

@@ -943,6 +943,358 @@ def detect_three_qi_cheng_xiang(pillars: List[Pillar], strength: Dict) -> Dict:
     }
 
 
+# ============================================================================
+# 【v7.4 #5 新增】化气格检测 (P6 · Hua Qi Ge / Transformation Pattern)
+# ----------------------------------------------------------------------------
+# 天干五合若得地支化神之根 + 月令有气 + 无破格之物 → 真化气格
+# 此时日主"借合化"易主，命局主导五行 = 化神，扶抑判定全部翻转。
+#
+# 五合化气：
+#   甲 + 己 → 化土（月令辰戌丑未 / 地支土多）
+#   乙 + 庚 → 化金（月令申酉 / 巳丑 / 地支金多）
+#   丙 + 辛 → 化水（月令子亥 / 申辰 / 地支水多）
+#   丁 + 壬 → 化木（月令寅卯 / 亥未 / 地支木多）
+#   戊 + 癸 → 化火（月令巳午 / 寅戌 / 地支火多）
+#
+# 条件（4 + 1 一票否决）：
+#   1. 日干 ∈ 五合对，且合干必须紧贴（月干 OR 时干，年干较弱）
+#   2. 月令属化神（或半合 / 三合化神局）
+#   3. 化神在地支至少 2 根，或月令本气就是化神
+#   4. 无强力克化神者（如化土遇月干/时干透甲乙木，且木有根 → 破格）
+#   5. 一票否决：日干本身在地支有强根（≥ 3 处比劫得地） → 不能化（化不掉）
+# ============================================================================
+
+GAN_WUHE_PAIRS = {
+    "甲": ("己", "土"), "己": ("甲", "土"),
+    "乙": ("庚", "金"), "庚": ("乙", "金"),
+    "丙": ("辛", "水"), "辛": ("丙", "水"),
+    "丁": ("壬", "木"), "壬": ("丁", "木"),
+    "戊": ("癸", "火"), "癸": ("戊", "火"),
+}
+
+# 化神 → 月令所属地支（化神有气的月）
+HUASHEN_FAVOR_MONTH = {
+    "土": {"辰", "戌", "丑", "未", "巳", "午"},
+    "金": {"申", "酉", "巳", "丑"},
+    "水": {"子", "亥", "申", "辰"},
+    "木": {"寅", "卯", "亥", "未"},
+    "火": {"巳", "午", "寅", "戌"},
+}
+
+
+def detect_huaqi_pattern(pillars: List[Pillar]) -> Dict:
+    """化气格检测。返回：
+        {
+            "triggered": bool,
+            "huashen": str | None,         # 化神五行
+            "score": "N/4",
+            "evidence": {...},
+            "suggested_phase": "huaqi_to_<wuxing>" | "day_master_dominant",
+            "suggested_label": "化XX格 · ..."
+        }
+    """
+    day_gan = pillars[2].gan
+    day_wx = GAN_WUXING[day_gan]
+    if day_gan not in GAN_WUHE_PAIRS:
+        return {"triggered": False, "huashen": None, "score": "0/4",
+                "phase_id": "P6_huaqi", "evidence": {}, "suggested_phase": "day_master_dominant",
+                "suggested_label": ""}
+
+    partner_gan, huashen = GAN_WUHE_PAIRS[day_gan]
+
+    # 条件 1：合干必须紧贴日干（月干或时干）
+    month_gan = pillars[1].gan
+    hour_gan = pillars[3].gan
+    year_gan = pillars[0].gan
+    cond_1_adjacent = (month_gan == partner_gan) or (hour_gan == partner_gan)
+    cond_1_year_only = (year_gan == partner_gan) and not cond_1_adjacent  # 年干合稍弱
+
+    # 条件 2：月令属化神
+    month_zhi = pillars[1].zhi
+    favor_zhi = HUASHEN_FAVOR_MONTH.get(huashen, set())
+    cond_2_month_favor = month_zhi in favor_zhi
+    # 月令本气直接就是化神 → 加分
+    month_main_wx = GAN_WUXING[ZHI_HIDDEN_GAN[month_zhi][0]]
+    cond_2_month_huashen_main = (month_main_wx == huashen)
+
+    # 条件 3：地支化神有根（至少 2 处）
+    huashen_zhi_count = 0
+    for p in pillars:
+        if ZHI_WUXING[p.zhi] == huashen:
+            huashen_zhi_count += 1
+        for hg in ZHI_HIDDEN_GAN[p.zhi]:
+            if GAN_WUXING[hg] == huashen:
+                huashen_zhi_count += 0.4
+                break
+    cond_3_root = huashen_zhi_count >= 2.0
+
+    # 条件 4：无强力克化神者
+    huashen_ke_by = {v: k for k, v in WUXING_KE.items()}.get(huashen)  # 谁克化神
+    breakers = 0
+    for i, p in enumerate(pillars):
+        if i == 2:
+            continue  # 日干本身不算
+        if GAN_WUXING[p.gan] == huashen_ke_by:
+            # 地支有根才算硬破
+            for q in pillars:
+                if ZHI_WUXING[q.zhi] == huashen_ke_by or huashen_ke_by in [GAN_WUXING[hg] for hg in ZHI_HIDDEN_GAN[q.zhi]]:
+                    breakers += 1
+                    break
+    cond_4_no_break = breakers == 0
+
+    # 条件 5（一票否决）：日干本身有强根（化不掉）
+    dms_root_count = 0
+    for p in pillars:
+        if ZHI_WUXING[p.zhi] == day_wx:
+            dms_root_count += 1
+        elif GAN_WUXING[ZHI_HIDDEN_GAN[p.zhi][0]] == day_wx:
+            dms_root_count += 0.5
+    veto_dms_strong = dms_root_count >= 2.5
+
+    # 评分
+    score = 0
+    if cond_1_adjacent:
+        score += 1
+    elif cond_1_year_only:
+        score += 0.5
+    if cond_2_month_favor:
+        score += 1
+        if cond_2_month_huashen_main:
+            score += 0.5
+    if cond_3_root:
+        score += 1
+    if cond_4_no_break:
+        score += 1
+
+    # 真化气：score ≥ 3.5 + 无 veto
+    triggered = (score >= 3.5) and (not veto_dms_strong) and cond_1_adjacent
+
+    if not triggered:
+        return {
+            "phase_id": "P6_huaqi",
+            "triggered": False,
+            "huashen": huashen,
+            "score": f"{score}/4.5",
+            "suggested_phase": "day_master_dominant",
+            "suggested_label": "",
+            "evidence": {
+                "partner_gan": partner_gan,
+                "cond_1_adjacent_he": cond_1_adjacent,
+                "cond_1_year_only_he": cond_1_year_only,
+                "cond_2_month_favor": cond_2_month_favor,
+                "cond_2_month_main_is_huashen": cond_2_month_huashen_main,
+                "cond_3_huashen_root_count": round(huashen_zhi_count, 2),
+                "cond_4_no_strong_breaker": cond_4_no_break,
+                "n_breakers": breakers,
+                "veto_dms_strong": veto_dms_strong,
+                "dms_root_count": round(dms_root_count, 2),
+            },
+        }
+
+    return {
+        "phase_id": "P6_huaqi",
+        "triggered": True,
+        "huashen": huashen,
+        "score": f"{score}/4.5",
+        "suggested_phase": f"huaqi_to_{huashen}",
+        "suggested_label": f"化{huashen}格（{day_gan}{partner_gan}合化{huashen}） · 命局主导改为{huashen}",
+        "evidence": {
+            "partner_gan": partner_gan,
+            "cond_1_adjacent_he": cond_1_adjacent,
+            "cond_2_month_favor": cond_2_month_favor,
+            "cond_2_month_main_is_huashen": cond_2_month_huashen_main,
+            "cond_3_huashen_root_count": round(huashen_zhi_count, 2),
+            "cond_4_no_strong_breaker": cond_4_no_break,
+            "veto_dms_strong": veto_dms_strong,
+            "dms_root_count": round(dms_root_count, 2),
+        },
+    }
+
+
+# ============================================================================
+# 【v7.4 #5 新增】神煞检测 (Shen Sha · 烈度修正用，不影响主格局)
+# ----------------------------------------------------------------------------
+# 神煞规则参考通行版本（《三命通会》《渊海子平》），仅做主流神煞，不做冷门。
+# 用法：在 score_curves.py 烈度修正阶段，命中神煞的大运 / 流年微调强度，
+# 不参与主格局判定（避免混入"封建迷信"权重）。
+# 影响幅度都很小（±0.5 ~ ±1.0），只是局部调味。
+# ============================================================================
+
+# 天乙贵人：日干 → 贵人地支
+TIANYI_GUIREN = {
+    "甲": {"丑", "未"}, "戊": {"丑", "未"}, "庚": {"丑", "未"},
+    "乙": {"子", "申"}, "己": {"子", "申"},
+    "丙": {"亥", "酉"}, "丁": {"亥", "酉"},
+    "辛": {"寅", "午"},
+    "壬": {"卯", "巳"}, "癸": {"卯", "巳"},
+}
+
+# 文昌贵人：日干 → 文昌地支（食神临官）
+WENCHANG = {
+    "甲": "巳", "乙": "午", "丙": "申", "丁": "酉", "戊": "申",
+    "己": "酉", "庚": "亥", "辛": "子", "壬": "寅", "癸": "卯",
+}
+
+# 驿马：年支 / 日支 三合局首字 → 驿马（冲首字者）
+# 申子辰马在寅；寅午戌马在申；亥卯未马在巳；巳酉丑马在亥
+YIMA = {
+    "申": "寅", "子": "寅", "辰": "寅",
+    "寅": "申", "午": "申", "戌": "申",
+    "亥": "巳", "卯": "巳", "未": "巳",
+    "巳": "亥", "酉": "亥", "丑": "亥",
+}
+
+# 桃花：年支 / 日支 → 桃花（已在他处使用，此处为完整性保留）
+TAOHUA = {
+    "申": "酉", "子": "酉", "辰": "酉",
+    "寅": "卯", "午": "卯", "戌": "卯",
+    "亥": "子", "卯": "子", "未": "子",
+    "巳": "午", "酉": "午", "丑": "午",
+}
+
+# 华盖：年支 / 日支 三合局末字 → 华盖
+HUAGAI = {
+    "申": "辰", "子": "辰", "辰": "辰",
+    "寅": "戌", "午": "戌", "戌": "戌",
+    "亥": "未", "卯": "未", "未": "未",
+    "巳": "丑", "酉": "丑", "丑": "丑",
+}
+
+# 孤辰寡宿：年支 → (孤辰, 寡宿)
+GUCHEN_GUASU = {
+    "亥": ("寅", "戌"), "子": ("寅", "戌"), "丑": ("寅", "戌"),
+    "寅": ("巳", "丑"), "卯": ("巳", "丑"), "辰": ("巳", "丑"),
+    "巳": ("申", "辰"), "午": ("申", "辰"), "未": ("申", "辰"),
+    "申": ("亥", "未"), "酉": ("亥", "未"), "戌": ("亥", "未"),
+}
+
+# 旬空（空亡）：日柱所在六十甲子旬 → 空亡两字
+# 简化：按日干日支组合查（标准方法是按 60 甲子旬）
+def _xunkong(day_gan: str, day_zhi: str) -> Tuple[str, str]:
+    """根据日柱所在旬返回空亡两支。"""
+    gan_idx = GAN.index(day_gan)
+    zhi_idx = ZHI.index(day_zhi)
+    # 日柱在 60 甲子里的位置
+    # 找到所在旬的起点
+    # 60 甲子 = (gan_idx, zhi_idx) 对应序号
+    # 简化算法：旬首干 = 甲，旬首干日序号 i 时，其对应的支序号是 (zhi_idx - gan_idx) mod 12
+    diff = (zhi_idx - gan_idx) % 12
+    # 旬空 = 旬首支 + 10 与 +11
+    # 旬首支序号 = (60 - gan_idx) % 12 内（甲为旬首），实际旬首支 = (zhi_idx - gan_idx) mod 12 = diff
+    # 旬空 = (diff + 10) % 12, (diff + 11) % 12
+    return ZHI[(diff + 10) % 12], ZHI[(diff + 11) % 12]
+
+
+def detect_shensha(pillars: List[Pillar]) -> Dict:
+    """检测命局神煞分布。返回每个神煞触发位置 + 是否落在原局。
+
+    Returns:
+        {
+            "tianyi_guiren": {"target_zhi": [...], "in_chart": [...], "found": bool},
+            "wenchang": {"target_zhi": "X", "in_chart": [...], "found": bool},
+            "yima": {"target_zhi": [...], "in_chart": [...], "found": bool},
+            "taohua": {...},
+            "huagai": {...},
+            "guchen": {"target_zhi": "X", "in_chart": [...], "found": bool},
+            "guasu": {"target_zhi": "X", "in_chart": [...], "found": bool},
+            "kongwang": {"target_zhi": [X, Y], "in_chart": [...], "found": bool},
+        }
+
+    用途：
+      - in_chart 为空但 target_zhi 存在 → 当大运/流年走到 target_zhi 时触发，
+        在 score_curves.py 烈度修正阶段做小幅 ±0.5 调整。
+      - in_chart 已命中 → 命主一生持续受该神煞影响（e.g., 天乙贵人在原局
+        → 终生有贵人相助倾向，命名 / 关系维度小幅 +0.5）。
+    """
+    day_gan = pillars[2].gan
+    day_zhi = pillars[2].zhi
+    year_zhi = pillars[0].zhi
+
+    chart_zhi = [p.zhi for p in pillars]
+
+    def _check(target_zhi_set):
+        if isinstance(target_zhi_set, str):
+            target_zhi_set = {target_zhi_set}
+        target = list(target_zhi_set) if isinstance(target_zhi_set, (set, list, tuple)) else [target_zhi_set]
+        hits = [z for z in chart_zhi if z in target_zhi_set]
+        return {"target_zhi": sorted(target), "in_chart": hits, "found": bool(hits)}
+
+    # 天乙贵人：以日干为主
+    tianyi_target = TIANYI_GUIREN.get(day_gan, set())
+    # 文昌：以日干为主
+    wenchang_target = {WENCHANG.get(day_gan)} if day_gan in WENCHANG else set()
+    # 驿马 / 桃花 / 华盖：以年支 + 日支查（取并集）
+    yima_target = {YIMA[year_zhi], YIMA[day_zhi]} if year_zhi in YIMA else set()
+    taohua_target = {TAOHUA[year_zhi], TAOHUA[day_zhi]} if year_zhi in TAOHUA else set()
+    huagai_target = {HUAGAI[year_zhi], HUAGAI[day_zhi]} if year_zhi in HUAGAI else set()
+    # 孤辰 / 寡宿：以年支
+    if year_zhi in GUCHEN_GUASU:
+        gu, gua = GUCHEN_GUASU[year_zhi]
+    else:
+        gu, gua = "", ""
+    # 旬空
+    kw1, kw2 = _xunkong(day_gan, day_zhi)
+
+    return {
+        "tianyi_guiren": _check(tianyi_target),
+        "wenchang": _check(wenchang_target),
+        "yima": _check(yima_target),
+        "taohua": _check(taohua_target),
+        "huagai": _check(huagai_target),
+        "guchen": _check({gu} if gu else set()),
+        "guasu": _check({gua} if gua else set()),
+        "kongwang": _check({kw1, kw2}),
+    }
+
+
+# 神煞 → 维度 / 烈度修正映射（用于 score_curves）
+# 影响幅度刻意小（±0.5 ~ ±1.0），只是调味
+SHENSHA_IMPACT = {
+    "tianyi_guiren": {
+        "in_chart_bonus": {"fortune": 0.3, "fame": 0.3, "emotion": 0.2},  # 终生贵人倾向
+        "yearly_bonus": {"fortune": 0.5, "fame": 0.5},  # 大运/流年走到 → 当年贵人显
+        "label": "天乙贵人",
+    },
+    "wenchang": {
+        "in_chart_bonus": {"fame": 0.4},
+        "yearly_bonus": {"fame": 0.5, "spirit": 0.3},  # 考试 / 学问 / 著述
+        "label": "文昌贵人",
+    },
+    "yima": {
+        "in_chart_bonus": {},  # 命带驿马 → 一生奔波，但不直接加减分
+        "yearly_volatility": 0.3,  # 大运/流年逢 → 该年波动幅度 +30%（变动 / 出行 / 调岗）
+        "label": "驿马",
+    },
+    "taohua": {
+        "in_chart_bonus": {"emotion": 0.3},  # 命带桃花 → 关系能量略升
+        "yearly_bonus": {"emotion": 0.5},
+        "label": "桃花",
+    },
+    "huagai": {
+        "in_chart_bonus": {"spirit": 0.2},  # 偏门艺术 / 宗教 / 内省 → 精神维度小升
+        "yearly_bonus": {"spirit": 0.3},
+        "label": "华盖",
+    },
+    "guchen": {
+        "in_chart_penalty": {"emotion": -0.4},  # 孤辰 → 关系能量小减（仅基线，不绝对）
+        "label": "孤辰",
+    },
+    "guasu": {
+        "in_chart_penalty": {"emotion": -0.4},
+        "label": "寡宿",
+    },
+    "kongwang": {
+        "yearly_penalty": {"fortune": -0.5, "fame": -0.3},  # 大运/流年逢空亡 → 落空感
+        "label": "空亡",
+    },
+}
+
+
+# ============================================================================
+# end of HuaQi + Shensha (v7.4 #5)
+# ============================================================================
+
+
 def detect_all_phase_candidates(bazi_dict: Dict) -> List[Dict]:
     """跑全部 4 类 detect，返回触发的候选 + 全部 detect 详情。
 
@@ -959,6 +1311,7 @@ def detect_all_phase_candidates(bazi_dict: Dict) -> List[Dict]:
         detect_climate_inversion(pillars, climate),
         detect_pseudo_following(pillars, strength),
         detect_three_qi_cheng_xiang(pillars, strength),
+        detect_huaqi_pattern(pillars),
     ]
     triggered = [r for r in results if r["triggered"]]
     not_triggered = [r for r in results if not r["triggered"]]

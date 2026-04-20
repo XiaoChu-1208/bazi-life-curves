@@ -232,6 +232,20 @@ def apply_geju_override(bazi: dict) -> dict:
     if bazi.get("yongshen", {}).get("_locked"):
         return bazi
 
+    # v7.4 #5 · 自动识别化气格（优先级最高 · 直接走 phase_override）
+    try:
+        from _bazi_core import detect_huaqi_pattern, Pillar as _P
+        huaqi = detect_huaqi_pattern([_P(p["gan"], p["zhi"]) for p in bazi["pillars"]])
+        if huaqi.get("triggered"):
+            phase_id = huaqi["suggested_phase"]
+            bazi = apply_phase_override(bazi, phase_id)
+            bazi["phase"]["auto_detected"] = True
+            bazi["phase"]["detection_source"] = "detect_huaqi_pattern"
+            bazi["phase"]["evidence"] = huaqi.get("evidence", {})
+            return bazi  # 化气格定型 → 不再走常规格局识别
+    except Exception:
+        pass  # 化气格检测失败不影响主流程
+
     geju = detect_geju(bazi)
     bazi["geju"] = geju
     if geju["yongshen_override"]:
@@ -1025,6 +1039,12 @@ def apply_phase_override(bazi: dict, phase_id: str) -> dict:
         "climate_inversion_wet_top": "调候反向·上湿下燥（用神锁火）",
         "true_following": "真从格 · 按从神方向走",
         "pseudo_following": "假从格 · 仍按弱身扶身但加 caveat",
+        # v7.4 #5 · 化气格（5 种）
+        "huaqi_to_土": "化土格（甲己合化土）· 命局主导改为土",
+        "huaqi_to_金": "化金格（乙庚合化金）· 命局主导改为金",
+        "huaqi_to_水": "化水格（丙辛合化水）· 命局主导改为水",
+        "huaqi_to_木": "化木格（丁壬合化木）· 命局主导改为木",
+        "huaqi_to_火": "化火格（戊癸合化火）· 命局主导改为火",
     }
     if pid not in label_map:
         raise ValueError(f"unknown --override-phase id: {pid!r}, valid: {list(label_map.keys()) + ['day_master_dominant']}")
@@ -1088,6 +1108,22 @@ def apply_phase_override(bazi: dict, phase_id: str) -> dict:
     # ④ 假从：strength 保持，用神保持，仅加 caveat 标记
     elif pid == "pseudo_following":
         bazi["yongshen"]["_phase_caveat"] = "假从格 · 用神扶身但置信度降低；大运若顺从神则按从势补充读"
+
+    # ⑤ 化气格（v7.4 #5）：日主借合化易主 → 用神锁定为化神，扶抑全部翻转
+    elif pid.startswith("huaqi_to_"):
+        huashen = pid.split("_")[-1]
+        bazi["strength"]["_phase_orig_label"] = bazi["strength"].get("label")
+        bazi["strength"]["_phase_orig_score"] = bazi["strength"].get("score")
+        bazi["strength"]["label"] = "强"  # 化神为主 → 按强势读
+        bazi["strength"]["score"] = 35
+        bazi["yongshen"]["_phase_orig_yongshen"] = bazi["yongshen"].get("yongshen")
+        bazi["yongshen"]["yongshen"] = huashen  # 用神 = 化神（生扶化神之物 = 喜）
+        bazi["yongshen"]["_phase_override_reason"] = (
+            f"化{huashen}格 · 日主借合化易主 → 用神锁定 {huashen}（生扶化神为喜，克化神为忌）"
+        )
+        bazi["yongshen"]["_locked"] = True
+        # 化神维度旗帜：score / scoring_rubric 在维度配置时可读取此字段
+        bazi["yongshen"]["_huashen"] = huashen
 
     return bazi
 
@@ -1170,6 +1206,29 @@ def score(
         for ev in mangpai["events"]:
             mangpai_events_by_year.setdefault(ev["year"], []).append(ev)
 
+    # v7.4 #5 · 神煞预计算：原局命中 → 终生 baseline；目标地支表 → 大运/流年逢则当年触发
+    try:
+        from _bazi_core import detect_shensha, SHENSHA_IMPACT, Pillar as _Psh
+        _shensha = detect_shensha([_Psh(p["gan"], p["zhi"]) for p in bazi["pillars"]])
+        # 把命中的"终生 baseline"加到 base 里
+        for ss_key, ss_info in _shensha.items():
+            impact = SHENSHA_IMPACT.get(ss_key, {})
+            if ss_info["found"]:
+                for dim, delta in impact.get("in_chart_bonus", {}).items():
+                    if dim in base:
+                        base[dim] = _clip(base[dim] + delta)
+                    elif dim == "emotion":
+                        base["emotion"] = _clip(base.get("emotion", 50) + delta)
+                for dim, delta in impact.get("in_chart_penalty", {}).items():
+                    if dim in base:
+                        base[dim] = _clip(base[dim] + delta)
+                    elif dim == "emotion":
+                        base["emotion"] = _clip(base.get("emotion", 50) + delta)
+        bazi["shensha"] = _shensha
+    except Exception as _e:
+        _shensha = {}
+        bazi["shensha"] = {}
+
     if age_start < 0:
         age_start = 0
     if age_end < age_start:
@@ -1225,6 +1284,34 @@ def score(
             mp_adjust[dim] = max(-12, min(12, mp_adjust[dim]))
             values[dim] = _clip(values[dim] + mp_adjust[dim])
 
+        # v7.4 #5 · 神煞当年触发（大运 / 流年地支命中 target_zhi → 微调 ±0.5~1.0）
+        ss_adjust = {"spirit": 0.0, "wealth": 0.0, "fame": 0.0, "emotion": 0.0}
+        ss_triggered_this_year: List[str] = []
+        for ss_key, ss_info in _shensha.items():
+            impact = SHENSHA_IMPACT.get(ss_key, {})
+            target_set = set(ss_info.get("target_zhi", []))
+            if not target_set:
+                continue
+            zhi_hits_this_year = []
+            if ln_p.zhi in target_set:
+                zhi_hits_this_year.append(("liunian", ln_p.zhi))
+            if dy is not None and dy_p.zhi in target_set:
+                zhi_hits_this_year.append(("dayun", dy_p.zhi))
+            if not zhi_hits_this_year:
+                continue
+            ss_triggered_this_year.append(impact.get("label", ss_key))
+            for dim, delta in impact.get("yearly_bonus", {}).items():
+                if dim in ss_adjust:
+                    ss_adjust[dim] += delta
+            for dim, delta in impact.get("yearly_penalty", {}).items():
+                if dim in ss_adjust:
+                    ss_adjust[dim] += delta
+            # 驿马 → 该年波动幅度 +30%（不直接加分，影响 sigma）
+            # 注：volatility 处理在后续 sigma 计算阶段
+        for dim in ("spirit", "wealth", "fame"):
+            ss_adjust[dim] = max(-3, min(3, ss_adjust[dim]))  # 神煞影响小于盲派
+            values[dim] = _clip(values[dim] + ss_adjust[dim])
+
         spirit_yearly.append(values["spirit"])
         wealth_yearly.append(values["wealth"])
         fame_yearly.append(values["fame"])
@@ -1233,6 +1320,8 @@ def score(
         emo_v = emotion_year_value(bazi, emo_base, dy_p, ln_p)
         if transition:
             emo_v = 50 + (emo_v - 50) * 0.7
+        # v7.4 #5 · 神煞 emotion 调整（桃花 / 孤辰寡宿）
+        emo_v = _clip(emo_v + ss_adjust.get("emotion", 0.0))
         emotion_yearly.append(emo_v)
         values["emotion"] = emo_v
         confidence["emotion"] = "high"  # 感情通道不存在三派分歧
@@ -1265,6 +1354,8 @@ def score(
                 for e in year_mp_events
             ],
             "mangpai_adjust": {k: round(v, 1) for k, v in mp_adjust.items()},
+            "shensha_triggered": ss_triggered_this_year,
+            "shensha_adjust": {k: round(v, 1) for k, v in ss_adjust.items()},
         })
 
     spirit_cum = cumulative_curve(spirit_yearly, lambdas["spirit"])
@@ -1279,13 +1370,14 @@ def score(
 
     for pt in points:
         sigma = {}
+        # v7.4 #5 · 驿马触发当年 → sigma × 1.3（波动幅度加大，反映"动 / 调岗 / 出行"）
+        yima_volatility = 1.3 if "驿马" in pt.get("shensha_triggered", []) else 1.0
         for dim in ("spirit", "wealth", "fame"):
             base_sig = 5.0
             div_factor = pt["divergence"][dim] / 20.0
             inter_factor = 1.0 + 0.15 * len(pt["interactions"])
-            sigma[dim] = round(base_sig * (1 + div_factor) * inter_factor, 2)
-        # 感情维度 sigma 用固定 base_sig（无三派分歧）
-        sigma["emotion"] = round(5.0 * (1.0 + 0.10 * len(pt["interactions"])), 2)
+            sigma[dim] = round(base_sig * (1 + div_factor) * inter_factor * yima_volatility, 2)
+        sigma["emotion"] = round(5.0 * (1.0 + 0.10 * len(pt["interactions"])) * yima_volatility, 2)
         pt["sigma"] = sigma
 
     dayun_segments = []
@@ -1324,6 +1416,7 @@ def score(
         "yongshen": bazi["yongshen"],
         "geju": bazi.get("geju", {}),
         "phase": bazi.get("phase", {"id": "day_master_dominant", "label": "默认 · 日主主导", "is_inverted": False}),
+        "shensha": bazi.get("shensha", {}),
         "birth_year": bazi["birth_year"],
         "gender": bazi["gender"],
         "orientation": bazi.get("orientation", "hetero"),
