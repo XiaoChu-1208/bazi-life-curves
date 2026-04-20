@@ -630,15 +630,15 @@ HTML 渲染单盘要 5–15 秒、合盘也要 3–5 秒，用户没要的时候
          ↓ 立刻发出
 [Node 4] 一生四维度评价 · 名声（life_review.fame）
          ↓ 立刻发出
-[Node 5] 一生四维度评价 · **感情**（life_review.emotion · v6 新增 · 必须援引 R0 命中情况）
+[Node 5] 一生四维度评价 · **关系**（life_review.relations · v7.6；旧名 life_review.emotion 兼容 · 必须援引 R0 命中情况）
          ↓ 立刻发出
-[Node 6..K] 大运评价 · 每段 1 节（按时间从早到晚，dayun_segments 逐段，**每段必带"感情看点"行**）
+[Node 6..K] 大运评价 · 每段 1 节（按时间从早到晚，dayun_segments 逐段，**每段必带"关系看点"行**）
             ↓ 每写完一段立刻发出
-[Node K+1..N] 关键年份评价 · 每条 1 节（按 year 升序，含三派分歧说明 + emotion 偏离 ≥ 12 的必须带【感情·v6】行）
+[Node K+1..N] 关键年份评价 · 每条 1 节（按 year 升序，含三派分歧说明 + relations/emotion 偏离 ≥ 12 的必须带【关系·v7.6】行）
               ↓ 每写完一条立刻发出
 ```
 
-每节用 markdown 标题（`## 整图综合分析` / `## 一生 · 感情` / `## 大运评价 · 辛丑（25–34 岁）` / `## 关键年份 · 2031 (35 岁 辛亥)` 等），方便用户视觉扫描和折叠。
+每节用 markdown 标题（`## 整图综合分析` / `## 一生 · 关系` / `## 大运评价 · 辛丑（25–34 岁）` / `## 关键年份 · 2031 (35 岁 辛亥)` 等），方便用户视觉扫描和折叠。
 
 **Node 5 感情段写作要求**（v6）：
 - 标题必带 R0 命中：`## 一生 · 感情（援引 R0：偏好类型 = X / 对方态度 = Y / 命中 = N/2）`
@@ -655,11 +655,11 @@ HTML 渲染单盘要 5–15 秒、合盘也要 3–5 秒，用户没要的时候
 {
   "overall": "Markdown 字符串（整图综合分析 · 命格定位 · 一生主线）",
 
-  "life_review": {                                      // 一生四维度评价（卡片网格 · v6 加 emotion）
-    "spirit":  "Markdown：精神舒畅度的一生走势 + 体感建议",
-    "wealth":  "Markdown：财富的一生走势 + 钱从哪来 / 高峰区段 / 防漏点",
-    "fame":    "Markdown：名声的一生走势 + 被看见的方式 / 警惕陷阱",
-    "emotion": "Markdown（v6）：感情走势 + 援引 R0 命中 + 偏好类型 + 对方态度在大运/流年的展开 + 与事业的同步/对冲"
+  "life_review": {                                      // 一生四大维度评价（卡片网格 · v7.6 「关系」面）
+    "spirit":    "Markdown：精神舒畅度的一生走势 + 体感建议",
+    "wealth":    "Markdown：财富的一生走势 + 钱从哪来 / 高峰区段 / 防漏点",
+    "fame":      "Markdown：名望的一生走势 + 被看见的方式 / 警惕陷阱（旧名 fame，UI 标签「名望」）",
+    "relations": "Markdown（v7.6）：感情、家庭、人脉的总体能量与节奏 + 援引 R0 命中 + 偏好类型 + 对方态度在大运/流年的展开 + 与事业的同步/对冲（旧 key 'emotion' 仍兼容）"
   },
 
   "dayun_review": {                                     // 大运评价（按 dayun_segments.label 索引）
@@ -682,7 +682,7 @@ HTML 渲染单盘要 5–15 秒、合盘也要 3–5 秒，用户没要的时候
 
 **强制要求（严禁简化）**：
 - `overall`：整图综合分析 + 命格定位（援引 `curves["geju"]`）+ 一生主线 + **4 条曲线的整体形状 + 关系**（v6）
-- `life_review.{spirit,wealth,fame,emotion}`：每个维度 ≥ 200 字大白话；spirit/wealth/fame 结合三派分数 + 命理依据；**emotion 必须援引 R0 命中情况 + 偏好类型 + 对方态度在 dayun 的展开**
+- `life_review.{spirit,wealth,fame,relations}`：每个维度 ≥ 200 字大白话；spirit/wealth/fame 结合三派分数 + 命理依据；**relations 必须援引 R0 命中情况 + 偏好类型 + 对方态度在 dayun 的展开**（旧 key `emotion` 仍可，模板会自动 fallback 读取）
 - `dayun_review[label]`：每段 10 年大运都要写（**含起运前段 + 65 岁以后只要 dayun_segments 里有就要写**），含 1 行 headline + Markdown body（命理属性 / 主线 / 实际表现 / 建议）
 - `key_years`：把过往的"用户已确认事件年份" + 未来的"高峰 / 低谷 / 拐点"都列入；每条 ≥ 250 字，必须包含**推论过程的大白话描述**（"为什么我推这一年是 X"），有盲派事件的必须援引 `points[year].mangpai_events` 文本
 - 旧版 `turning_points` / `disputes` 字段已废弃 → 全部合并到 `key_years` 里（disputed 年份在 key_years body 里加一段「⚠ 三派分歧」说明）
@@ -830,7 +830,7 @@ python3 scripts/save_confirmed_facts.py --bazi output/bazi.json --add-structural
 |---|---|
 | `chart` | Artifact（HTML，type="text/html"，含 marked.js + Recharts + details 折叠 + 整图分析 / 一生评价 / 大运评价 / 关键年份评价四类 markdown）或 PNG 路径；**v6 起 8 条曲线（4 维度 × 实/虚）** |
 | `score_table` | Markdown 表格：年份 / 年龄 / 干支 / 大运 / 精神(当/趋势) / 财富(当/趋势) / 名声(当/趋势) / **感情(当/趋势)** / 置信度 |
-| `life_review` | 一生**四维度**评价（精神 / 财富 / 名声 / **感情** 各 ≥ 200 字） |
+| `life_review` | 一生**四大维度**评价（精神 / 财富 / 名望 / **关系** 各 ≥ 200 字 · v7.6 起 key 推荐 `relations`，兼容旧 `emotion`） |
 | `dayun_review` | 每段 10 年大运 headline + body |
 | `key_years` | 关键年份评价（peak / dip / shift），含大白话推论过程 + 盲派应事 + 三派分歧说明 |
 | `mangpai_events` | 按年汇总的盲派应事（仅当 Step 2a 启用） |

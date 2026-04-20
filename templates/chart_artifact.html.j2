@@ -102,18 +102,19 @@
   }
   .key-year .ky-body { padding: 8px 0 12px 24px; }
 
-  /* --- 一生评价（三维度并列卡） --- */
+  /* --- 一生评价（四大维度卡 · v7.6 加 relations） --- */
   .life-grid {
-    display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
     gap: 14px; margin-top: 4px;
   }
   .life-cell {
     border: 1px solid #f0f0ed; border-radius: 10px;
-    padding: 12px 14px;
+    padding: 14px 16px;
   }
   .life-cell .lc-head {
-    font-size: 13px; font-weight: 600; margin-bottom: 8px;
+    font-size: 14px; font-weight: 600; margin-bottom: 10px;
     display: flex; align-items: center; gap: 8px;
+    padding-bottom: 6px; border-bottom: 1px solid rgba(0,0,0,0.05);
   }
   .life-cell .lc-dot {
     display: inline-block; width: 10px; height: 10px; border-radius: 50%;
@@ -127,6 +128,9 @@
   .life-cell.fame   { background: #fdf8f4; }
   .life-cell.fame   .lc-dot { background: #D88E5C; }
   .life-cell.fame   .lc-head { color: #9c5d2e; }
+  .life-cell.relations { background: #fbf6f8; }
+  .life-cell.relations .lc-dot { background: #C77B9F; }
+  .life-cell.relations .lc-head { color: #8a3d6a; }
 
   /* --- markdown --- */
   .markdown { font-size: 13px; line-height: 1.7; color: #333; }
@@ -227,6 +231,13 @@ const ZEITGEIST = window.__BAZI_ZEITGEIST__ || {};
 const HAS_ZEITGEIST = !!window.__BAZI_HAS_ZEITGEIST__;
 const DIM_LABEL = { spirit: "精神", wealth: "财富", fame: "名声" };
 
+// SIMPLE_MODE: 阅读优先版。
+//   true  → 面板上不显示盲派块、三派争议年、互动列表、mp-summary 这些技术细节。
+//           只保留：图表 + 整图综合分析 + 一生总评 + 时代-民俗志 + 大运评价 + 关键年份评价。
+//   false → 全细节版（开发/调试/盲派研究用）。
+//   数据流不受影响：CURVES.points 里仍带 mangpai_events / dispute_detail / interactions。
+const SIMPLE_MODE = true;
+
 const COLOR_SPIRIT = "#8B7BC7";
 const COLOR_WEALTH = "#4A9D7F";
 const COLOR_FAME   = "#D88E5C";
@@ -244,43 +255,35 @@ const {
   CartesianGrid, ReferenceArea, ReferenceLine, Label, Tooltip,
 } = Recharts;
 
-/* === 5 年段趋势线：每 5 年取一段均值，对齐到段中心 === */
-function buildSegmentTrend(yearly) {
-  const SEG = 5;
-  const out = [];
-  for (let i = 0; i < yearly.length; i += SEG) {
-    const slice = yearly.slice(i, Math.min(i + SEG, yearly.length));
-    const ages  = slice.map(p => p.age);
-    const center = (ages[0] + ages[ages.length - 1]) / 2;
-    const mean = slice.reduce((s, p) => s + p.value, 0) / slice.length;
-    out.push({ age: center, value: Math.round(mean * 10) / 10 });
-  }
+/* === 大运段趋势线：以每个大运为一个点（取该大运内所有 yearly 的均值，对齐到大运中心年龄） === */
+function buildDayunTrend(points, segments) {
+  // points: [{age, year, spirit_yearly, wealth_yearly, fame_yearly}]
+  // segments: [{label, start_year, end_year, start_age, end_age}]
+  const out = { spirit: [], wealth: [], fame: [] };
+  if (!segments || segments.length === 0) return out;
+  segments.forEach(seg => {
+    const inSeg = points.filter(p => p.age >= seg.start_age && p.age <= seg.end_age);
+    if (inSeg.length === 0) return;
+    const center = (seg.start_age + seg.end_age) / 2;
+    ["spirit", "wealth", "fame"].forEach(k => {
+      const vs = inSeg.map(p => p[k + "_yearly"]).filter(v => v != null);
+      if (vs.length === 0) return;
+      const mean = vs.reduce((s, v) => s + v, 0) / vs.length;
+      out[k].push({ age: center, value: Math.round(mean * 10) / 10, dayun: seg.label });
+    });
+  });
   return out;
 }
 
 function buildSeries(curves) {
-  // 主线：每年一个点
   const main = curves.points.map(p => ({
     age: p.age, year: p.year, dayun: p.dayun,
     spirit: p.spirit_yearly,
     wealth: p.wealth_yearly,
     fame:   p.fame_yearly,
   }));
-  // 5 年段趋势
-  const spiritTrend = buildSegmentTrend(curves.points.map(p => ({age: p.age, value: p.spirit_yearly})));
-  const wealthTrend = buildSegmentTrend(curves.points.map(p => ({age: p.age, value: p.wealth_yearly})));
-  const fameTrend   = buildSegmentTrend(curves.points.map(p => ({age: p.age, value: p.fame_yearly})));
-  // 合并到主数据集（用 age 对齐，趋势数据点用单独字段）
-  const trendByAge = {};
-  spiritTrend.forEach(p => { trendByAge[p.age] = trendByAge[p.age] || {}; trendByAge[p.age].spirit_t = p.value; });
-  wealthTrend.forEach(p => { trendByAge[p.age] = trendByAge[p.age] || {}; trendByAge[p.age].wealth_t = p.value; });
-  fameTrend.forEach(p   => { trendByAge[p.age] = trendByAge[p.age] || {}; trendByAge[p.age].fame_t   = p.value; });
-
-  // 把趋势点（可能是非整数年龄）作为单独序列返回，避免 Recharts 数值轴对不齐
-  return {
-    main,
-    trend: { spirit: spiritTrend, wealth: wealthTrend, fame: fameTrend },
-  };
+  const trend = buildDayunTrend(curves.points, curves.dayun_segments || []);
+  return { main, trend };
 }
 
 function MangpaiBlock({ events }) {
@@ -342,6 +345,15 @@ function App() {
   const pointsByAge = {};
   (CURVES.points || []).forEach(p => { pointsByYear[p.year] = p; pointsByAge[p.age] = p; });
 
+  // === 大运均值表（按 dayun label 索引），用于 Tooltip 里显示「该大运均值」===
+  const dayunMeanByLabel = {};
+  ["spirit", "wealth", "fame"].forEach(k => {
+    series.trend[k].forEach(p => {
+      dayunMeanByLabel[p.dayun] = dayunMeanByLabel[p.dayun] || {};
+      dayunMeanByLabel[p.dayun][k] = p.value;
+    });
+  });
+
   // === Tooltip 组件（rich hover）===
   const keyYearByYear = {};
   (ANALYSIS.key_years || []).forEach(k => { keyYearByYear[k.year] = k; });
@@ -351,19 +363,22 @@ function App() {
     const age = label;
     const p = pointsByAge[age];
     if (!p) {
-      // 趋势中点（无原始 point），简化显示
+      // 大运中心点 hover：显示该大运的均值
+      const trendPayload = payload.filter(e => /_t$/.test(e.dataKey) && e.value != null);
+      const seg = (segments || []).find(s => age >= s.start_age && age <= s.end_age);
       return (
         <div style={{
           background: "rgba(255,255,255,0.96)", border: "1px solid #ddd",
           borderRadius: 6, padding: "8px 12px", fontSize: 12, color: "#444",
           boxShadow: "0 2px 8px rgba(0,0,0,0.08)", maxWidth: 280
         }}>
-          <div style={{fontWeight: 600, marginBottom: 4}}>{age} 岁（趋势中点）</div>
-          {payload.filter(e => e.value != null).map(e => (
+          <div style={{fontWeight: 600, marginBottom: 4}}>
+            {seg ? `${seg.label} 大运均值（${seg.start_age}-${seg.end_age} 岁）` : `${age} 岁（趋势中点）`}
+          </div>
+          {trendPayload.map(e => (
             <div key={e.dataKey} style={{display: "flex", justifyContent: "space-between", gap: 12}}>
               <span style={{color: e.color}}>{
-                {spirit:"精神", wealth:"财富", fame:"名声",
-                 spirit_t:"精神·5年趋势", wealth_t:"财富·5年趋势", fame_t:"名声·5年趋势"}[e.dataKey] || e.dataKey
+                {spirit_t:"精神", wealth_t:"财富", fame_t:"名声"}[e.dataKey] || e.dataKey
               }</span>
               <b>{e.value.toFixed(1)}</b>
             </div>
@@ -385,27 +400,35 @@ function App() {
           {p.year} 年 · {p.age} 岁 · {p.ganzhi} <span style={{color: "#888", fontWeight: 400}}>· 大运 {p.dayun}</span>
         </div>
         <div style={{display: "grid", gridTemplateColumns: "auto auto auto", gap: "2px 12px", marginBottom: 6}}>
-          <span style={{color: COLOR_SPIRIT}}>精神</span>
-          <span style={{textAlign:"right"}}><b>{p.spirit_yearly?.toFixed(1)}</b></span>
-          <span style={{color: "#888", fontSize: 11}}>趋势 {(trendByAge.spirit[age] ?? "—") !== "—" ? trendByAge.spirit[age].toFixed(1) : "—"}</span>
-          <span style={{color: COLOR_WEALTH}}>财富</span>
-          <span style={{textAlign:"right"}}><b>{p.wealth_yearly?.toFixed(1)}</b></span>
-          <span style={{color: "#888", fontSize: 11}}>趋势 {(trendByAge.wealth[age] ?? "—") !== "—" ? trendByAge.wealth[age].toFixed(1) : "—"}</span>
-          <span style={{color: COLOR_FAME}}>名声</span>
-          <span style={{textAlign:"right"}}><b>{p.fame_yearly?.toFixed(1)}</b></span>
-          <span style={{color: "#888", fontSize: 11}}>趋势 {(trendByAge.fame[age] ?? "—") !== "—" ? trendByAge.fame[age].toFixed(1) : "—"}</span>
+          {(() => {
+            const dm = dayunMeanByLabel[p.dayun] || {};
+            const fmtMean = (v) => (v != null ? `大运均 ${v.toFixed(1)}` : "");
+            return (
+              <>
+                <span style={{color: COLOR_SPIRIT}}>精神</span>
+                <span style={{textAlign:"right"}}><b>{p.spirit_yearly?.toFixed(1)}</b></span>
+                <span style={{color: "#888", fontSize: 11}}>{fmtMean(dm.spirit)}</span>
+                <span style={{color: COLOR_WEALTH}}>财富</span>
+                <span style={{textAlign:"right"}}><b>{p.wealth_yearly?.toFixed(1)}</b></span>
+                <span style={{color: "#888", fontSize: 11}}>{fmtMean(dm.wealth)}</span>
+                <span style={{color: COLOR_FAME}}>名声</span>
+                <span style={{textAlign:"right"}}><b>{p.fame_yearly?.toFixed(1)}</b></span>
+                <span style={{color: "#888", fontSize: 11}}>{fmtMean(dm.fame)}</span>
+              </>
+            );
+          })()}
         </div>
-        {interactions.length > 0 && (
+        {!SIMPLE_MODE && interactions.length > 0 && (
           <div style={{marginTop: 4, color: "#7a6a3e", fontSize: 11}}>
             <b>互动：</b>{interactions.map(it => `${it.type}·${it.with}(${it.magnitude})`).join("，")}
           </div>
         )}
-        {mpEvents.length > 0 && (
+        {!SIMPLE_MODE && mpEvents.length > 0 && (
           <div style={{marginTop: 4, color: "#6e8a4e", fontSize: 11}}>
             <b>盲派：</b>{mpEvents.map(e => `${e.name}${e.intensity ? "·"+e.intensity : ""}`).join("，")}
           </div>
         )}
-        {p.is_disputed && (
+        {!SIMPLE_MODE && p.is_disputed && (
           <div style={{marginTop: 4, color: "#a85b3e", fontSize: 11}}>
             ⚠ 三派争议年（极差 {p.dispute_detail?.spread?.toFixed(1) || "?"}）
           </div>
@@ -465,11 +488,11 @@ function App() {
       <div className="chart-wrap">
         <div className="legend-row">
           <span className="legend-item"><span className="legend-line" style={{borderTopColor: COLOR_SPIRIT}}></span>精神 · 当年</span>
-          <span className="legend-item"><span className="legend-line dashed" style={{borderTopColor: COLOR_SPIRIT}}></span>精神 · 5 年趋势</span>
+          <span className="legend-item"><span className="legend-line dashed" style={{borderTopColor: COLOR_SPIRIT}}></span>精神 · 大运趋势</span>
           <span className="legend-item"><span className="legend-line" style={{borderTopColor: COLOR_WEALTH}}></span>财富 · 当年</span>
-          <span className="legend-item"><span className="legend-line dashed" style={{borderTopColor: COLOR_WEALTH}}></span>财富 · 5 年趋势</span>
+          <span className="legend-item"><span className="legend-line dashed" style={{borderTopColor: COLOR_WEALTH}}></span>财富 · 大运趋势</span>
           <span className="legend-item"><span className="legend-line" style={{borderTopColor: COLOR_FAME}}></span>名声 · 当年</span>
-          <span className="legend-item"><span className="legend-line dashed" style={{borderTopColor: COLOR_FAME}}></span>名声 · 5 年趋势</span>
+          <span className="legend-item"><span className="legend-line dashed" style={{borderTopColor: COLOR_FAME}}></span>名声 · 大运趋势</span>
         </div>
 
         <ResponsiveContainer width="100%" height={520}>
@@ -511,42 +534,49 @@ function App() {
             {/* === Hover Tooltip（年份 + 干支 + 大运 + 三维数 + 互动 + 盲派 + 关键年提示） === */}
             <Tooltip content={<RichTooltip />} cursor={{stroke: "#bbb", strokeWidth: 1, strokeDasharray: "4 4"}} />
 
-            {/* === 5 年段趋势线（细虚线，背景） === */}
+            {/* === 大运段趋势线（细虚线，每大运一个隐形锚点） === */}
             <Line type="monotone" dataKey="spirit_t" stroke={COLOR_SPIRIT}
-                  strokeWidth={1.5} strokeDasharray="5 4" strokeOpacity={0.55}
-                  dot={{ r: 2.5, fill: COLOR_SPIRIT, strokeOpacity: 0 }}
+                  strokeWidth={1.4} strokeDasharray="6 5" strokeOpacity={0.5}
+                  dot={false}
+                  activeDot={{ r: 4, fill: COLOR_SPIRIT, stroke: "#fff", strokeWidth: 1.5 }}
                   connectNulls={true} isAnimationActive={false} />
             <Line type="monotone" dataKey="wealth_t" stroke={COLOR_WEALTH}
-                  strokeWidth={1.5} strokeDasharray="5 4" strokeOpacity={0.55}
-                  dot={{ r: 2.5, fill: COLOR_WEALTH, strokeOpacity: 0 }}
+                  strokeWidth={1.4} strokeDasharray="6 5" strokeOpacity={0.5}
+                  dot={false}
+                  activeDot={{ r: 4, fill: COLOR_WEALTH, stroke: "#fff", strokeWidth: 1.5 }}
                   connectNulls={true} isAnimationActive={false} />
             <Line type="monotone" dataKey="fame_t"   stroke={COLOR_FAME}
-                  strokeWidth={1.5} strokeDasharray="5 4" strokeOpacity={0.55}
-                  dot={{ r: 2.5, fill: COLOR_FAME, strokeOpacity: 0 }}
+                  strokeWidth={1.4} strokeDasharray="6 5" strokeOpacity={0.5}
+                  dot={false}
+                  activeDot={{ r: 4, fill: COLOR_FAME, stroke: "#fff", strokeWidth: 1.5 }}
                   connectNulls={true} isAnimationActive={false} />
 
-            {/* === 当年值（粗实线 + 圆点，主角） === */}
+            {/* === 当年值（粗实线，无静态点，hover 时显 activeDot） === */}
             <Line type="monotone" dataKey="spirit" stroke={COLOR_SPIRIT}
-                  strokeWidth={2.6}
-                  dot={{ r: 2.8, fill: COLOR_SPIRIT, stroke: "#fff", strokeWidth: 1 }}
+                  strokeWidth={2.4}
+                  dot={false}
+                  activeDot={{ r: 5, fill: COLOR_SPIRIT, stroke: "#fff", strokeWidth: 2 }}
                   connectNulls={true} isAnimationActive={false} />
             <Line type="monotone" dataKey="wealth" stroke={COLOR_WEALTH}
-                  strokeWidth={2.6}
-                  dot={{ r: 2.8, fill: COLOR_WEALTH, stroke: "#fff", strokeWidth: 1 }}
+                  strokeWidth={2.4}
+                  dot={false}
+                  activeDot={{ r: 5, fill: COLOR_WEALTH, stroke: "#fff", strokeWidth: 2 }}
                   connectNulls={true} isAnimationActive={false} />
             <Line type="monotone" dataKey="fame"   stroke={COLOR_FAME}
-                  strokeWidth={2.6}
-                  dot={{ r: 2.8, fill: COLOR_FAME, stroke: "#fff", strokeWidth: 1 }}
+                  strokeWidth={2.4}
+                  dot={false}
+                  activeDot={{ r: 5, fill: COLOR_FAME, stroke: "#fff", strokeWidth: 2 }}
                   connectNulls={true} isAnimationActive={false} />
           </ComposedChart>
         </ResponsiveContainer>
 
         <div className="caveat">
           <b>粗实线＝当年值</b>（看具体年的尖峰谷底）　|　
-          <b>淡虚线＝5 年段趋势</b>（每 5 年一段均值，描绘大运整体走势）　|　
-          基线 50（虚横线）：&gt;50 为该年偏吉，&lt;50 偏凶。
+          <b>淡虚线＝大运趋势</b>（每个大运一个均值点，看 10 年一段的整体走势）　|　
+          基线 50（虚横线）：&gt;50 为该年偏吉，&lt;50 偏凶　|　
+          鼠标悬停可见数值。
         </div>
-        {CURVES.mangpai_enabled && (
+        {!SIMPLE_MODE && CURVES.mangpai_enabled && (
           <div className="mp-summary">
             盲派启用：{mpYearsCount} 年触发盲派经典组合（其中 {mpHighCount} 条「重」烈度），不进 25% 融合权重，仅做 ±烈度档修正。
           </div>
@@ -616,43 +646,49 @@ function App() {
         )}
       </details>
 
-      {/* === 一生三维度评价 === */}
+      {/* === 一生四大维度评价（v7.6 加「关系」面） === */}
       <div className="card">
-        <h2>一生总评（三维度）</h2>
-        <div className="sub">三条曲线的整体走势 / 长板短板 / 各维度的人生策略建议</div>
+        <h2>一生总评（四大维度）</h2>
+        <div className="sub">从精神 / 财富 / 名望 / 关系四个面向，对全局做分层面的描述</div>
         <div className="life-grid">
           {[
-            { key: "spirit", name: "精神舒畅度" },
-            { key: "wealth", name: "财富" },
-            { key: "fame",   name: "名声" },
-          ].map(d => (
-            <div key={d.key} className={"life-cell "+d.key}>
-              <div className="lc-head"><span className="lc-dot"></span>{d.name}</div>
-              {lifeReview[d.key] && lifeReview[d.key].trim() ? (
-                <Markdown source={lifeReview[d.key]} />
-              ) : (
-                <div className="placeholder">
-                  （此处由 LLM 写入一生 {d.name} 的整体评价。
-                  key = "{d.key}"）
-                </div>
-              )}
-            </div>
-          ))}
+            { key: "spirit",    name: "精神",
+              hint: "精神舒畅度的一生走势 + 体感建议（用神到位 / 调候是否舒展）" },
+            { key: "wealth",    name: "财富",
+              hint: "钱从哪来 / 高峰区段 / 防漏点（伤官生财 / 食神生财 / 财库 / 比劫劫财）" },
+            { key: "fame",      name: "名望",
+              hint: "被看见的方式 / 标签如何形成 / 警惕陷阱（官印格 / 食神制杀 / 伤官见官）" },
+            { key: "relations", name: "关系",
+              hint: "感情、家庭、人脉的总体能量与节奏（配偶星位置 / 桃花 / 比劫 / 合冲）",
+              fallbackKey: "emotion" },
+          ].map(d => {
+            const md = lifeReview[d.key] || (d.fallbackKey ? lifeReview[d.fallbackKey] : "");
+            return (
+              <div key={d.key} className={"life-cell "+d.key}>
+                <div className="lc-head"><span className="lc-dot"></span>{d.name}</div>
+                {md && md.trim() ? (
+                  <Markdown source={md} />
+                ) : (
+                  <div className="placeholder">
+                    （此处由 LLM 写入一生「{d.name}」总评：{d.hint}。
+                    key = "life_review.{d.key}"
+                    {d.fallbackKey ? `（兼容旧 key "life_review.${d.fallbackKey}"）` : ""}。
+                    建议 ≥ 200 字大白话，包含命局学理 + 一生走势 + 实操建议。）
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       </div>
 
       {/* === v7.5 时代-民俗志解读层（仅在传入 zeitgeist 时显示） === */}
       {HAS_ZEITGEIST && eraWindows.length > 0 && (
         <div className="card">
-          <h2>时代-民俗志解读层（v7.5）</h2>
-          <div className="sub">
-            把每个 era_window（5-10 年区间）作为一段「时代镶嵌」叙事，
-            脚本只给骨架（id/label/span/keywords + 与大运的对齐情况），
-            具体「时代底色 / 标志性细节 / 命局节点 / 累计影响 / 证伪点」由 LLM 现场写
-          </div>
+          <h2>时代背景</h2>
+          <div className="sub">把人生切成几段时代区间，看命主在每个时代里经历了什么</div>
           <div className="era-banner">
-            ⚠ 此层只用于「后事详写」（已发生段的精细化解读），不预测未来；
-            对未来段会自动转为「方向性提示」。详见 references/zeitgeist_protocol.md。
+            已发生的时段会写得较细；未来时段只给方向性提示，不做具体预测。
           </div>
           <div className="era-list">
             {eraWindows.map((era, i) => {
@@ -661,7 +697,6 @@ function App() {
               return (
                 <details className="era-item" key={era.id || i} open={i === 0}>
                   <summary>
-                    <span className="era-tag">{era.id}</span>
                     <span>{era.label}</span>
                     <span className="era-span">
                       {span[0]}-{span[1]}　·　{era.decade_label || ""}
@@ -669,21 +704,21 @@ function App() {
                     <span className="era-keywords">
                       {(era.keywords || []).slice(0, 5).join(" · ")}
                     </span>
+                    {!SIMPLE_MODE && <span className="era-tag">{era.id}</span>}
                   </summary>
                   <div className="era-body">
-                    <div className="era-meta">
-                      <b>骨架：</b>{(era.keywords || []).join(" · ")}
-                    </div>
+                    {!SIMPLE_MODE && (
+                      <div className="era-meta">
+                        <b>骨架：</b>{(era.keywords || []).join(" · ")}
+                      </div>
+                    )}
                     {narrative && narrative.trim() ? (
                       <Markdown source={narrative} />
                     ) : (
                       <div className="placeholder">
                         （此处由 LLM 按 references/zeitgeist_protocol.md §3 写入「区间叙事」：
-                        ①时代底色（1-2 句不带身份名词的中性概括）　
-                        ②标志性细节（民俗志层 6 子层挑 ≥ 3 项 high/mid 置信）　
-                        ③命局给的几个具体节点（首选形态 + 备选形态）　
-                        ④累计影响（这一段如何沉淀到命主的人生轨迹）　
-                        ⑤整段证伪点。
+                        ①时代底色　②标志性细节　③命局给的几个具体节点　
+                        ④累计影响　⑤整段证伪点。
                         key = "{era.id}"。）
                       </div>
                     )}
@@ -757,7 +792,7 @@ function App() {
                 <span className="ky-headline">{k.headline}</span>
               </summary>
               <div className="ky-body">
-                <MangpaiBlock events={mpEvents} />
+                {!SIMPLE_MODE && <MangpaiBlock events={mpEvents} />}
                 {k.body && k.body.trim() ? (
                   <Markdown source={k.body} />
                 ) : (
