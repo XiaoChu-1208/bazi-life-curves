@@ -28,12 +28,12 @@
     "version": "v9-PR5",
     "trigger_reason": "consensus < 0.55 AND top1_top2_gap < 0.10",
     "task": "rare_phase_exhaustive_scan",
-    "input_pillars": "丙子 庚子 己卯 己巳",
+    "input_pillars": "<year> <month> <day> <hour>",
     "input_root_strength": {"label": "弱根", "yin_root": 1.0, "bijie_root": 0.2},
     "input_climate": {"label": "燥实", "干头分": 5.0, "地支分": -2.0},
     "input_anchor_events": [
-      {"year": 2015, "type": "学业", "polarity": "+大事件"},
-      {"year": 2026, "type": "事业迁徙", "polarity": "+大事件"}
+      {"year": "<YYYY>", "type": "学业", "polarity": "+大事件"},
+      {"year": "<YYYY>", "type": "事业迁徙", "polarity": "+大事件"}
     ],
     "instruction": "你必须严格按以下步骤操作:",
     "steps": [

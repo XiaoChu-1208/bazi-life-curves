@@ -3,7 +3,7 @@
 > 本协议替代 [phase_inversion_protocol.md](phase_inversion_protocol.md) 的「事后兜底」立场。
 > 旧协议把"反演"做成"R0+R1+R2 命中率 ≤ 2/6 时才触发"的兜底机制；新协议把"相位决策"做成 `solve_bazi` 阶段就强制要做的一等公民，由 detector 算先验、用户校验答案算后验、贝叶斯落地。
 >
-> 历史背景：1996/12/08 这盘 6 个 detector 满分（P5 三气成象 4/4 + P3 调候反向 3/3 + P4 假从触发），但默认 `bazi.json` 仍按 `day_master_dominant` 输出，全因"反演"在旧协议里是事后兜底。详见 [diagnosis_pitfalls.md](diagnosis_pitfalls.md) §13。
+> 历史背景：典型边界 case 中, 6 个 detector 满分（P5 三气成象 4/4 + P3 调候反向 3/3 + P4 假从触发），但默认 `bazi.json` 仍按 `day_master_dominant` 输出，全因"反演"在旧协议里是事后兜底。详见 [diagnosis_pitfalls.md](diagnosis_pitfalls.md) §13。
 
 ---
 

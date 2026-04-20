@@ -27,10 +27,10 @@
 {
   "version": 8,
   "bazi_summary": {
-    "pillars": ["丙子", "庚子", "己卯", "己巳"],
-    "day_master": "己",
+    "pillars": ["<year>", "<month>", "<day>", "<hour>"],
+    "day_master": "<day_stem>",
     "gender": "female",
-    "birth_year": 1996
+    "birth_year": "<YYYY>"
   },
   "phase_candidates": [
     {"phase_id": "floating_dms_to_cong_cai", "label": "弃命从财", "detector_score": "4/4 (P5)"},

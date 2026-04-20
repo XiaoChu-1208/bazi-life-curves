@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""save_confirmed_facts.py — 用户校验反馈固化器（P5，2026-04，from 1996 八字失败教训）。
+"""save_confirmed_facts.py — 用户校验反馈固化器（P5，2026-04）。
 
 为什么需要这个？
 ================

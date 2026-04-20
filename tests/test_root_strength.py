@@ -3,7 +3,7 @@
 覆盖：
   1. 无根 / 微根 / 弱根 / 中根 / 强根 五档 label
   2. bijie_root vs yin_root 区分
-  3. 1996/12/08 case 黄金回归：必须有 yin_root，不能落"无根"
+  3. 印根边界 case 黄金回归：必须有 yin_root，不能落"无根"
   4. 真从财格典型盘必须落"无根"
   5. day_master_strength 嵌入 root_strength 字段
   6. apply_phase_override 守卫：有印根时从格触发 _root_strength_warnings
@@ -39,7 +39,7 @@ pytestmark = [pytest.mark.fast]
         ("丁", ["子", "申", "酉", "酉"], "无根", (0.0, 0.30)),
         # 微根：日主丁火 + 子申酉亥 (亥中甲中气=印 0.5)
         ("丁", ["子", "申", "酉", "亥"], "微根", (0.30, 0.70)),
-        # 弱根：1996/12/08 case 己 + 子子卯巳 (巳本丙印1.0+戊余比0.2 = 1.2)
+        # 弱根：日主己 + 子子卯巳 (巳本丙印1.0+戊余比0.2 = 1.2) — 印根边界 case
         ("己", ["子", "子", "卯", "巳"], "弱根", (0.70, 1.50)),
         # 中根：日主庚 + 申丑辰未 (申本庚比1.0; 丑本己印1.0; 辰本戊印1.0; 未本己印1.0 + 中乙不算)
         # 实际太多变 → 用己土 + 戌酉巳卯 (戌本戊1.0+丁余0.2; 巳本丙1.0+戊余0.2 = 2.4)
@@ -83,16 +83,17 @@ def test_yin_dominant_with_some_bijie():
 
 
 # ------------------------------------------------------------
-# 3. 1996/12/08 黄金回归
+# 3. 印根边界 case 黄金回归
 # ------------------------------------------------------------
 
-def test_1996_1208_male_must_have_yin_root():
-    """diagnosis_pitfalls §14 要求：此盘 yin_root>0、不能落'无根'，否则会误触假从"""
+def test_rooted_pseudo_following_boundary_must_have_yin_root():
+    """diagnosis_pitfalls §14 要求：日支主气印星结构 yin_root>0、不能落'无根'，
+    否则会误触假从。代表结构：日主己土 + 月支水 + 时支巳 (巳本气丙=正印)。"""
     pillars = parse_pillars("丙子,庚子,己卯,己巳")
     rs = compute_dayuan_root_strength("己", [p.zhi for p in pillars])
     assert rs["yin_root"] >= 1.0, f"巳中本气丙=印 应贡献 1.0，实际 {rs['yin_root']}"
     assert rs["label"] != "无根"
-    assert rs["label"] != "微根"  # 应至少弱根
+    assert rs["label"] != "微根"
     assert rs["total_root"] >= 0.30
 
 

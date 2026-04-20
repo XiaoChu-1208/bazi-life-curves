@@ -3,7 +3,7 @@
 覆盖：
   1. catalog md 文件存在 + 三层条目数 ≥ 110
   2. catalog 每条 schema 字段齐全
-  3. rare_phase_detector.scan_all 在 1996/12/08 case 必触发 杀印相生 + 伤官生财
+  3. rare_phase_detector.scan_all 在印根边界 case 必触发 杀印相生 + 伤官生财
   4. 经典魁罡日柱必触发 detect_kuigang_ge
   5. 天元一气必触发
   6. llm_fallback_protocol.md 存在且包含关键章节
@@ -103,8 +103,8 @@ def test_detector_tianyuanyiqi():
     assert res["confidence"] == 1.0
 
 
-def test_detector_1996_case_triggers_qi_yin_xiang_sheng():
-    """1996/12/08 case 应至少触发 杀印相生 (七杀+印星互生)"""
+def test_detector_rooted_pseudo_following_triggers_qi_yin_xiang_sheng():
+    """印根边界 case 应至少触发 杀印相生 (七杀+印星互生)"""
     from rare_phase_detector import scan_all
     from _bazi_core import Pillar
     pillars = [Pillar("丙", "子"), Pillar("庚", "子"),
@@ -112,12 +112,12 @@ def test_detector_1996_case_triggers_qi_yin_xiang_sheng():
     results = scan_all(pillars, "己")
     ids = {r["id"] for r in results}
     assert "qi_yin_xiang_sheng" in ids, (
-        f"1996/12/08 case 必须触发杀印相生; 实际触发: {ids}"
+        f"印根边界 case 必须触发杀印相生; 实际触发: {ids}"
     )
 
 
-def test_detector_1996_case_does_not_trigger_cong_cai():
-    """1996/12/08 case 有印根, 必须 NOT 触发真从财 (修复 PR-1 假从误判)"""
+def test_detector_rooted_pseudo_following_does_not_trigger_cong_cai():
+    """印根边界 case 有印根, 必须 NOT 触发真从财 (修复 PR-1 假从误判)"""
     from rare_phase_detector import scan_all
     from _bazi_core import Pillar
     pillars = [Pillar("丙", "子"), Pillar("庚", "子"),
@@ -125,7 +125,7 @@ def test_detector_1996_case_does_not_trigger_cong_cai():
     results = scan_all(pillars, "己")
     ids = {r["id"] for r in results}
     assert "cong_cai_zhen" not in ids, (
-        f"1996/12/08 case 因有印根不能触发真从财; 实际触发: {ids}"
+        f"印根边界 case 因有印根不能触发真从财; 实际触发: {ids}"
     )
 
 

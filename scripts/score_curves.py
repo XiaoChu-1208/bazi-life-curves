@@ -51,9 +51,9 @@ PEACH_BLOSSOM_ZHIS = {"子", "午", "卯", "酉"}
 def detect_geju(bazi: dict) -> dict:
     """识别原局主格局。"格局为先"——先认格局，再讲扶抑。
 
-    [改进 v2，2026-04，from 1996 八字失败教训]：
+    [改进 v2，2026-04，from 假伤官生财边界 case 失败教训]：
     每个格局都加了**成立条件**——避免"看到月干透伤官 + 见财"就盲目判伤官生财。
-    1996 八字（丙子庚子己卯己巳）反例：身弱 + 财不透干 + 印浮 → 不构成伤官生财格。
+    典型反例：身弱 + 财不透干 + 印浮 → 不构成伤官生财格。
 
     成立条件总览：
     - 伤官生财格：身不弱（中和或偏强）+ 财星透干或月令旺
@@ -1059,7 +1059,7 @@ def apply_phase_override(bazi: dict, phase_id: str) -> dict:
     bazi.setdefault("strength", {})
 
     # v9 root_strength 否决守卫：从格 / 化气格类 phase 必须满足无根/微根门槛
-    # 修 1996/12/08 case 假从误判（详见 references/diagnosis_pitfalls.md §13-14）
+    # 修"印根足够却被算法误判为弃命从财"的边界 case（详见 references/diagnosis_pitfalls.md §13-14）
     _rs = (bazi.get("strength") or {}).get("root_strength") or {}
     if _rs:
         rs_total = _rs.get("total_root", 0.0)

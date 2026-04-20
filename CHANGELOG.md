@@ -2,7 +2,7 @@
 
 ## v9.0.0 — 2026-04 · Precision-Over-Recall · 多流派交叉投票 · open_phase 逃逸阀
 
-> **Triggering case**: 1996/12/08 男命被旧 v8 误判为「弃命从财」的反思。详见
+> **Triggering pattern**: 一类"印根足够却被旧算法误判为弃命从财"的边界 case 反思。详见
 > `references/diagnosis_pitfalls.md` §13-14 + `references/mind_model_protocol.md`.
 >
 > 这不是小修, 是结构性的范式转换:
@@ -13,7 +13,7 @@
 - 新增 `scripts/_bazi_core.py::compute_dayuan_root_strength`
 - `scripts/score_curves.py::apply_phase_override` 守卫: `cong_*`/`huaqi_to_*` phase 强制
   要求 `total_root<0.30`, 否则写 `_root_strength_warnings`.
-- 修复: 1996/12/08 case 因「巳中本气丙=印」贡献 `yin_root=1.2`, 不再被算法误标"无根 → 弃命从财".
+- 修复: 地支主气印星 (如 巳中本气丙=正印) 应贡献 `yin_root=1.0`, 不再被算法误标"无根 → 弃命从财".
 
 ### PR-2 · `--pillars` 弃用 + `he_pan` v8 入口守卫
 - `scripts/solve_bazi.py`: `--pillars` 模式自 v9 起进入 DeprecationWarning 流程; 必须显式
@@ -32,7 +32,7 @@
 - 新增 `references/mind_model_protocol.md` (五项操作戒律 + 五项认知戒律).
 - `scripts/score_curves.py::hsr7_audit`: 检查 `narrative_caution` / `phase_composition` /
   `alternative_readings` / `must_be_true` 字段是否齐全; warning 模式或 `BAZI_STRICT_HSR7=1` raise.
-- 1996/12/08 case 的 6 个独立拦截点都已落地.
+- 同类边界 case 的 6 个独立拦截点都已落地.
 
 ### PR-5 · 罕见格全集 (~110 条) + LLM inline fallback
 - 新增 `references/rare_phases_catalog.md`: 三层 catalog —
@@ -54,7 +54,7 @@
   - **open_phase 逃逸阀**: top1<0.55 OR gap<0.10 → `decision="open_phase"`.
   - LLM fallback candidates 按 0.7x 权重回流投票.
 - `scripts/score_curves.py::score()` 自动注入 `multi_school_vote` 字段到所有产物.
-- 1996/12/08 case 验证: top1=0.34 → open_phase, 杀印相生 / 伤官生财 / 调候反向干燥
+- 多格并存型边界 case 验证: top1=0.34 → open_phase, 杀印相生 / 伤官生财 / 调候反向干燥
   三足鼎立, 真正落到"多流派必出备解" — 不允许独断"弃命从财".
 
 ### 测试覆盖
@@ -70,5 +70,5 @@
 
 1. 不许独断输出"你是 X 相位".
 2. 把 `multi_school_vote.alternative_readings` 全部列出, 每条带 `if_this_is_right_then`.
-3. 请用户补充 ≥ 2 条具体事件年份 (高考 / 工作 / 婚配 / 大病 等), 重新跑投票.
+3. 请用户补充 ≥ 2 条具体事件年份 (学业 / 工作 / 婚配 / 大病 等), 重新跑投票.
 4. 必带 HS-R7.3 disclaimer: "本工具是辅助, 不构成确定预测; 任何与你强烈直觉冲突的判定, 你保留最终裁定权".

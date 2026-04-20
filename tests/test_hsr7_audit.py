@@ -112,5 +112,5 @@ def test_mind_model_protocol_doc_exists():
     p = ROOT / "references" / "mind_model_protocol.md"
     assert p.exists(), "PR-4 必须创建 mind_model_protocol.md"
     text = p.read_text(encoding="utf-8")
-    for marker in ["HS-R7", "5.6 open_phase", "5.10", "1996/12/08"]:
+    for marker in ["HS-R7", "5.6 open_phase", "5.10", "假从误判"]:
         assert marker in text, f"protocol doc 缺关键章节: {marker}"

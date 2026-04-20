@@ -21,7 +21,7 @@ description: >-
     · **disambiguation（用户）**：Agent 用宿主 `AskQuestion` 一次性抛全部 N 题点选 UI，禁止把题面用自然语言转述让用户口头答"对/不对"
     · **posterior decision（算法）**：`phase_posterior.py` 算后验，≥ 0.80 high adopt / 0.60-0.80 mid adopt / 0.40-0.60 触发追问轮 / < 0.40 拒绝出图
     · 5 维度：D1 民族志 × 原生家庭 / D2 关系结构 / D3 流年大事件（动态生成）/ D4 中医体征 / D5 自我体感；硬体征（D1/D3/D4）权重 2× 软自述（D2/D5）
-    · 命名 case：1996/12/08 这盘 6 个 detector 满分但旧默认输出仍是 day_master_dominant，详见 `references/diagnosis_pitfalls.md` §14。
+    · 典型边界 case：某些盘 6 个 detector 满分但旧默认输出仍是 day_master_dominant，详见 `references/diagnosis_pitfalls.md` §14。
   **v5 流式输出 + 输出格式可选**：校验通过后先问用户「要纯 markdown 流式（A · 默认 · 最快）还是 markdown 流式 + HTML 交互图（B · 多等 5-15 秒）」；
   无论选 A / B，所有文字分析都按节流式输出（写完一节立刻发出，不批量憋整段），HTML 渲染（如选）放最后一步。
   Claude 宿主下 HTML 是含 marked.js + Recharts + details 折叠的交互式 Artifact，
@@ -170,7 +170,7 @@ print(f'已有记忆: {len(r[\"validations\"])} validations + {len(r[\"free_fact
   - `燥实` / `外燥内湿` → 用神 = 水（润降 / 让地支水透干）
   - `寒湿` / `外湿内燥` → 用神 = 火（暖局 / 让地支火透干）
 
-  这是 1996 八字（丙子庚子己卯己巳）"月令决定论"误判教训的产物——详见 `references/diagnosis_pitfalls.md` §1-§2。
+  这是"月令决定论"误判教训的产物（典型反例：干头丙庚己己 + 地支双子湿冷，纯按月令算就把调候判反）——详见 `references/diagnosis_pitfalls.md` §1-§2。
 - **格局派"为先"**：识别原局是否构成 `伤官生财 / 食神生财 / 杀印相生 / 官印相生 / 食神制杀 / 财格 …` 之一。**每个格局都有成立条件**——例如"伤官生财格"必须满足「身不弱 + 财透干或通月令」，否则放进 `geju.rejected` 不强行套；详见 `references/diagnosis_pitfalls.md` §4。
 - **用神反向校验**：所有用神（无论来自身强弱、climate 还是 geju）都要做 `_yongshen_reverse_check`——usability 不能为 "无"（即原局完全不见这个五行）。若为 "无" → 拒绝覆盖回退。
 - **印化护身后处理**：流年 / 大运凡触发「七杀」「伤官见官」时，自动检测原局是否有印星（干 / 支均查），有则将原本 -12 的「伤官见官」减为 -4 + 标记为 `伤官见官·印化护身`，将「七杀压身」转为 `+6 fame / +4 spirit` 的杀印相生。
@@ -254,7 +254,7 @@ LLM **不直接生成数字**，只能解释脚本输出。
 > | 失败兜底 | 命中率 ≤ 2/6 → 触发 Step 2.55 phase_inversion_loop 事后反演 | **identification 提到 `solve_bazi.py` 一等公民**，detector 算先验直接落 `bazi.phase`；`phase_inversion_loop.py` 标 deprecated |
 > | 落地阈值 | R0 ≥ 1/2 且（R1 ≥ 2/3 或 R1+R2 ≥ 4/6） | top-1 后验 ≥ 0.80 high / 0.60-0.80 mid / 0.40-0.60 追问轮 / < 0.40 reject |
 >
-> 命名 case：1996/12/08（丙子 庚子 己卯 己巳）这盘 6 个 detector 满分（P5 三气成象 4/4 + P3 调候反向 3/3 + P4 假从触发），但旧架构 `bazi.json` 仍按 `day_master_dominant` 输出。详见 `references/diagnosis_pitfalls.md` §14。
+> 典型边界 case：某些盘 6 个 detector 满分（P5 三气成象 4/4 + P3 调候反向 3/3 + P4 假从触发），但旧架构 `bazi.json` 仍按 `day_master_dominant` 输出。详见 `references/diagnosis_pitfalls.md` §14。
 
 #### 心智模型 · identification vs disambiguation
 
@@ -766,7 +766,7 @@ python3 scripts/save_confirmed_facts.py --bazi output/bazi.json --add-structural
 - **争议解读（强制）**：每个 disputed 年份都必须并入 key_years 并按 dispute_analysis_protocol Step A–D 解读
 - **合盘解读（强制）**：4 层评分必须按 he_pan_protocol §5 解读（按层 → 加 / 减分 → 大运同步 → confidence），禁止甩 grade、禁止给"配/不配"结论
 - **流式输出（强制 · v5）**：Step 3a / 合盘解读必须按节流式发出（每写完一节立刻发，禁止憋整段）；Step 2.7 必须先问用户要 markdown-only 还是要 HTML，禁止默认渲染 HTML 让用户白等
-- **v8 校验回路（强制 · 替代旧 R0/R1/R2/R3 + 命中率 + phase_inversion）**：Step 2.5 必须按 v8 协议跑 —— ① `handshake.py` 生成 5 维度 ~28 题 + `askquestion_payload`；② Agent 调宿主 **AskQuestion 结构化点选** UI 一次抛全部题（**禁止**用自然语言转述题面让用户口头答"对/不对/部分"，CLI 宿主 fallback 到 `cli_fallback_prompt`）；③ `phase_posterior.py` 算贝叶斯后验 P(phase | answers)；④ 后验阈值落地：≥ 0.80 high adopt / 0.60-0.80 mid adopt / 0.40-0.60 触发追问轮（top-2 候选间最 discriminative 2-3 题，最多 1 轮）/ < 0.40 reject 不出图。`bazi.phase_decision.is_provisional=true` 时 `render_artifact.py` 必须拒绝渲染。详见 `references/phase_decision_protocol.md` + `references/handshake_protocol.md` + `references/discriminative_question_bank.md` 和 `references/diagnosis_pitfalls.md` §14（命名 case：1996/12/08）。
+- **v8 校验回路（强制 · 替代旧 R0/R1/R2/R3 + 命中率 + phase_inversion）**：Step 2.5 必须按 v8 协议跑 —— ① `handshake.py` 生成 5 维度 ~28 题 + `askquestion_payload`；② Agent 调宿主 **AskQuestion 结构化点选** UI 一次抛全部题（**禁止**用自然语言转述题面让用户口头答"对/不对/部分"，CLI 宿主 fallback 到 `cli_fallback_prompt`）；③ `phase_posterior.py` 算贝叶斯后验 P(phase | answers)；④ 后验阈值落地：≥ 0.80 high adopt / 0.60-0.80 mid adopt / 0.40-0.60 触发追问轮（top-2 候选间最 discriminative 2-3 题，最多 1 轮）/ < 0.40 reject 不出图。`bazi.phase_decision.is_provisional=true` 时 `render_artifact.py` 必须拒绝渲染。详见 `references/phase_decision_protocol.md` + `references/handshake_protocol.md` + `references/discriminative_question_bank.md` 和 `references/diagnosis_pitfalls.md` §14（典型边界 case 详解）。
 - **现代化解读铁律（强制 · v7）**：emotion 维度的解读**必须**遵守 fairness_protocol.md §10：
   - **命局可推**：关系结构 / 能量模式 / 偏好的互动模式 / 关系密度
   - **命局不可推**：对方生理性别 / 是否结婚 / 几段关系 / 是否生育 / 关系是否被祝福
@@ -783,7 +783,7 @@ python3 scripts/save_confirmed_facts.py --bazi output/bazi.json --add-structural
 
 ## v9 范式转换（2026-04 重写 · precision-over-recall · 多流派交叉投票 · open_phase 逃逸阀）
 
-> **触发动因**：用户对 1996/12/08 男命的"弃命从财"误判。详见 `references/diagnosis_pitfalls.md` §14 + `references/mind_model_protocol.md`。
+> **触发动因**：一类"印根足够却被旧算法误判为弃命从财"的边界 case 反思。详见 `references/diagnosis_pitfalls.md` §14 + `references/mind_model_protocol.md`。
 > **v9 不是 v8 的小修，是结构性的范式转换**：之前是"算法独断 → 让用户答题校验" → 现在是"多流派加权投票 + open_phase 逃逸阀 + 必出多解备选 + LLM 兜底特殊格"。
 
 ### v9 核心改动一览
@@ -817,10 +817,10 @@ python3 scripts/save_confirmed_facts.py --bazi output/bazi.json --add-structural
 ## 何时阅读 USAGE.md / references/
 
 - **用户问"怎么用 / 怎么触发 / 不会用"** → `USAGE.md`（直接复述给用户）
-- **v9 范式入门 + 1996/12/08 教训** → `references/mind_model_protocol.md`（v9 强制） + `references/diagnosis_pitfalls.md` §13-14
+- **v9 范式入门 + 假从误判教训** → `references/mind_model_protocol.md`（v9 强制） + `references/diagnosis_pitfalls.md` §13-14
 - **算法可判定的特殊格 (~30) + LLM 兜底协议 (~80 罕见格)** → `references/rare_phases_catalog.md` + `references/llm_fallback_protocol.md`（v9 强制）
 - **每次接到八字 / 生日，进入 Step 2.5 之前** → `references/phase_decision_protocol.md`（v8 强制）+ `references/handshake_protocol.md`（v8 强制）+ `references/discriminative_question_bank.md`（v8 题库源文件）
-- **任何后验落地 / 阈值 / phase 决策疑问** → `references/phase_decision_protocol.md` §5 + `references/diagnosis_pitfalls.md` §14（命名 case：1996/12/08）
+- **任何后验落地 / 阈值 / phase 决策疑问** → `references/phase_decision_protocol.md` §5 + `references/diagnosis_pitfalls.md` §14（典型边界 case）
 - **[deprecated v8] 旧 R0+R1+R2 命中率 / 相位反演兜底** → `references/phase_inversion_protocol.md` 仅作历史参考，新流程不读
 - **每次合盘前 / 用户给 ≥ 2 份八字** → `references/he_pan_protocol.md`（强制）
 - **每次跑 Step 2a 之前 / 用户问"盲派怎么看"** → `references/mangpai_protocol.md`（强制）

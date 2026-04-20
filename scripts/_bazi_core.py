@@ -189,7 +189,7 @@ def calc_zhi_shishen(day_gan: str, zhi: str) -> str:
     return calc_shishen(day_gan, main_gan)
 
 
-# --- 通根度（v9 新增 · 修 1996/12/08 假从误判） ---
+# --- 通根度（v9 新增 · 修"印根足够却被误判为弃命从财"边界 case） ---
 #
 # 设计动机（lessons learned 2026-04 后第二轮回顾）：
 # 旧 day_master_strength 把"印根"和"比劫根"合并到 sheng/same 加权得分里，
@@ -368,10 +368,10 @@ def day_master_strength(pillars: List[Pillar]) -> Dict[str, float]:
 
 # --- 燥湿独立画像（lessons learned 2026-04 后新增） ---
 #
-# 关键洞察（来自 1996 八字 丙子庚子己卯己巳 的失败经验）：
+# 关键洞察（来自一类"上燥下寒"边界 case 的失败经验）：
 # 月令决定"季节寒暖"，但**天干能量场**才决定"体感和性格的明面表现"。
-# 干头 = 丙庚己己（三土火金全燥）→ 实际是燥实命；
-# 旧 select_yongshen 只看月令子水 + 身弱 → 错判用神为火土。
+# 例如干头三土火金全燥 + 月支水 → 实际是燥实命；
+# 旧 select_yongshen 只看月令水 + 身弱 → 错判用神为火土。
 # 同样身弱：燥实命用神 = 水（润降）；寒湿命用神 = 火（暖局）—— 完全相反。
 # 所以"燥湿"必须是独立于"身强弱"的维度。
 
@@ -425,7 +425,7 @@ def climate_profile(pillars: List[Pillar]) -> Dict:
     extreme_wet = g_score <= -6 and z_score > 2
 
     if extreme_dry:
-        label = "外燥内湿"           # 干头极燥 + 地支湿（如 1996 丙庚己己 + 双子）
+        label = "外燥内湿"           # 干头极燥 + 地支湿
     elif extreme_wet:
         label = "外湿内燥"           # 干头极湿 + 地支燥
     elif total >= 4:
@@ -475,16 +475,16 @@ def climate_profile(pillars: List[Pillar]) -> Dict:
 def select_yongshen(pillars: List[Pillar], strength: Dict) -> Dict[str, str]:
     """Pick yongshen / xishen / jishen — climate-first, strength-second.
 
-    [改进 v2，2026-04，from 1996 八字失败教训]：
+    [改进 v2，2026-04，from 上燥下寒边界 case 失败教训]：
     - **燥实命**（climate.label = 燥实，总分 ≥ 4）→ 用神 = 水（润降），
       不论身强弱。同样身弱，燥实命用神是水；寒湿命才是火 —— 完全相反。
     - **寒湿命**（总分 ≤ -4）→ 用神 = 火（暖局），不论身强弱。
     - **偏燥 / 偏湿**：燥湿方向上微调（影响 jishen），主选用神仍按身强弱走。
     - **中和**：原 (强→克泄耗、弱→生扶、中和→调候) 规则。
 
-    1996 八字（丙子庚子己卯己巳）失败案例：
+    典型反例：日主己土 + 月令子水 + 干头多火多燥土
     旧规则 → 月令子水 + 身弱 → 用神 = 火土（错）
-    新规则 → 干头丙庚己己全燥 → 燥实命 → 用神 = 水（对，且匹配"从小怕热"体感）
+    新规则 → 干头全燥 → 燥实命 → 用神 = 水（对，且匹配"从小怕热"体感）
     """
     climate = climate_profile(pillars)
 

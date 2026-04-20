@@ -27,7 +27,7 @@ pytestmark = [pytest.mark.fast, pytest.mark.fairness]
 # - cong_cai 候选 (己土日主、财官旺、climate 偏寒)
 # - calibration dataset 中的 jobs / einstein (默认相位 / 多 detector 触发)
 TEST_CASES = [
-    ("cong_cai_candidate", "丙子 庚子 己卯 己巳", "F", 1996),
+    ("cong_cai_candidate", "丙子 庚子 己卯 己巳", "F", 1936),
     ("jobs_steve",         "乙未 戊寅 甲戌 甲戌", "M", 1955),
     ("einstein",           "己卯 丁卯 庚午 壬午", "M", 1879),
     ("guan_yin_xiang_sheng", "壬戌 癸丑 庚午 丁丑", "F", 1982),
@@ -120,7 +120,7 @@ def test_phase_decision_gender_symmetry(case_id, pillars, birth_year):
 @pytest.mark.parametrize(
     "case_id,pillars,birth_year",
     [
-        ("cong_cai_candidate", "丙子 庚子 己卯 己巳", 1996),
+        ("cong_cai_candidate", "丙子 庚子 己卯 己巳", 1936),
         ("jobs_steve",         "乙未 戊寅 甲戌 甲戌", 1955),
     ],
     ids=["cong_cai_candidate", "jobs_steve"],

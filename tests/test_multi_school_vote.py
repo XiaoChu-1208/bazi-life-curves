@@ -3,7 +3,7 @@
 校验:
   1. _school_registry: phase_candidate vs ratify_only 划分
   2. multi_school_vote.vote() 基本调用通
-  3. 1996/12/08 case 必须落 open_phase (precision over recall):
+  3. 多格并存型边界 case 必须落 open_phase (precision over recall):
      杀印相生 vs 伤官生财 vs 调候反向 三足鼎立 → 不许独断
   4. open_phase 逃逸阀阈值: top1<0.55 OR gap<0.10
   5. high consensus case: 单一流派强信号 → consensus_level=high
@@ -31,7 +31,7 @@ def _make_bazi(pillars_str: str, day_gan_idx: int = 2) -> dict:
     return {
         "pillars": pillars,
         "gender": "M",
-        "birth_year": 1996,
+        "birth_year": 1990,
     }
 
 
@@ -78,17 +78,17 @@ def test_vote_runs_end_to_end():
 
 
 # ------------------------------------------------------------
-# 3. 1996/12/08 case 必须 open_phase
+# 3. 多格并存型边界 case 必须 open_phase
 # ------------------------------------------------------------
 
-def test_1996_case_must_fall_to_open_phase():
+def test_rooted_pseudo_following_must_fall_to_open_phase():
     """v9 核心校验: 此盘多流派分歧大, 必须 open_phase 不许独断."""
     from multi_school_vote import vote
     bazi = _make_bazi("丙子 庚子 己卯 己巳")
     result = vote(bazi)
 
     assert result["decision"] == "open_phase", (
-        f"1996/12/08 男命 多流派分歧, 必须落 open_phase, 实际 {result['decision']}"
+        f"多格并存型边界 case 多流派分歧, 必须落 open_phase, 实际 {result['decision']}"
     )
     assert result["consensus_level"] == "low"
     assert result["open_phase_triggered"] is True

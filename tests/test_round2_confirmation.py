@@ -63,7 +63,7 @@ def cong_cai_bazi():
         pillars_str="丙子 庚子 己卯 己巳",
         gregorian=None,
         gender="F",
-        birth_year=1996,
+        birth_year=1936,
     )
 
 
@@ -253,7 +253,7 @@ def test_round2_handshake_requires_r1_phase_decision():
         pillars_str="丙子 庚子 己卯 己巳",
         gregorian=None,
         gender="F",
-        birth_year=1996,
+        birth_year=1936,
     )
     bazi_no_pd = {k: v for k, v in raw.items() if k != "phase_decision"}
     with pytest.raises(ValueError, match="phase_decision"):

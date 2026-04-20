@@ -6,7 +6,7 @@
 #     - id: <唯一字符串>
 #       description: <可读描述>
 #       bazi_input:
-#         pillars: "<年柱 月柱 日柱 时柱>"  # 如 "丙子 庚子 己卯 己巳"
+#         pillars: "<年柱 月柱 日柱 时柱>"  # 如 "甲寅 丙寅 甲寅 丙寅"
 #         gender: M | F
 #         birth_year: <int>
 #       expected_phase: <phase_id from phase_decision_protocol.md §2>
@@ -21,16 +21,16 @@
 metadata:
   schema_version: 8
   created: "2026-04-20"
-  description: "phase_decision_recall 评估数据集 · 覆盖 6 个典型 phase（含 1 个真问题 regression case + 2 个默认相位 baseline + 3 个非默认相位）"
+  description: "phase_decision_recall 评估数据集 · 覆盖 6 个典型 phase（含 1 个边界结构 regression case + 2 个默认相位 baseline + 3 个非默认相位）"
   thresholds_ref: thresholds.yaml#phase_decision
 
 samples:
-  - id: case_1996_12_08
-    description: "1996/12/08 10:08 女 · 三气成象 + 调候反向 · 真问题 regression case"
+  - id: case_rooted_pseudo_following_boundary
+    description: "印根足够 + 财官印三气成象 + 调候反向 · 边界结构 regression case"
     bazi_input:
       pillars: "丙子 庚子 己卯 己巳"
       gender: F
-      birth_year: 1996
+      birth_year: 1936
     expected_phase: floating_dms_to_cong_cai
     expected_min_prior_prob: 0.50
     expected_min_posterior_prob: 0.85
@@ -44,7 +44,7 @@ samples:
     notes: |
       P5 三气成象（4/4）+ P3 调候反向（3/3）+ P4 假从触发。
       仅先验已达 0.6051（top-1 mid），加 5 道用户答案后验 ≈ 0.98 high adopt。
-      这是 v8 协议解决的 1996/12/08 历史 regression case。
+      这是 v8/v9 协议处理"假从误判"边界 case 的 regression sample。
 
   - id: case_jobs
     description: "Steve Jobs 1955-02-24 19:15 加州 · 默认相位 baseline reality check"
