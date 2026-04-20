@@ -71,6 +71,20 @@ def main():
                     help="JSON 模式：只输出最终结果 JSON，便于 LLM 解析")
     args = ap.parse_args()
 
+    # v8 deprecation warning
+    print(
+        "\n" + "=" * 78 + "\n"
+        "[DEPRECATION WARNING] phase_inversion_loop.py 是 v7 老路径，v8 主流程不再使用。\n"
+        "v8 校验回路：\n"
+        "  python scripts/handshake.py --bazi out/bazi.json --curves out/curves.json\n"
+        "  → Agent 调宿主 AskQuestion 抛 askquestion_payload\n"
+        "  → python scripts/phase_posterior.py --bazi out/bazi.json --questions out/handshake.json --answers user_answers.json\n"
+        "本脚本仍可运行（保留旧 phase_inversion_protocol 兼容性），但请尽快迁移。\n"
+        "详见 references/phase_decision_protocol.md / handshake_protocol.md (v8)。\n"
+        + "=" * 78 + "\n",
+        file=sys.stderr
+    )
+
     out_dir = Path(args.out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
 

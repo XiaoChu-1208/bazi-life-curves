@@ -1,0 +1,11 @@
+# bazi-life-curves · 可选依赖（按需启用）
+# 安装：pip install -r requirements-optional.txt
+
+# v8.0 · 双引擎交叉验证（启用 --engine tyme4py / --engine cross-check）
+# 节气算法基于"寿星天文历"sxwnl，与 lunar-python 默认引擎并行计算，节气交接边缘 case 自动 warn
+# 要求 Python >= 3.10
+tyme4py>=1.4.0; python_version >= "3.10"
+
+# v8.0 · 寿星天文历 Python 绑定（同源算法）· tyme4py 节气底层使用
+# 真太阳时 EOT 已用 NOAA 公式（精度 ±15 秒，零依赖），sxtwl 不再用于 EOT，仅作为日历库可选启用
+sxtwl>=2.0.6

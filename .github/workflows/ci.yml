@@ -25,7 +25,10 @@ jobs:
           cache: pip
 
       - name: Install deps
-        run: pip install -r requirements.txt
+        run: pip install -r requirements.txt -r requirements-dev.txt
+
+      - name: Harness (L0 static + L4 contract + L7 fairness)
+        run: python -m pytest tests/ -ra --tb=short
 
       - name: Pipeline smoke test
         run: |

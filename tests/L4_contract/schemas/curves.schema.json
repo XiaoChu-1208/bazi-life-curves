@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "curves.schema.json",
+  "title": "curves.json (score_curves.py 输出 / render_artifact.py 输入)",
+  "description": "render_artifact.py 直接消费的字段必须稳定。新增字段允许,已锁字段不能改名/改类型/改值域。",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "version", "weights", "lambdas",
+    "age_start", "age_end",
+    "baseline", "pillars_str", "day_master", "strength", "yongshen",
+    "birth_year", "gender",
+    "dayun_segments", "points"
+  ],
+  "properties": {
+    "version":       { "type": "integer", "minimum": 1 },
+    "weights":       { "type": "object" },
+    "lambdas":       { "type": "object" },
+    "age_start":     { "type": "integer", "minimum": 0 },
+    "age_end":       { "type": "integer", "minimum": 0 },
+    "baseline":      { "type": "object" },
+    "pillars_str":   { "type": "string" },
+    "day_master":    { "type": "string" },
+    "strength":      { "type": "object" },
+    "yongshen":      { "type": "object" },
+    "birth_year":    { "type": "integer" },
+    "gender":        { "type": "string", "enum": ["M", "F"] },
+    "orientation":   { "type": "string", "enum": ["hetero", "homo", "bi", "none", "poly"] },
+    "dayun_segments": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["label", "start_age", "end_age", "start_year", "end_year"]
+      }
+    },
+    "points": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "age", "year", "ganzhi", "dayun",
+          "spirit_yearly", "wealth_yearly", "fame_yearly",
+          "confidence", "divergence", "school_scores"
+        ],
+        "properties": {
+          "age":            { "type": "integer", "minimum": 0, "maximum": 200 },
+          "year":           { "type": "integer", "minimum": 1800, "maximum": 2300 },
+          "ganzhi":         { "type": "string" },
+          "dayun":          { "type": "string" },
+          "spirit_yearly":  { "type": "number", "minimum": 0, "maximum": 100 },
+          "wealth_yearly":  { "type": "number", "minimum": 0, "maximum": 100 },
+          "fame_yearly":    { "type": "number", "minimum": 0, "maximum": 100 },
+          "emotion_yearly": { "type": "number", "minimum": 0, "maximum": 100 },
+          "confidence":     { "type": "object" },
+          "divergence":     { "type": "object" },
+          "school_scores":  { "type": "object" }
+        }
+      }
+    }
+  }
+}

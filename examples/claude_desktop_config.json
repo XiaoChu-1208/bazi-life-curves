@@ -1,0 +1,18 @@
+{
+  "_comment": "Bazi Life Curves MCP server · 接入 Claude Desktop 模板",
+  "_install_path_macos": "~/Library/Application Support/Claude/claude_desktop_config.json",
+  "_install_path_windows": "%APPDATA%\\Claude\\claude_desktop_config.json",
+  "_install_steps": [
+    "1. 把 /ABS/PATH/TO/bazi-life-curves 替换成你机器上的实际项目路径",
+    "2. 把整个 mcpServers 块合并到上面那个 config 文件里（如果文件已存在，追加到 mcpServers 里即可）",
+    "3. 重启 Claude Desktop",
+    "4. 在对话里输入：use the bazi-life-curves MCP / 用八字 MCP 帮我算 1990-05-12 14:30 男 北京 的命局"
+  ],
+
+  "mcpServers": {
+    "bazi-life-curves": {
+      "command": "python3",
+      "args": ["/ABS/PATH/TO/bazi-life-curves/scripts/mcp_server.py"]
+    }
+  }
+}

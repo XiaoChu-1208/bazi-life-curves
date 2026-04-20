@@ -25,20 +25,34 @@ score_curves.py                # 4 维曲线打分（spirit/wealth/fame/emotion 
     ↓ output/curves.json
 mangpai_events.py              # 盲派事件检测 + 反向规则 + 护身减压（可选 · score_curves 已内置基础调用）
     ↓ output/curves.json (events 字段)
-handshake.py                   # R0+R0'+R1[+R2][+R3] 反询问校验（必跑）
-    ↓ output/handshake.json
-[用户作答 → save_confirmed_facts.py 写回]
+handshake.py (round 1)         # v8 · 输出 5 维度 ~28 道 phase-discriminative 多选题（必跑）
+    ↓ output/handshake.r1.json # 含 phase_candidates + prior_distribution + askquestion_payload
+[Agent 调宿主 AskQuestion 抛点选 UI → 用户答案 → user_answers.r1.json]
+phase_posterior.py (round 1)   # v8 · 贝叶斯后验更新，写出 R1 phase / 调候 / 用神 / 喜神 / 忌神
+    ↓ output/bazi.json         # bazi.phase + bazi.phase_decision（is_provisional=false）
+handshake.py --round 2         # v8.1 · 基于 R1 决策的 confirmation 题（targeted top vs runner-up）
+    ↓ output/handshake.r2.json # 含 round1_summary + pairwise_target + 6-8 道 confirmation 题
+[Agent 调宿主 AskQuestion 抛 R2 题 → user_answers.r2.json]
+phase_posterior.py --round 2   # v8.1 · 合并 R1+R2 算最终后验 + confirmation_status
+    ↓ output/bazi.json         # bazi.phase / phase_decision / phase_confirmation
+[save_confirmed_facts.py --round r2 --r1-* --r2-* 写回 confirmed_facts.json（按 round 分桶）]
     ↓ output/confirmed_facts.json
-[判定不通过 → phase_inversion_loop.py 自动 dump→pick→score→handshake 重跑]
-render_artifact.py             # 交互 HTML（Recharts + marked.js）
+render_artifact.py             # 交互 HTML（Recharts + marked.js）·
+                               #   confirmation=weakly_confirmed 时解读自动加 caveat
     ↓ output/chart.html
+
+[deprecated] phase_inversion_loop.py  # v7 老路径，保留可运行但不再是主流程
 ```
 
-**关键不可跳步**：
+**关键不可跳步（v8 / v8.1）**：
 
-- 不能跳过 `handshake.py` 直接渲染 HTML —— R0+R1 命中率不达标必须停手要更准的八字
+- 不能跳过 `handshake.py` + `phase_posterior.py` 直接渲染 HTML —— `bazi.phase_decision.is_provisional=true` 时 render_artifact 必须拒绝
+- **Agent 必须用宿主结构化 `AskQuestion` 抛 `askquestion_payload`，禁止用自然语言转述题面让用户口头回答**（违反 = 破坏 phase 决策的 likelihood 计算前提）
+- **R1 后验 < 0.95 或 runner-up ≥ 0.02 时必须走 Round 2 confirmation**（详见 [handshake_protocol.md §4](references/handshake_protocol.md) HS-R7）
+- **R2 confirmation_status=`decision_changed` 时必须 escalate 报告决策反转，不允许直接出图**（HS-R6）
 - 不能让 LLM 自己改 `curves.json` 的数值 —— 那是 `score_curves.py` 的职责
 - 不能在 `solve_bazi.py` 之外推导八字 —— 起运岁、真太阳时、orientation 全部依赖该脚本
+- 后验 < 0.40 → **拒绝出图**，提示用户复核时辰 / 性别（详见 [phase_decision_protocol.md](references/phase_decision_protocol.md) §5）
 
 ---
 
@@ -59,10 +73,12 @@ bazi-life-curves/
 │   ├── solve_bazi.py              # 入口 1
 │   ├── score_curves.py            # 入口 2
 │   ├── mangpai_events.py          # 入口 3（可选）
-│   ├── handshake.py               # 入口 4（必跑）
-│   ├── phase_inversion_loop.py    # 自动重跑编排
-│   ├── save_confirmed_facts.py    # 校验反馈固化
-│   ├── family_profile.py          # R3 原生家庭反询问
+│   ├── handshake.py               # 入口 4（必跑）· v8 输出 phase-discriminative 5 维度题集
+│   ├── phase_posterior.py         # 入口 4.5 · v8 用户答案 → 贝叶斯后验 → 落地 phase
+│   ├── _question_bank.py          # v8 5 维度 28 题 dataclass（与 references/discriminative_question_bank.md 1:1）
+│   ├── phase_inversion_loop.py    # [deprecated v8] 老 R0/R1/R2 反演路径，保留可运行
+│   ├── save_confirmed_facts.py    # 校验反馈固化（v8 加 --user-choices 参数 + schema migration）
+│   ├── family_profile.py          # [legacy] 旧 R3 原生家庭，逻辑已迁入 D1 题库
 │   ├── render_chart.py            # 静态 PNG
 │   ├── render_artifact.py         # 交互 HTML
 │   ├── he_pan.py                  # 合盘评分
@@ -84,8 +100,10 @@ bazi-life-curves/
 |---|---|
 | `score_curves.py` 的扶抑/调候/格局权重 | `references/methodology.md` + `references/scoring_rubric.md` |
 | `mangpai_events.py` 的事件 / 反向 / 护身 | `references/mangpai_protocol.md` |
-| `handshake.py` 的 R0/R1/R2/R3 题目或放行规则 | `references/handshake_protocol.md` |
-| `_bazi_core.py` 的化气格 / 神煞 / 三合三会 detect | `references/diagnosis_pitfalls.md` + `references/methodology.md` |
+| `handshake.py` 的题集生成 / askquestion_payload schema / Round 2 confirmation 题 | `references/handshake_protocol.md` (v8 / §4 v8.1) |
+| `_bazi_core.py` 的 detector / decide_phase / pairwise_discrimination_power / assess_confirmation | `references/phase_decision_protocol.md` (v8 / §7 v8.1) + `references/diagnosis_pitfalls.md` §14 |
+| `_question_bank.py` / `references/discriminative_question_bank.md` 题目 / likelihood_table | 两边必须 1:1 同步；calibrate.py 做一致性检查 |
+| `phase_posterior.py` 后验阈值 / R1 决策规则 / R2 confirmation_status | `references/phase_decision_protocol.md` §5 / §7 |
 | `he_pan.py` 的 4 层评分 | `references/he_pan_protocol.md` |
 | 任何涉及性别 / 取向 / 关系结构的改动 | **必须**先读 `references/fairness_protocol.md §9-§10`，违反会破坏现代化承诺 |
 
@@ -173,10 +191,12 @@ python scripts/calibrate.py
 ### 当用户问"算个八字"
 
 1. 先用 `solve_bazi.py` 解析（询问性别 + 公历生辰 + 取向）
-2. 跑 `score_curves.py` + `handshake.py`
-3. 抛 R0+R1 校验题给用户（不能跳）
-4. 用户答完 → 判定通过则继续，不通过则建议核对时辰
-5. 用 `render_artifact.py` 出 HTML，或按 `multi_dim_xiangshu_protocol.md` 流式输出 markdown 解读
+2. 跑 `score_curves.py` + `handshake.py`（R1）
+3. **R1**：调宿主 AskQuestion 抛 `askquestion_payload` 全部题给用户点选；不能口头转述
+4. 跑 `phase_posterior.py --round 1` 写出 R1 phase_decision
+5. **R2**：跑 `handshake.py --round 2`（confirmation 题）→ AskQuestion 抛 → `phase_posterior.py --round 2`
+6. 看 `phase_confirmation.action`：`render` / `render_with_caveat` 直接出图；`escalate` 时**必须**报告决策反转或不确定，建议核对时辰 / 性别
+7. 用 `render_artifact.py` 出 HTML，或按 `multi_dim_xiangshu_protocol.md` 流式输出 markdown 解读
 
 ### 当用户问"我 X 年怎么样"
 

@@ -1,0 +1,157 @@
+# Phase Decision Calibration Dataset · v8
+# 详见 references/phase_decision_protocol.md · §10 calibration
+#
+# Schema:
+#   samples:
+#     - id: <唯一字符串>
+#       description: <可读描述>
+#       bazi_input:
+#         pillars: "<年柱 月柱 日柱 时柱>"  # 如 "丙子 庚子 己卯 己巳"
+#         gender: M | F
+#         birth_year: <int>
+#       expected_phase: <phase_id from phase_decision_protocol.md §2>
+#       expected_min_prior_prob: <0..1>           # 仅先验下，目标 phase 的最低概率
+#       expected_min_posterior_prob: <0..1>       # 加 user_answers 后，目标 phase 的最低概率
+#       expected_min_confidence_with_answers: high | mid | low | reject
+#       simulated_user_answers:                   # 可选；缺省时仅评估先验
+#         <question_id>: <option_id>
+#       notes: |
+#         <补充说明>
+
+metadata:
+  schema_version: 8
+  created: "2026-04-20"
+  description: "phase_decision_recall 评估数据集 · 覆盖 6 个典型 phase（含 1 个真问题 regression case + 2 个默认相位 baseline + 3 个非默认相位）"
+  thresholds_ref: thresholds.yaml#phase_decision
+
+samples:
+  - id: case_1996_12_08
+    description: "1996/12/08 10:08 女 · 三气成象 + 调候反向 · 真问题 regression case"
+    bazi_input:
+      pillars: "丙子 庚子 己卯 己巳"
+      gender: F
+      birth_year: 1996
+    expected_phase: floating_dms_to_cong_cai
+    expected_min_prior_prob: 0.50
+    expected_min_posterior_prob: 0.85
+    expected_min_confidence_with_answers: high
+    simulated_user_answers:
+      D2_Q1_partner_attraction_type: B   # 资源型 / 给予物质型 → 强烈支持 cong_cai
+      D2_Q2_partner_proactive: A          # 你主动追求 → 支持 cong_cai
+      D2_Q3_partner_economic_role: B      # 对方是主要经济输出方 → 支持 cong_cai
+      D4_Q1_cold_heat: B                  # 怕热爱冷饮 → 上燥下寒 / 兼支持 cong_cai
+      D5_Q2_money_attitude: B             # 善于撬动 / 借力生财 → 支持 cong_cai
+    notes: |
+      P5 三气成象（4/4）+ P3 调候反向（3/3）+ P4 假从触发。
+      仅先验已达 0.6051（top-1 mid），加 5 道用户答案后验 ≈ 0.98 high adopt。
+      这是 v8 协议解决的 1996/12/08 历史 regression case。
+
+  - id: case_jobs
+    description: "Steve Jobs 1955-02-24 19:15 加州 · 默认相位 baseline reality check"
+    bazi_input:
+      pillars: "庚寅 戊寅 戊寅 壬戌"
+      gender: M
+      birth_year: 1955
+    expected_phase: day_master_dominant
+    expected_min_prior_prob: 0.80
+    expected_min_posterior_prob: 0.90
+    expected_min_confidence_with_answers: high
+    simulated_user_answers:
+      D2_Q1_partner_attraction_type: C   # 同辈对等型
+      D2_Q5_relationship_pattern: A       # 长稳型 → DM
+      D4_Q2_sleep: A                      # 入睡快深睡足 → DM (hard_evidence ×2)
+      D5_Q1_default_strategy: A           # 主动迎击硬扛 → DM
+      D5_Q2_money_attitude: A             # 主动管理 → DM
+      D5_Q3_authority_relation: A         # 自己定规则 → DM
+    notes: |
+      检测器 0 触发（无 P1-P6），fast-path 给 DM_dominant prior=0.90。
+      作为 baseline reality check，用于检测协议改动是否破坏默认相位的稳定性。
+      该八字非协议挑战 case，重点是确保未来算法迭代不让 DM 概率漂移过低。
+
+  - id: case_einstein
+    description: "Einstein 1879-03-14 11:30 乌尔姆 · 默认相位 baseline reality check"
+    bazi_input:
+      pillars: "己卯 丙寅 戊辰 戊午"
+      gender: M
+      birth_year: 1879
+    expected_phase: day_master_dominant
+    expected_min_prior_prob: 0.80
+    expected_min_posterior_prob: 0.90
+    expected_min_confidence_with_answers: high
+    simulated_user_answers:
+      D2_Q1_partner_attraction_type: C
+      D2_Q5_relationship_pattern: A
+      D4_Q2_sleep: A
+      D5_Q1_default_strategy: A
+      D5_Q2_money_attitude: A
+      D5_Q3_authority_relation: A
+    notes: |
+      检测器 0 触发，fast-path DM_dominant prior=0.90。
+      与 case_jobs 共同构成"默认相位回归保护伞"。
+
+  - id: case_pseudo_following
+    description: "假从格 · 日主有印护身但仍走从（P4 触发）"
+    bazi_input:
+      pillars: "庚午 庚辰 乙酉 戊寅"
+      gender: M
+      birth_year: 1950
+    expected_phase: pseudo_following
+    expected_min_prior_prob: 0.30
+    expected_min_posterior_prob: 0.55
+    expected_min_confidence_with_answers: mid
+    simulated_user_answers:
+      D5_Q1_default_strategy: C            # 顺势而为 → PSEUDO=0.40 (top)
+      D4_Q6_emotion_temperament: D         # 情绪起伏剧烈 → PSEUDO=0.35 (hard_evidence ×2)
+      D2_Q3_partner_economic_role: B       # 对方主要经济输出
+      D2_Q4_partner_emotional_dependence: C # 高度互相依赖
+      D5_Q3_authority_relation: C          # 服从规则
+    notes: |
+      P4_pseudo_following 单独触发，prior=0.40。
+      pseudo_following 在 D2/D4/D5 题库中仅 D4_Q6:D 与 D5_Q1:C 两处显式倾斜（其余落入 0.25 uniform fallback），
+      因此即便用 5 题校验，posterior 上限约 0.62 (mid)。
+      期望阈值已按当前题库现实设为 0.55 / mid；待题库扩充后可上调。
+
+  - id: case_climate_inversion
+    description: "调候反向·上燥下寒（P3 满分触发）"
+    bazi_input:
+      pillars: "甲戌 丙寅 丁丑 庚子"
+      gender: M
+      birth_year: 1934
+    expected_phase: climate_inversion_dry_top
+    expected_min_prior_prob: 0.45
+    expected_min_posterior_prob: 0.85
+    expected_min_confidence_with_answers: high
+    simulated_user_answers:
+      D4_Q1_cold_heat: C                   # 上热下寒 → CIDRY=0.50 (hard_evidence ×2)
+      D4_Q2_sleep: C                       # 入睡难睡着深 → CIDRY=0.45 (hard_evidence ×2)
+      D4_Q3_organs: C                      # 肺呼吸/皮肤 → CIDRY=0.40 (hard_evidence ×2)
+      D4_Q4_body_type: A                   # 偏瘦骨架小 → CIDRY=0.50 (hard_evidence ×2)
+      D4_Q5_appetite: D                    # 偏好生冷凉饮 → CIDRY=0.45 (hard_evidence ×2)
+      D4_Q6_emotion_temperament: A         # 急躁易上火 → CIDRY=0.50 (hard_evidence ×2)
+    notes: |
+      P3_climate_inversion 满分触发（3/3，干头分>0 + 地支分<0 + 标签为对冲）。
+      6 道 D4 中医体征题全部命中 CIDRY 顶档，posterior ≈ 0.9998 high adopt。
+
+  - id: case_dominating_god
+    description: "旺神得令·官杀主事 · 日主受制（P2 触发，dominating_god_guan_zuo_zhu）"
+    bazi_input:
+      pillars: "癸亥 乙卯 戊辰 甲寅"
+      gender: M
+      birth_year: 1983
+    expected_phase: dominating_god_guan_zuo_zhu
+    expected_min_prior_prob: 0.23
+    expected_min_posterior_prob: 0.85
+    expected_min_confidence_with_answers: high
+    simulated_user_answers:
+      D2_Q1_partner_attraction_type: A     # 强势主导型 → DGGUAN=0.50
+      D2_Q2_partner_proactive: B           # 对方主动追求 → DGGUAN=0.45
+      D2_Q3_partner_economic_role: B       # 对方主要经济输出 → DGGUAN=0.35
+      D4_Q3_organs: D                      # 肝肾腰膝 → DGGUAN=0.40 (hard_evidence ×2)
+      D5_Q3_authority_relation: C          # 服从规则适应权威 → DGGUAN=0.50
+      D5_Q4_creative_outlet: B             # 组织系统建设 → DGGUAN=0.40
+    notes: |
+      P2_dominating_god 触发（3/4，月令官杀+透干+ratio≥2），suggested phase = guan_zuo_zhu（戊日见旺木官杀）。
+      原计划用 dominating_god_yin_zuo_zhu 作为 case，但当前 P2 detector 中 same_score=同党+印，
+      若印主导则 ratio 永远≈1 < 2 → 该 phase 当前不可达。改用 guan_zuo_zhu 子型作为 dominating_god 家族代表。
+      先验仅 0.29（低于 0.30 的常规 mid 门槛），故 expected_min_prior_prob 设为 0.23（实际 ×0.8）；
+      6 道 D2/D4/D5 校验题强力支持 → posterior 0.92 high adopt。

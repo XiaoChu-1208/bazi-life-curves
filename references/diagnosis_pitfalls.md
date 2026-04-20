@@ -405,3 +405,59 @@ LLM 容易踩的坑都来自一个方向：**把内部 reasoning 直接吐给用
 2. **思维材料 vs 输出语言**：class_inference_ethics §3 替换字典是必经环节
 3. **后事详 vs 前事粗**：current_year 是"详写 / 粗写"的硬边界
 4. **骨架 vs 现场**：era_windows_skeleton 是骨架，folkways 细节由 LLM 现场推、过自检后才能输出
+
+---
+
+## §14 「detector 满分但默认输出反向」（v8 新增 · 2026-04 真实 case study）
+
+> 本节是 v8 校验回路重构的命名 case，所有 phase_decision 实现都以此为 regression 基准。
+
+### §14.1 案例 · 1996/12/08 10:08
+
+```
+四柱：丙子 庚子 己卯 己巳
+日主：己土
+detector 命中：
+  - P5 三气成象 4/4（水/木/火三气流通 + 日主真弱 + 含连环生化）
+  - P3 调候反向 3/3（上燥下寒，干头丙己己庚 = 燥实，地支子子卯巳 = 寒湿）
+  - P4 假从触发（日主无根从财但月干庚金破格 → 假从）
+默认 bazi.json 输出：
+  strength = 弱
+  yongshen = 火
+  phase = day_master_dominant   ← 错！6 个 detector 都说不是这个 phase
+```
+
+**为什么默认输出错？**
+
+旧 v7.4 架构里 `solve_bazi.py` 单线程跑 `select_yongshen()` → 只看 strength.label = 弱 + climate = 上燥下寒 → 选用神 = 火 → 写 `phase = day_master_dominant`。`detect_all_phase_candidates` 的 4 个 detector 输出**根本没有进 `bazi.json`**，只在 `phase_inversion_loop.py` 的"事后兜底"流程里被消费。换言之：**算法已经知道这盘走反了，但产品不知道**。
+
+用户跑出来的解读自然按"日主弱用神火"叙事，**与命主真实体感（怕热贪冷、流年节奏对不上扶身建议）完全相反**。
+
+### §14.2 修复 · phase-driven validation loop（v8）
+
+[phase_decision_protocol.md](phase_decision_protocol.md) 把 phase decision 提到 `solve_bazi.py` 阶段的强制一等公民：
+
+1. `solve_bazi.py` 末尾必须调 `decide_phase(user_answers=None)` 算先验，把 `phase` + `phase_decision` 写进 `bazi.json`，`is_provisional=True`
+2. `score_curves.py` 默认读 `bazi.phase.id` 走 `apply_phase_override`，不再"忘读"
+3. handshake 通过 [discriminative_question_bank.md](discriminative_question_bank.md) 5 维度 28 题让用户校验，answers 经贝叶斯后验落地
+4. 后验 ≥ 0.6 → adopt；< 0.4 → 报"算法无法落地，请核对时辰"
+
+### §14.3 自检规则
+
+> **bazi.json 必须永远有 `phase` 字段**（即使 `id = day_master_dominant`，也要显式写出，不能依赖默认值）。
+> **`score_curves` 的主路径必须读 `bazi.phase`**，`--override-phase` 退化为调试用 flag。
+> **`solve_bazi` 的 `select_yongshen` 输出顶层 `strength` / `yongshen` 仅作"默认假设"留底**，下游消费看 `phase_decision.yongshen_after_phase`。
+
+### §14.4 regression 测试
+
+[calibration/phase_dataset.yaml](../calibration/phase_dataset.yaml) 把 1996/12/08 列为主 regression case：
+
+- `expected_phase = floating_dms_to_cong_cai`（或 `floating_dms_to_cong_er`，视 D3 用户答案而定）
+- 仅先验下 `decide_phase` 必须把 `day_master_dominant` 后验压到 < 0.30
+- 含 `simulated_user_answers` 时 top-1 后验 ≥ 0.85
+
+### §14.5 为什么这个坑值得单独命名
+
+这一类陷阱的本质：**算法的 identification 能力（穷尽候选）远超过产品的 disambiguation 接口（让用户在候选间投票）**。旧架构把 disambiguation 做成"事后兜底"，所以 identification 的成果被废了一半。v8 把两者强制对齐：identification 算几个候选，disambiguation 接口必须在这几个候选里选一个，不能默默回退到默认相位。
+
+> 跑任何新八字时：先看 `phase_decision.candidates` 数量，再看 `phase_decision.confidence`。candidates 多 + confidence = low → 必须走 AskQuestion 校验，不能跳过直接出图。

@@ -42,6 +42,61 @@
 | 5 | 戊申 | 48 | 2030 |
 | 6 | 丁未 | 58 | 2040 |
 
+## v8 相位决策（Phase Decision）
+
+> Schema v8 起，Agent 在 `solve_bazi.py` 阶段就会写入一份**临时（provisional）相位决策**到 `bazi.json` 的
+> `phase` / `phase_decision` 字段。本盘属于 detector 没有任何反相触发的"标准官印相生"，先验直接
+> 落在 `day_master_dominant`（默认日主主导，置信度 high，prob=0.900）。
+
+```json
+"phase": {
+  "id": "day_master_dominant",
+  "label": "默认 · 日主主导",
+  "is_provisional": true,
+  "is_inverted": false,
+  "default_phase_was": "day_master_dominant",
+  "confidence": "high",
+  "decision_probability": 0.9
+}
+```
+
+`handshake.json` 中 `phase_candidates` 共 5 个（`day_master_dominant`, `climate_inversion_dry_top`,
+`climate_inversion_wet_top`, `dominating_god_cai_zuo_zhu`, `dominating_god_guan_zuo_zhu`），
+其余 4 个候选先验皆 ≤ 0.006，作为对照保留。
+
+Step 2.5 校验流程（v8.1 两轮）：
+
+1. **R1**：Agent 读 `guan_yin_xiang_sheng.handshake.json`，用宿主 AskQuestion 抛全部 22 道题。
+2. R1 用户答案到 `user_answers.r1.json` 后，跑 `phase_posterior.py --round 1` 写出 R1 决策。
+3. **R2 · 必跑**：跑 `handshake.py --round 2` 在 R1 决策 phase 与 runner-up 之间挑 6-8 道高 pairwise 判别力的题（自动排除 R1 已问过的）→ AskQuestion 抛 → `phase_posterior.py --round 2` 写 `bazi.phase_confirmation`。
+4. 看 `bazi.phase_confirmation.action`：`render` 直接出图；`render_with_caveat` 加解读 caveat；`escalate` 报告"决策反转 / 后验不足"，建议核对时辰 / 性别。
+
+本盘 R1 prior 已经 ≈ 0.900，预期 R2 多数情形落在 `confirmed` (`render`)。
+
+```bash
+# R1
+python3 ../scripts/phase_posterior.py --round 1 \
+  --bazi guan_yin_xiang_sheng.bazi.json \
+  --questions guan_yin_xiang_sheng.handshake.json \
+  --answers user_answers.r1.json \
+  --out guan_yin_xiang_sheng.bazi.json
+
+# R2
+python3 ../scripts/handshake.py --round 2 \
+  --bazi guan_yin_xiang_sheng.bazi.json \
+  --curves guan_yin_xiang_sheng.curves.json \
+  --r1-handshake guan_yin_xiang_sheng.handshake.json \
+  --r1-answers user_answers.r1.json \
+  --current-year 2026 \
+  --out guan_yin_xiang_sheng.handshake.r2.json
+
+python3 ../scripts/phase_posterior.py --round 2 \
+  --bazi guan_yin_xiang_sheng.bazi.json \
+  --r1-handshake guan_yin_xiang_sheng.handshake.json --r1-answers user_answers.r1.json \
+  --r2-handshake guan_yin_xiang_sheng.handshake.r2.json --r2-answers user_answers.r2.json \
+  --out guan_yin_xiang_sheng.bazi.json
+```
+
 ## 50 年评分曲线
 
 ![官印相生格 · 50 年曲线](guan_yin_xiang_sheng.png)
@@ -107,6 +162,9 @@
 cd ~/.claude/skills/bazi-life-curves/examples
 python3 ../scripts/solve_bazi.py --pillars "壬戌 癸丑 庚午 丁丑" --gender F --birth-year 1982 --out guan_yin_xiang_sheng.bazi.json
 python3 ../scripts/score_curves.py --bazi guan_yin_xiang_sheng.bazi.json --out guan_yin_xiang_sheng.curves.json --strict --age-end 60 --dispute-threshold 18
+python3 ../scripts/handshake.py --bazi guan_yin_xiang_sheng.bazi.json --curves guan_yin_xiang_sheng.curves.json --current-year 2026 --out guan_yin_xiang_sheng.handshake.json
+# (Step 2.5：Agent 用 AskQuestion 抛 ≥3 道判别题；用户回答后写入 confirmed_facts.json
+#  并通过 phase_posterior.py 决定是否更新 bazi.phase；标准 day_master_dominant 盘多数情形可直接通过)
 python3 ../scripts/render_artifact.py --curves guan_yin_xiang_sheng.curves.json --out guan_yin_xiang_sheng.html
 python3 ../scripts/render_chart.py --curves guan_yin_xiang_sheng.curves.json --out guan_yin_xiang_sheng.png
 ```

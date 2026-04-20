@@ -1,0 +1,84 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "bazi.schema.json",
+  "title": "bazi.json (solve_bazi.py 输出 / 下游脚本输入)",
+  "description": "锁住 12 脚本 pipeline 的'入口契约'。新增字段允许(additionalProperties=true),但已锁字段不能改名/改类型。",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "version", "gender", "birth_year", "pillars", "pillars_str",
+    "day_master", "day_master_wuxing", "strength", "yongshen",
+    "dayun", "liunian"
+  ],
+  "properties": {
+    "version": { "type": "integer", "minimum": 1 },
+    "gender": { "type": "string", "enum": ["M", "F"] },
+    "orientation": {
+      "type": "string",
+      "enum": ["hetero", "homo", "bi", "none", "poly"],
+      "description": "v7+ 关系取向。缺省视为 hetero(向后兼容)。"
+    },
+    "birth_year": { "type": "integer", "minimum": 1800, "maximum": 2200 },
+    "pillars": {
+      "type": "array",
+      "minItems": 4, "maxItems": 4,
+      "items": {
+        "type": "object",
+        "required": ["gan", "zhi"],
+        "properties": {
+          "gan": { "type": "string", "minLength": 1, "maxLength": 1 },
+          "zhi": { "type": "string", "minLength": 1, "maxLength": 1 }
+        }
+      }
+    },
+    "pillars_str": { "type": "string" },
+    "day_master": { "type": "string", "minLength": 1, "maxLength": 1 },
+    "day_master_wuxing": { "type": "string", "enum": ["木", "火", "土", "金", "水"] },
+    "strength": {
+      "type": "object",
+      "required": ["score", "label"],
+      "properties": {
+        "score": { "type": "number" },
+        "label": { "type": "string" }
+      }
+    },
+    "yongshen": {
+      "type": "object",
+      "required": ["yongshen"],
+      "properties": {
+        "yongshen": { "type": "string", "enum": ["木", "火", "土", "金", "水"] },
+        "xishen":   { "type": ["string", "null"] },
+        "jishen":   { "type": ["string", "null"] }
+      }
+    },
+    "dayun": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["index", "gan", "zhi", "start_age", "start_year", "end_age", "end_year"],
+        "properties": {
+          "index":      { "type": "integer", "minimum": 0 },
+          "gan":        { "type": "string", "minLength": 1, "maxLength": 1 },
+          "zhi":        { "type": "string", "minLength": 1, "maxLength": 1 },
+          "start_age":  { "type": "integer", "minimum": 0, "maximum": 200 },
+          "start_year": { "type": "integer", "minimum": 1800, "maximum": 2300 },
+          "end_age":    { "type": "integer", "minimum": 0, "maximum": 200 },
+          "end_year":   { "type": "integer", "minimum": 1800, "maximum": 2300 }
+        }
+      }
+    },
+    "liunian": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["age", "year", "gan", "zhi"],
+        "properties": {
+          "age":  { "type": "integer", "minimum": 0, "maximum": 200 },
+          "year": { "type": "integer", "minimum": 1800, "maximum": 2300 },
+          "gan":  { "type": "string" },
+          "zhi":  { "type": "string" }
+        }
+      }
+    }
+  }
+}

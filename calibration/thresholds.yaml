@@ -19,3 +19,15 @@ magnitude_within_one_rate: 0.40   # 量级误差 ≤ 1 档的样本比例（v1 b
 # 算法迭代目标（信息性，calibrate.py 不读取）
 target_v2_direction_hit_rate: 0.50
 target_v2_magnitude_within_one_rate: 0.60
+
+# ---------------------------------------------------------------------------
+# v8 phase_decision 评估通道（read by calibrate.py --phase-only）
+# 数据集：calibration/phase_dataset.yaml · 详见 references/phase_decision_protocol.md
+# ---------------------------------------------------------------------------
+
+phase_decision:
+  prior_recall_min: 0.50          # ≥ 50% 样本 top-1 prior 命中 expected_phase
+  prior_prob_pass_min: 0.50       # ≥ 50% 样本 prior[expected] >= expected_min_prior_prob
+  posterior_recall_min: 0.85      # ≥ 85% 样本 top-1 posterior 命中 expected_phase
+  posterior_prob_pass_min: 0.85   # ≥ 85% 样本 posterior[expected] >= expected_min_posterior_prob
+  confidence_pass_min: 0.85       # ≥ 85% 样本 confidence ≥ expected_min_confidence_with_answers

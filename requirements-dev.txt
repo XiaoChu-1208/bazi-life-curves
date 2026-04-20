@@ -1,0 +1,5 @@
+# Harness 开发依赖（生产 requirements.txt 不引入）
+# 与 5.1 节"5 秒跑完"承诺一致：所有依赖 < 50MB
+pytest>=7.4.0
+pytest-xdist>=3.5.0          # 并行跑测试
+jsonschema>=4.21.0           # L4 contract 校验

@@ -1058,6 +1058,33 @@ def apply_phase_override(bazi: dict, phase_id: str) -> dict:
     bazi.setdefault("yongshen", {})
     bazi.setdefault("strength", {})
 
+    # v9 root_strength 否决守卫：从格 / 化气格类 phase 必须满足无根/微根门槛
+    # 修 1996/12/08 case 假从误判（详见 references/diagnosis_pitfalls.md §13-14）
+    _rs = (bazi.get("strength") or {}).get("root_strength") or {}
+    if _rs:
+        rs_total = _rs.get("total_root", 0.0)
+        rs_yin = _rs.get("yin_root", 0.0)
+        rs_label = _rs.get("label", "")
+        warns = []
+        if pid.startswith("floating_dms_to_cong_") or pid == "true_following":
+            if rs_total >= 0.30:
+                warns.append(
+                    f"day_master.root_strength={rs_label}(total={rs_total:.2f}); "
+                    f"真从格门槛要求 total<0.30。建议改判为 pseudo_following 或杀印相生格。"
+                )
+            if rs_yin >= 0.50:
+                warns.append(
+                    f"yin_root={rs_yin:.2f}>=0.50（有印根）；从格典型不容许印护身。"
+                    f"参考 references/diagnosis_pitfalls.md §14。"
+                )
+        if pid.startswith("huaqi_to_") and rs_total >= 1.50:
+            warns.append(
+                f"化气格要求日主无根(total<1.5); 当前 total={rs_total:.2f}({rs_label})；"
+                f"建议改判为复合相位 + 化神调候。"
+            )
+        if warns:
+            bazi["phase"]["_root_strength_warnings"] = warns
+
     # ① 从势类：日主从弱反推为"按强读" + 用神锁定为"从神"方向
     if pid.startswith("floating_dms_to_cong_") or pid == "true_following":
         bazi["strength"]["_phase_orig_label"] = bazi["strength"].get("label")
@@ -1128,6 +1155,86 @@ def apply_phase_override(bazi: dict, phase_id: str) -> dict:
     return bazi
 
 
+# ============================================================
+# v9 PR-4 · HS-R7 守卫 + 反身性话术
+# ============================================================
+
+class MissingHSR7Disclosure(RuntimeError):
+    """v9 PR-4: HS-R7 三声明缺失时,严格模式下抛出此异常."""
+
+
+HSR7_REQUIRED_FIELDS = {
+    "narrative_caution": "5.5 叙事审慎前置声明",
+    "phase_composition": "5.3 复合相位常态化",
+    "alternative_readings": "5.10 多流派备解",
+    "must_be_true": "5.2 phase-必然预测协议",
+}
+
+HSR7_DISCLOSURE_TEXT = {
+    "limitations": (
+        "本 skill 的判定基于公历出生数据 + 真太阳时校正(±5 秒) + 当前 N 个特殊格 + "
+        "K 个事件锚点(Bayes 后验更新)。它不能判定: (1) 未提供给算法的人生面向; "
+        "(2) 算法 catalog 之外的更细分的'格中之格'; "
+        "(3) 灵魂层 / 因果层 / 命运感 / 自由意志 等元层议题."
+    ),
+    "reflexivity": (
+        "任何'未来某年会发生 X'的预测都具有反身性 — 你听完它会调整行为, "
+        "调整之后的人生不再是这个 phase 的纯粹运行. "
+        "把预测当作'决策时的参考维度之一', 不当作'必然发生的剧本'."
+    ),
+    "user_authority": (
+        "算法可以在 95% 置信度下输出某个 phase. 但你和你身边的人对自己人生的认识, "
+        "永远比 8 题问卷 + N 个格能覆盖的更深. "
+        "任何与你强烈直觉冲突的判定, 优先相信你的直觉, 回头让算法补 anchor 重算."
+    ),
+}
+
+
+def hsr7_audit(bazi: dict, curves: dict, strict: bool | None = None) -> dict:
+    """v9 PR-4: 检查 HS-R7 三声明 + 心智模型 5.x 字段是否齐全.
+
+    strict=None: 读 BAZI_STRICT_HSR7 env (默认 0=warning).
+    strict=True: 缺失字段直接 raise MissingHSR7Disclosure.
+    strict=False: 仅在返回 dict 中报告 missing.
+
+    Returns: {missing: List[str], hsr7_disclosure: Dict, ...}
+    """
+    if strict is None:
+        import os
+        strict = os.environ.get("BAZI_STRICT_HSR7") == "1"
+
+    phase = bazi.get("phase") or {}
+    missing = []
+    for field, desc in HSR7_REQUIRED_FIELDS.items():
+        if field not in phase and field not in bazi:
+            missing.append(f"{field} ({desc})")
+
+    audit = {
+        "version": "v9-PR4",
+        "missing_fields": missing,
+        "hsr7_disclosure": dict(HSR7_DISCLOSURE_TEXT),
+        "mind_model_protocol_ref": "references/mind_model_protocol.md",
+    }
+    if missing and strict:
+        raise MissingHSR7Disclosure(
+            "HS-R7 守卫拒绝输出 — 以下心智模型字段缺失:\n  - "
+            + "\n  - ".join(missing)
+            + "\n\n请在 phase_posterior 或 multi_school_vote 阶段补齐, "
+            + "或临时设 BAZI_STRICT_HSR7=0 进入 warning 模式."
+        )
+    return audit
+
+
+def append_reflexivity_disclaimer(text: str) -> str:
+    """v9 PR-4 § 5.9: 高强度断语后强制追加反身性话术."""
+    if not text:
+        return text
+    return text.rstrip() + (
+        "\n\n*此处解读建立在你已提供的事件之上, 不构成对未来的因果决定. "
+        "把它当作一种'你可能正在的解释模式', 而非'你必将经历的剧本'.*"
+    )
+
+
 def _strength_to_dom_wuxing(bazi: dict, dim: str | None) -> str | None:
     """根据 strength 字段或全局 _wuxing_count 推回旺神所属五行。
 
@@ -1190,8 +1297,17 @@ def score(
     weights = weights or DEFAULT_WEIGHTS
     lambdas = lambdas or DEFAULT_LAMBDA
     bazi, sc_applied = apply_structural_corrections(bazi, confirmed_facts)
-    if override_phase:
-        bazi = apply_phase_override(bazi, override_phase)
+
+    # v8 · 优先级：override_phase（CLI 调试强制） > bazi.phase.id（来自 solve_bazi/phase_posterior） > 默认
+    # 仅当 phase 不是默认相位时才反演（DM_dominant 不需要走 apply_phase_override）
+    effective_phase_id: str | None = override_phase
+    if not effective_phase_id:
+        bp = bazi.get("phase") or {}
+        candidate_pid = bp.get("id")
+        if candidate_pid and candidate_pid != "day_master_dominant":
+            effective_phase_id = candidate_pid
+    if effective_phase_id:
+        bazi = apply_phase_override(bazi, effective_phase_id)
     bazi = apply_geju_override(bazi)  # 格局为先：先识别格局，再用其覆盖用神
     base = l0_baseline(bazi)
     emo_base = emotion_baseline(bazi)  # v6 关系能量维度基线（独立通道，v7 现代化）
@@ -1400,7 +1516,7 @@ def score(
 
     disputes = _collect_disputes(points, dispute_threshold, base, weights)
 
-    return {
+    result = {
         "version": 3,
         "weights": weights,
         "lambdas": lambdas,
@@ -1435,6 +1551,24 @@ def score(
         ),
         "structural_corrections_applied": sc_applied,
     }
+
+    # v9 PR-6 · 多流派加权投票 + open_phase 逃逸阀注入
+    # 在 score 产物里挂 multi_school_vote 结果, 供下游报告 / he_pan / babysitter 使用.
+    # 失败不阻塞 (warning 即可), 因 multi_school_vote 是辅助层.
+    try:
+        from multi_school_vote import vote as _ms_vote  # noqa: WPS433
+        result["multi_school_vote"] = _ms_vote(bazi)
+    except Exception as _msv_err:  # pragma: no cover
+        result["multi_school_vote"] = {
+            "decision": "error",
+            "error": f"multi_school_vote skipped: {type(_msv_err).__name__}: {_msv_err}",
+        }
+
+    # v9 PR-4 · HS-R7 守卫 + 反身性话术注入
+    # 默认 warning 模式; BAZI_STRICT_HSR7=1 时缺失字段会 raise.
+    result["hsr7_audit"] = hsr7_audit(bazi, result, strict=None)
+    return result
+
 
 
 def _collect_disputes(
