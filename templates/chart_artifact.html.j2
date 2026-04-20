@@ -22,70 +22,113 @@
   h1 { font-size: 18px; font-weight: 600; margin: 0 0 4px; color: #1a1a1a; }
   .meta { color: #888; font-size: 13px; margin-bottom: 16px; }
   .meta b { color: #555; font-weight: 600; }
+
+  /* --- 图表 --- */
   .chart-wrap { background: #fff; border-radius: 12px; padding: 20px 8px 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.04); }
   .legend-row { display: flex; flex-wrap: wrap; gap: 16px 24px; padding: 0 16px 12px; font-size: 13px; }
   .legend-item { display: inline-flex; align-items: center; gap: 6px; }
-  .legend-line { display: inline-block; width: 24px; height: 0; border-top: 2.4px solid; }
-  .legend-line.dashed { border-top-style: dashed; border-top-width: 1.6px; }
-  .turning {
-    margin-top: 24px; background: #fff; border-radius: 12px; padding: 16px 20px;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.04);
-  }
-  .turning h2 { font-size: 15px; font-weight: 600; margin: 0 0 12px; color: #1a1a1a; }
-  .turning table { width: 100%; border-collapse: collapse; font-size: 13px; }
-  .turning th, .turning td { padding: 6px 10px; text-align: left; border-bottom: 1px solid #f0f0ed; }
-  .turning th { color: #888; font-weight: 500; font-size: 12px; }
-  .conf-high { color: #2c7a52; }
-  .conf-mid { color: #b07a26; }
-  .conf-low { color: #a3a3a3; }
-  .dim-spirit { color: #8B7BC7; }
-  .dim-wealth { color: #4A9D7F; }
-  .dim-fame { color: #D88E5C; }
-  .dim-emotion { color: #D8639E; }
-  .caveat { font-size: 12px; color: #999; margin-top: 8px; }
-  .disputes {
-    margin-top: 16px; background: #fffaf0; border-radius: 12px;
-    padding: 16px 20px; border: 1px solid #f0e3c0;
-  }
-  .disputes h2 { font-size: 15px; font-weight: 600; margin: 0 0 4px; color: #8b5a00; }
-  .disputes .sub { font-size: 12px; color: #b07a26; margin-bottom: 14px; }
-  .dispute-card {
-    background: #fff; border: 1px solid #f0e3c0; border-radius: 8px;
-    padding: 12px 14px; margin-bottom: 10px;
-  }
-  .dispute-head { font-weight: 600; font-size: 13px; margin-bottom: 6px; }
-  .dispute-bars { display: flex; flex-direction: column; gap: 4px; margin: 8px 0; }
-  .dispute-bar { display: flex; align-items: center; gap: 8px; font-size: 12px; }
-  .dispute-bar .name { width: 60px; color: #555; }
-  .dispute-bar .bar { flex: 1; height: 14px; background: #f5f2ea; border-radius: 3px; overflow: hidden; }
-  .dispute-bar .fill { height: 100%; }
-  .dispute-bar .val { width: 40px; text-align: right; color: #333; font-variant-numeric: tabular-nums; }
-  .dispute-hints { font-size: 12px; color: #6b5028; margin-top: 6px; line-height: 1.5; }
-  .dispute-hints li { margin: 2px 0; }
-  .dispute-llm-cue {
-    margin-top: 8px; padding: 6px 10px; background: #fff3d9;
-    border-radius: 4px; font-size: 11px; color: #8b5a00; font-style: italic;
-  }
-  /* 整图综合分析 + 多维取象 */
-  .overall-analysis {
-    margin-top: 24px; background: #fff; border-radius: 12px;
+  .legend-line { display: inline-block; width: 28px; height: 0; border-top: 2.6px solid; }
+  .legend-line.dashed { border-top-style: dashed; border-top-width: 1.4px; opacity: 0.55; }
+  .caveat { font-size: 12px; color: #999; margin-top: 8px; padding: 0 8px; }
+  .mp-summary { margin-top: 6px; font-size: 11px; color: #888; padding: 0 8px; }
+
+  /* --- 通用卡片 --- */
+  .card {
+    margin-top: 20px; background: #fff; border-radius: 12px;
     padding: 16px 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.04);
   }
-  .overall-analysis > summary {
-    font-size: 15px; font-weight: 600; color: #1a1a1a; cursor: pointer;
-    list-style: none; padding: 4px 0;
+  .card > h2 { font-size: 15px; font-weight: 600; margin: 0 0 12px; color: #1a1a1a; }
+  .card > .sub { font-size: 12px; color: #888; margin-bottom: 12px; }
+
+  /* --- details 折叠 --- */
+  details { padding: 4px 0; }
+  details > summary {
+    cursor: pointer; list-style: none; padding: 6px 0;
+    font-size: 14px; font-weight: 600; color: #1a1a1a;
   }
-  .overall-analysis > summary::-webkit-details-marker { display: none; }
-  .overall-analysis > summary::before {
-    content: "▸ "; display: inline-block; width: 14px; transition: transform 0.15s;
-    color: #999;
+  details > summary::-webkit-details-marker { display: none; }
+  details > summary::before {
+    content: "▸ "; display: inline-block; width: 16px;
+    color: #999; transition: transform 0.15s;
   }
-  .overall-analysis[open] > summary::before { transform: rotate(90deg); }
-  .overall-analysis .markdown { padding-top: 12px; }
-  .overall-analysis .placeholder {
-    color: #b8b8b8; font-style: italic; padding: 12px 0; font-size: 13px;
+  details[open] > summary::before { transform: rotate(90deg); }
+
+  /* --- 大运评价 --- */
+  .dayun-list { display: flex; flex-direction: column; gap: 4px; }
+  .dayun-item {
+    border-bottom: 1px solid #f0f0ed;
+    padding: 4px 0;
   }
-  /* details 通用 markdown */
+  .dayun-item:last-child { border-bottom: none; }
+  .dayun-item > summary {
+    display: flex; align-items: center; gap: 12px;
+    font-size: 13px; font-weight: 500;
+  }
+  .dayun-item .du-tag {
+    display: inline-block; padding: 2px 8px; border-radius: 4px;
+    font-size: 12px; font-weight: 600; color: #fff;
+    min-width: 38px; text-align: center;
+  }
+  .dayun-item .du-range {
+    color: #888; font-size: 12px; font-weight: normal;
+  }
+  .dayun-item .du-summary {
+    color: #555; font-size: 12px; font-weight: normal; flex: 1;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .dayun-item .du-body { padding: 8px 0 12px 28px; }
+
+  /* --- 关键年份评价 --- */
+  .key-year {
+    border-bottom: 1px solid #f0f0ed;
+    padding: 6px 0;
+  }
+  .key-year:last-child { border-bottom: none; }
+  .key-year > summary {
+    display: flex; align-items: center; gap: 10px;
+    font-size: 13px; font-weight: 500; flex-wrap: wrap;
+  }
+  .key-year .ky-year { font-weight: 600; color: #1a1a1a; min-width: 84px; }
+  .key-year .ky-tag {
+    display: inline-block; padding: 1px 7px; border-radius: 10px;
+    font-size: 11px; line-height: 1.5;
+  }
+  .ky-tag.peak { background: #eaf4ee; color: #2c7a52; border: 1px solid #d3e8de; }
+  .ky-tag.dip  { background: #fdf0e8; color: #b14a1a; border: 1px solid #f0d9c2; }
+  .ky-tag.shift{ background: #f4f1fb; color: #5a4d8a; border: 1px solid #e2dcf2; }
+  .key-year .ky-headline {
+    color: #555; font-size: 12px; font-weight: normal;
+    flex: 1; min-width: 200px;
+  }
+  .key-year .ky-body { padding: 8px 0 12px 24px; }
+
+  /* --- 一生评价（三维度并列卡） --- */
+  .life-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 14px; margin-top: 4px;
+  }
+  .life-cell {
+    border: 1px solid #f0f0ed; border-radius: 10px;
+    padding: 12px 14px;
+  }
+  .life-cell .lc-head {
+    font-size: 13px; font-weight: 600; margin-bottom: 8px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .life-cell .lc-dot {
+    display: inline-block; width: 10px; height: 10px; border-radius: 50%;
+  }
+  .life-cell.spirit { background: #faf9fd; }
+  .life-cell.spirit .lc-dot { background: #8B7BC7; }
+  .life-cell.spirit .lc-head { color: #5a4d8a; }
+  .life-cell.wealth { background: #f7fbf9; }
+  .life-cell.wealth .lc-dot { background: #4A9D7F; }
+  .life-cell.wealth .lc-head { color: #2c6f5a; }
+  .life-cell.fame   { background: #fdf8f4; }
+  .life-cell.fame   .lc-dot { background: #D88E5C; }
+  .life-cell.fame   .lc-head { color: #9c5d2e; }
+
+  /* --- markdown --- */
   .markdown { font-size: 13px; line-height: 1.7; color: #333; }
   .markdown h1, .markdown h2, .markdown h3 { margin: 14px 0 6px; color: #1a1a1a; }
   .markdown h1 { font-size: 16px; }
@@ -102,68 +145,67 @@
     background: #f0eee7; padding: 1px 5px; border-radius: 3px; font-size: 12px;
   }
   .markdown strong { color: #1a1a1a; }
-  /* turning point row 展开 */
-  .turning td.expand-cell {
-    cursor: pointer; color: #888; user-select: none; text-align: center; width: 30px;
+
+  .placeholder {
+    color: #b8b8b8; font-style: italic; font-size: 12px; padding: 6px 0;
   }
-  .turning tr.tp-detail-row td {
-    background: #faf8f4; padding: 12px 16px;
+
+  /* --- 整图综合分析 --- */
+  .overall-analysis {
+    background: #fff; border-radius: 12px;
+    padding: 16px 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+    margin-top: 20px;
   }
-  /* 维度 chip：同年多维度收拢到单元格里 */
-  .dim-chip {
-    display: inline-block; font-size: 11px; padding: 2px 8px;
-    border-radius: 10px; margin: 0 4px 2px 0; background: #f5f2ea;
-    border: 1px solid transparent; line-height: 1.5; white-space: nowrap;
+  .overall-analysis > summary {
+    font-size: 15px; font-weight: 600; color: #1a1a1a;
+    padding: 4px 0;
   }
-  .dim-chip.dim-spirit  { color: #5a4d8a; border-color: #e2dcf2; background: #f4f1fb; }
-  .dim-chip.dim-wealth  { color: #2c6f5a; border-color: #d3e8de; background: #eef7f3; }
-  .dim-chip.dim-fame    { color: #9c5d2e; border-color: #f0d9c2; background: #fbf0e6; }
-  .dim-chip.dim-emotion { color: #9c3e6e; border-color: #f3d2e3; background: #fceef4; }
-  .dim-chip.conf-low   { opacity: 0.55; }
-  .turning .tp-trigger {
-    font-size: 11px; color: #6b6b6b; max-width: 280px;
+  .overall-analysis .markdown { padding-top: 12px; }
+
+  /* --- v7.5 时代-民俗志卡片 --- */
+  .era-list { display: flex; flex-direction: column; gap: 8px; }
+  .era-item {
+    border: 1px solid #ece7da; border-radius: 8px;
+    padding: 10px 14px; background: #fbf9f3;
   }
-  .tp-mp-events {
-    margin-top: 8px; padding: 10px 12px; background: #fff;
-    border: 1px dashed #d4c896; border-radius: 6px;
+  .era-item > summary {
+    display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap;
+    font-size: 13px; font-weight: 600; color: #5a4a26;
   }
-  .tp-mp-events .head {
-    font-size: 12px; color: #8b5a00; font-weight: 600; margin-bottom: 6px;
+  .era-item .era-span {
+    font-size: 12px; color: #8a6f3a; font-weight: 500;
   }
-  .tp-mp-event-item {
-    font-size: 12px; color: #5a4a26; margin: 4px 0; line-height: 1.5;
+  .era-item .era-keywords {
+    color: #8a8676; font-size: 11px; font-weight: normal;
+    flex: 1; min-width: 200px; overflow: hidden;
+    text-overflow: ellipsis; white-space: nowrap;
   }
-  .tp-mp-event-item .badge {
+  .era-item .era-tag {
+    display: inline-block; font-size: 10px; padding: 1px 6px; border-radius: 3px;
+    background: #d4c896; color: #3a2c10;
+  }
+  .era-item .era-body { padding: 8px 0 0 0; margin-top: 8px;
+    border-top: 1px dashed #e2d9be; }
+  .era-item .era-meta {
+    font-size: 11px; color: #8a8676; margin-bottom: 6px; line-height: 1.5;
+  }
+  .era-item .era-meta b { color: #5a4a26; font-weight: 600; }
+  .era-banner {
+    font-size: 11px; color: #888; margin-bottom: 12px;
+    padding: 6px 10px; background: #f6f4ee; border-radius: 4px;
+    border-left: 3px solid #d4c896;
+  }
+
+  /* --- 盲派事件小标签 --- */
+  .mp-events { padding: 8px 12px; background: #fffaf0; border: 1px dashed #d4c896; border-radius: 6px; margin-top: 8px; }
+  .mp-events .head { font-size: 12px; color: #8b5a00; font-weight: 600; margin-bottom: 6px; }
+  .mp-event-item { font-size: 12px; color: #5a4a26; margin: 4px 0; line-height: 1.5; }
+  .mp-event-item .badge {
     display: inline-block; font-size: 10px; padding: 1px 6px; border-radius: 3px;
     background: #E8B947; color: #fff; margin-right: 6px;
   }
-  .tp-mp-event-item .badge.mid { background: #d4a847; }
-  .tp-mp-event-item .badge.light { background: #c9b878; }
-  .tp-no-analysis {
-    color: #b8b8b8; font-style: italic; font-size: 12px; padding: 8px 0;
-  }
-  /* dispute LLM details */
-  .dispute-llm-details {
-    margin-top: 10px; border-top: 1px dashed #f0e3c0; padding-top: 8px;
-  }
-  .dispute-llm-details > summary {
-    font-size: 12px; color: #8b5a00; cursor: pointer; list-style: none;
-    padding: 4px 0; font-weight: 600;
-  }
-  .dispute-llm-details > summary::-webkit-details-marker { display: none; }
-  .dispute-llm-details > summary::before {
-    content: "▸ "; display: inline-block; width: 14px; color: #b07a26;
-    transition: transform 0.15s;
-  }
-  .dispute-llm-details[open] > summary::before { transform: rotate(90deg); }
-  .dispute-llm-details .markdown { padding: 6px 4px 4px; }
-  .dispute-llm-details .placeholder {
-    color: #b8b8b8; font-style: italic; font-size: 12px; padding: 4px 0;
-  }
-  /* 流年 mangpai 标记（图表下小注） */
-  .mp-summary {
-    margin-top: 10px; font-size: 11px; color: #888; padding: 0 8px;
-  }
+  .mp-event-item .badge.mid { background: #d4a847; }
+  .mp-event-item .badge.light { background: #c9b878; }
 </style>
 </head>
 <body>
@@ -173,14 +215,23 @@
 window.__BAZI_CURVES__ = {{ curves_json|safe }};
 window.__BAZI_TITLE__ = {{ title|tojson }};
 window.__BAZI_ANALYSIS__ = {{ analysis_json|safe }};
+window.__BAZI_ZEITGEIST__ = {{ zeitgeist_json|safe }};
+window.__BAZI_HAS_ZEITGEIST__ = {{ "true" if has_zeitgeist else "false" }};
 </script>
 {% raw %}
 <script type="text/babel" data-presets="env,react">
 const CURVES = window.__BAZI_CURVES__;
 const TITLE = window.__BAZI_TITLE__;
-const ANALYSIS = window.__BAZI_ANALYSIS__ || { overall: "", turning_points: {}, disputes: {} };
-const DIM_LABEL = { spirit: "精神", wealth: "财富", fame: "名声", emotion: "感情" };
-const DIR_ARROW = { up: "↑", down: "↓", flat: "→" };
+const ANALYSIS = window.__BAZI_ANALYSIS__ || {};
+const ZEITGEIST = window.__BAZI_ZEITGEIST__ || {};
+const HAS_ZEITGEIST = !!window.__BAZI_HAS_ZEITGEIST__;
+const DIM_LABEL = { spirit: "精神", wealth: "财富", fame: "名声" };
+
+const COLOR_SPIRIT = "#8B7BC7";
+const COLOR_WEALTH = "#4A9D7F";
+const COLOR_FAME   = "#D88E5C";
+
+const DAYUN_BAND_COLORS = ["#F5F2EA", "#EDF2F4", "#F0E7E7", "#E7F0EE", "#F3EFE8", "#EFEDE6"];
 
 function Markdown({ source }) {
   if (!source || !source.trim()) return null;
@@ -188,14 +239,58 @@ function Markdown({ source }) {
   return <div className="markdown" dangerouslySetInnerHTML={{ __html: html }} />;
 }
 
+const {
+  ResponsiveContainer, ComposedChart, Line, XAxis, YAxis,
+  CartesianGrid, ReferenceArea, ReferenceLine, Label, Tooltip,
+} = Recharts;
+
+/* === 5 年段趋势线：每 5 年取一段均值，对齐到段中心 === */
+function buildSegmentTrend(yearly) {
+  const SEG = 5;
+  const out = [];
+  for (let i = 0; i < yearly.length; i += SEG) {
+    const slice = yearly.slice(i, Math.min(i + SEG, yearly.length));
+    const ages  = slice.map(p => p.age);
+    const center = (ages[0] + ages[ages.length - 1]) / 2;
+    const mean = slice.reduce((s, p) => s + p.value, 0) / slice.length;
+    out.push({ age: center, value: Math.round(mean * 10) / 10 });
+  }
+  return out;
+}
+
+function buildSeries(curves) {
+  // 主线：每年一个点
+  const main = curves.points.map(p => ({
+    age: p.age, year: p.year, dayun: p.dayun,
+    spirit: p.spirit_yearly,
+    wealth: p.wealth_yearly,
+    fame:   p.fame_yearly,
+  }));
+  // 5 年段趋势
+  const spiritTrend = buildSegmentTrend(curves.points.map(p => ({age: p.age, value: p.spirit_yearly})));
+  const wealthTrend = buildSegmentTrend(curves.points.map(p => ({age: p.age, value: p.wealth_yearly})));
+  const fameTrend   = buildSegmentTrend(curves.points.map(p => ({age: p.age, value: p.fame_yearly})));
+  // 合并到主数据集（用 age 对齐，趋势数据点用单独字段）
+  const trendByAge = {};
+  spiritTrend.forEach(p => { trendByAge[p.age] = trendByAge[p.age] || {}; trendByAge[p.age].spirit_t = p.value; });
+  wealthTrend.forEach(p => { trendByAge[p.age] = trendByAge[p.age] || {}; trendByAge[p.age].wealth_t = p.value; });
+  fameTrend.forEach(p   => { trendByAge[p.age] = trendByAge[p.age] || {}; trendByAge[p.age].fame_t   = p.value; });
+
+  // 把趋势点（可能是非整数年龄）作为单独序列返回，避免 Recharts 数值轴对不齐
+  return {
+    main,
+    trend: { spirit: spiritTrend, wealth: wealthTrend, fame: fameTrend },
+  };
+}
+
 function MangpaiBlock({ events }) {
   if (!events || events.length === 0) return null;
   const intensityClass = (i) => ({ "重": "", "中": "mid", "轻": "light" }[i] || "");
   return (
-    <div className="tp-mp-events">
-      <div className="head">盲派应事（mangpai · 不进 25% 融合权重，仅作应事断 + 烈度修正）</div>
+    <div className="mp-events">
+      <div className="head">盲派应事（不进 25% 融合权重，仅作应事断 + 烈度修正）</div>
       {events.map((e, i) => (
-        <div className="tp-mp-event-item" key={i}>
+        <div className="mp-event-item" key={i}>
           <span className={"badge " + intensityClass(e.intensity)}>{e.intensity}</span>
           <b>{e.name}</b>（{e.school}）：{e.canonical_event}
           <div style={{ color: "#888", fontSize: 11, marginTop: 2, paddingLeft: 8 }}>
@@ -210,89 +305,151 @@ function MangpaiBlock({ events }) {
   );
 }
 
-const COLOR_SPIRIT = "#8B7BC7";
-const COLOR_WEALTH = "#4A9D7F";
-const COLOR_FAME = "#D88E5C";
-const COLOR_EMOTION = "#D8639E";  // v6 感情维度·粉
-
-const {
-  ResponsiveContainer, ComposedChart, Line, Area, XAxis, YAxis,
-  CartesianGrid, Tooltip, ReferenceArea, ReferenceLine, Label,
-} = Recharts;
-
-const DAYUN_BAND_COLORS = ["#F5F2EA", "#EDF2F4", "#F0E7E7", "#E7F0EE", "#F3EFE8"];
-
-function buildSeries(curves) {
-  return curves.points.map(p => ({
-    age: p.age,
-    year: p.year,
-    spirit: p.spirit_yearly,
-    spirit_cum: p.spirit_cumulative,
-    wealth: p.wealth_yearly,
-    wealth_cum: p.wealth_cumulative,
-    fame: p.fame_yearly,
-    fame_cum: p.fame_cumulative,
-    emotion: p.emotion_yearly,
-    emotion_cum: p.emotion_cumulative,
-    spirit_lo: p.spirit_yearly - p.sigma.spirit,
-    spirit_hi: p.spirit_yearly + p.sigma.spirit,
-    wealth_lo: p.wealth_yearly - p.sigma.wealth,
-    wealth_hi: p.wealth_yearly + p.sigma.wealth,
-    fame_lo: p.fame_yearly - p.sigma.fame,
-    fame_hi: p.fame_yearly + p.sigma.fame,
-    emotion_lo: p.emotion_yearly - (p.sigma.emotion || 5),
-    emotion_hi: p.emotion_yearly + (p.sigma.emotion || 5),
-    spirit_band: [p.spirit_yearly - p.sigma.spirit, p.spirit_yearly + p.sigma.spirit],
-    wealth_band: [p.wealth_yearly - p.sigma.wealth, p.wealth_yearly + p.sigma.wealth],
-    fame_band:  [p.fame_yearly - p.sigma.fame,  p.fame_yearly + p.sigma.fame],
-    emotion_band: [p.emotion_yearly - (p.sigma.emotion || 5), p.emotion_yearly + (p.sigma.emotion || 5)],
-    confLow: Object.values(p.confidence).filter(c => c === "low").length,
-    interactions: p.interactions,
-    dayun: p.dayun,
-  }));
-}
-
-function CustomTooltip({active, payload, label}) {
-  if (!active || !payload || !payload.length) return null;
-  const d = payload[0].payload;
-  return (
-    <div style={{background: "#fff", border: "1px solid #e5e5e5", borderRadius: 6, padding: "8px 10px", fontSize: 12, boxShadow: "0 2px 8px rgba(0,0,0,0.1)"}}>
-      <div style={{fontWeight: 600, marginBottom: 4}}>{d.age} 岁 · {d.year} · {d.dayun}</div>
-      <div style={{color: COLOR_SPIRIT}}>精神 {d.spirit.toFixed(1)} ／ 累积 {d.spirit_cum.toFixed(1)}</div>
-      <div style={{color: COLOR_WEALTH}}>财富 {d.wealth.toFixed(1)} ／ 累积 {d.wealth_cum.toFixed(1)}</div>
-      <div style={{color: COLOR_FAME}}>名声 {d.fame.toFixed(1)} ／ 累积 {d.fame_cum.toFixed(1)}</div>
-      <div style={{color: COLOR_EMOTION}}>感情 {d.emotion?.toFixed(1)} ／ 累积 {d.emotion_cum?.toFixed(1)}</div>
-      {d.interactions && d.interactions.length > 0 && (
-        <div style={{marginTop: 4, color: "#666", fontSize: 11}}>
-          {d.interactions.map((i, idx) => <span key={idx}>· {i.type}{i.with ? "·"+i.with : ""}{i.wuxing ? "·"+i.wuxing : ""} </span>)}
-        </div>
-      )}
-      {d.confLow >= 2 && <div style={{marginTop: 4, color: "#999", fontSize: 11}}>派别分歧大，置信度低</div>}
-    </div>
-  );
-}
-
-const SCHOOL_LABELS = { fuyi: "扶抑派", tiaohou: "调候派", geju: "格局派" };
-const SCHOOL_COLORS = { fuyi: "#7B9FCB", tiaohou: "#88B98C", geju: "#D88E5C" };
-
 function App() {
-  const data = buildSeries(CURVES);
+  const series = buildSeries(CURVES);
+  const data = series.main;
   const ages = data.map(d => d.age);
   const minAge = Math.min(...ages);
   const maxAge = Math.max(...ages);
   const segments = CURVES.dayun_segments || [];
-  const turning = (CURVES.turning_points_future || []).filter(t => t.confidence !== "low");
-  const disputes = CURVES.disputes || [];
-  const disputeAges = Array.from(new Set(disputes.map(d => d.age))).sort((a, b) => a - b);
 
-  // 用 year 索引 points，便于 turning point 行展开时查盲派事件
+  // 把 5 年段趋势数据 inline 到 data（用 null 填空）
+  const trendByAge = { spirit: {}, wealth: {}, fame: {} };
+  ["spirit", "wealth", "fame"].forEach(k => {
+    series.trend[k].forEach(p => { trendByAge[k][p.age] = p.value; });
+  });
+  // 给 data 补 _t 字段（在主点上不一定有匹配，所以另用一个稀疏轴）
+  // 处理半整数年龄：扩展 data 包含趋势中点
+  const allAges = new Set(ages);
+  ["spirit", "wealth", "fame"].forEach(k =>
+    series.trend[k].forEach(p => allAges.add(p.age))
+  );
+  const sortedAges = Array.from(allAges).sort((a, b) => a - b);
+  const yearMap = {};
+  data.forEach(d => { yearMap[d.age] = d; });
+
+  const merged = sortedAges.map(a => {
+    const base = yearMap[a] || { age: a, year: null };
+    return {
+      ...base,
+      spirit_t: trendByAge.spirit[a] != null ? trendByAge.spirit[a] : null,
+      wealth_t: trendByAge.wealth[a] != null ? trendByAge.wealth[a] : null,
+      fame_t:   trendByAge.fame[a]   != null ? trendByAge.fame[a]   : null,
+    };
+  });
+
   const pointsByYear = {};
-  (CURVES.points || []).forEach(p => { pointsByYear[p.year] = p; });
+  const pointsByAge = {};
+  (CURVES.points || []).forEach(p => { pointsByYear[p.year] = p; pointsByAge[p.age] = p; });
 
-  // 全图盲派事件计数（图下小注）
+  // === Tooltip 组件（rich hover）===
+  const keyYearByYear = {};
+  (ANALYSIS.key_years || []).forEach(k => { keyYearByYear[k.year] = k; });
+
+  const RichTooltip = ({ active, payload, label }) => {
+    if (!active || !payload || payload.length === 0) return null;
+    const age = label;
+    const p = pointsByAge[age];
+    if (!p) {
+      // 趋势中点（无原始 point），简化显示
+      return (
+        <div style={{
+          background: "rgba(255,255,255,0.96)", border: "1px solid #ddd",
+          borderRadius: 6, padding: "8px 12px", fontSize: 12, color: "#444",
+          boxShadow: "0 2px 8px rgba(0,0,0,0.08)", maxWidth: 280
+        }}>
+          <div style={{fontWeight: 600, marginBottom: 4}}>{age} 岁（趋势中点）</div>
+          {payload.filter(e => e.value != null).map(e => (
+            <div key={e.dataKey} style={{display: "flex", justifyContent: "space-between", gap: 12}}>
+              <span style={{color: e.color}}>{
+                {spirit:"精神", wealth:"财富", fame:"名声",
+                 spirit_t:"精神·5年趋势", wealth_t:"财富·5年趋势", fame_t:"名声·5年趋势"}[e.dataKey] || e.dataKey
+              }</span>
+              <b>{e.value.toFixed(1)}</b>
+            </div>
+          ))}
+        </div>
+      );
+    }
+    const ky = keyYearByYear[p.year];
+    const mpEvents = (p.mangpai_events || []).filter(e => e.name);
+    const interactions = (p.interactions || []);
+    return (
+      <div style={{
+        background: "rgba(255,255,255,0.97)", border: "1px solid #c8d3e5",
+        borderRadius: 8, padding: "10px 14px", fontSize: 12, color: "#333",
+        boxShadow: "0 4px 16px rgba(0,0,0,0.12)", maxWidth: 360, lineHeight: 1.5
+      }}>
+        <div style={{fontWeight: 700, fontSize: 13, marginBottom: 6, color: "#3a5378",
+                     borderBottom: "1px solid #eee", paddingBottom: 4}}>
+          {p.year} 年 · {p.age} 岁 · {p.ganzhi} <span style={{color: "#888", fontWeight: 400}}>· 大运 {p.dayun}</span>
+        </div>
+        <div style={{display: "grid", gridTemplateColumns: "auto auto auto", gap: "2px 12px", marginBottom: 6}}>
+          <span style={{color: COLOR_SPIRIT}}>精神</span>
+          <span style={{textAlign:"right"}}><b>{p.spirit_yearly?.toFixed(1)}</b></span>
+          <span style={{color: "#888", fontSize: 11}}>趋势 {(trendByAge.spirit[age] ?? "—") !== "—" ? trendByAge.spirit[age].toFixed(1) : "—"}</span>
+          <span style={{color: COLOR_WEALTH}}>财富</span>
+          <span style={{textAlign:"right"}}><b>{p.wealth_yearly?.toFixed(1)}</b></span>
+          <span style={{color: "#888", fontSize: 11}}>趋势 {(trendByAge.wealth[age] ?? "—") !== "—" ? trendByAge.wealth[age].toFixed(1) : "—"}</span>
+          <span style={{color: COLOR_FAME}}>名声</span>
+          <span style={{textAlign:"right"}}><b>{p.fame_yearly?.toFixed(1)}</b></span>
+          <span style={{color: "#888", fontSize: 11}}>趋势 {(trendByAge.fame[age] ?? "—") !== "—" ? trendByAge.fame[age].toFixed(1) : "—"}</span>
+        </div>
+        {interactions.length > 0 && (
+          <div style={{marginTop: 4, color: "#7a6a3e", fontSize: 11}}>
+            <b>互动：</b>{interactions.map(it => `${it.type}·${it.with}(${it.magnitude})`).join("，")}
+          </div>
+        )}
+        {mpEvents.length > 0 && (
+          <div style={{marginTop: 4, color: "#6e8a4e", fontSize: 11}}>
+            <b>盲派：</b>{mpEvents.map(e => `${e.name}${e.intensity ? "·"+e.intensity : ""}`).join("，")}
+          </div>
+        )}
+        {p.is_disputed && (
+          <div style={{marginTop: 4, color: "#a85b3e", fontSize: 11}}>
+            ⚠ 三派争议年（极差 {p.dispute_detail?.spread?.toFixed(1) || "?"}）
+          </div>
+        )}
+        {ky && (
+          <div style={{
+            marginTop: 8, padding: "6px 8px",
+            background: ky.kind === "peak" ? "#eaf5ec" : ky.kind === "dip" ? "#fbeae5" : "#eef0f7",
+            borderRadius: 4, fontSize: 11, color: "#444"
+          }}>
+            <b style={{color: ky.kind === "peak" ? "#3d7a47" : ky.kind === "dip" ? "#9a4632" : "#4a5a85"}}>
+              {ky.kind === "peak" ? "★ 关键高峰" : ky.kind === "dip" ? "★ 关键低谷" : "★ 关键拐点"}：
+            </b>
+            {ky.headline}
+            <div style={{marginTop: 3, fontSize: 10, color: "#888"}}>
+              点击下方"关键年份评价"区段查看完整解析
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   const mpYearsCount = (CURVES.points || []).filter(p => (p.mangpai_events || []).length > 0).length;
   const mpHighCount = (CURVES.points || []).reduce((acc, p) =>
     acc + (p.mangpai_events || []).filter(e => e.intensity === "重").length, 0);
+
+  // 大运颜色 chip
+  const dayunColor = (i) => {
+    const palette = ["#7B9FCB", "#88B98C", "#D88E5C", "#A57AC9", "#D9A03F", "#5BA9A0"];
+    return palette[i % palette.length];
+  };
+
+  // 每个大运段对应的年份范围（用于 LLM analysis.dayun_review 索引）
+  const dayunReview = ANALYSIS.dayun_review || {};
+  // v7.5 新增：dayun_reviews（按 dayun_label → markdown，整体替代 dayun_review.body 的扩展版）
+  const dayunReviews = ANALYSIS.dayun_reviews || {};
+  const keyYears = ANALYSIS.key_years || [];   // [{year, age, ganzhi, dayun, kind: 'peak'|'dip'|'shift', headline, body}]
+  const lifeReview = ANALYSIS.life_review || {}; // {spirit, wealth, fame}
+
+  // v7.5 时代-民俗志：era_windows_used（来自 _zeitgeist_loader）+ era_narratives（LLM 写）
+  const eraWindows = (ZEITGEIST.era_windows_used || []);
+  const eraNarratives = ANALYSIS.era_narratives || {};
+  const dayunSegByYear = (yr) => segments.find(s => s.start_year <= yr && yr <= s.end_year);
 
   return (
     <>
@@ -304,20 +461,19 @@ function App() {
         · 出生 {CURVES.birth_year}
       </div>
 
+      {/* === 主图 === */}
       <div className="chart-wrap">
         <div className="legend-row">
           <span className="legend-item"><span className="legend-line" style={{borderTopColor: COLOR_SPIRIT}}></span>精神 · 当年</span>
-          <span className="legend-item"><span className="legend-line dashed" style={{borderTopColor: COLOR_SPIRIT}}></span>精神 · 累积</span>
+          <span className="legend-item"><span className="legend-line dashed" style={{borderTopColor: COLOR_SPIRIT}}></span>精神 · 5 年趋势</span>
           <span className="legend-item"><span className="legend-line" style={{borderTopColor: COLOR_WEALTH}}></span>财富 · 当年</span>
-          <span className="legend-item"><span className="legend-line dashed" style={{borderTopColor: COLOR_WEALTH}}></span>财富 · 累积</span>
+          <span className="legend-item"><span className="legend-line dashed" style={{borderTopColor: COLOR_WEALTH}}></span>财富 · 5 年趋势</span>
           <span className="legend-item"><span className="legend-line" style={{borderTopColor: COLOR_FAME}}></span>名声 · 当年</span>
-          <span className="legend-item"><span className="legend-line dashed" style={{borderTopColor: COLOR_FAME}}></span>名声 · 累积</span>
-          <span className="legend-item"><span className="legend-line" style={{borderTopColor: COLOR_EMOTION}}></span>感情 · 当年</span>
-          <span className="legend-item"><span className="legend-line dashed" style={{borderTopColor: COLOR_EMOTION}}></span>感情 · 累积</span>
+          <span className="legend-item"><span className="legend-line dashed" style={{borderTopColor: COLOR_FAME}}></span>名声 · 5 年趋势</span>
         </div>
 
         <ResponsiveContainer width="100%" height={520}>
-          <ComposedChart data={data} margin={{top: 30, right: 30, left: 10, bottom: 10}}>
+          <ComposedChart data={merged} margin={{top: 30, right: 30, left: 10, bottom: 10}}>
             {segments.map((seg, i) => (
               <ReferenceArea
                 key={"seg-"+i}
@@ -327,220 +483,291 @@ function App() {
                 ifOverflow="extendDomain"
                 isFront={false}
               >
-                <Label value={seg.label} position="insideTop" fill="#888" fontSize={11} />
+                <Label value={`${seg.label} (${seg.start_age}-${seg.end_age}岁)`}
+                       position="insideTop" fill="#888" fontSize={11} />
               </ReferenceArea>
             ))}
 
             <CartesianGrid stroke="#eee" strokeDasharray="3 3" />
             <XAxis dataKey="age" type="number" domain={[minAge, maxAge]}
                    tickFormatter={(v) => v + "岁"} tick={{fontSize: 11, fill: "#666"}} />
-            <YAxis domain={[0, 100]} tick={{fontSize: 11, fill: "#666"}} />
-            <Tooltip content={<CustomTooltip />} />
+            <YAxis domain={[10, 90]} tick={{fontSize: 11, fill: "#666"}} />
+            {/* 基线 50 */}
+            <ReferenceLine y={50} stroke="#ccc" strokeDasharray="2 4" />
 
-            {/* 置信带 */}
-            <Area type="monotone" dataKey="spirit_band" stroke="none" fill={COLOR_SPIRIT} fillOpacity={0.10} />
-            <Area type="monotone" dataKey="wealth_band" stroke="none" fill={COLOR_WEALTH} fillOpacity={0.10} />
-            <Area type="monotone" dataKey="fame_band"  stroke="none" fill={COLOR_FAME}  fillOpacity={0.10} />
-            <Area type="monotone" dataKey="emotion_band" stroke="none" fill={COLOR_EMOTION} fillOpacity={0.10} />
-
-            {/* 8 条线（v6：4 维度 × 实/虚） */}
-            <Line type="monotone" dataKey="spirit"      stroke={COLOR_SPIRIT}  strokeWidth={2.4} dot={false} isAnimationActive={false} />
-            <Line type="monotone" dataKey="spirit_cum"  stroke={COLOR_SPIRIT}  strokeWidth={1.6} dot={false} strokeDasharray="6 3" isAnimationActive={false} />
-            <Line type="monotone" dataKey="wealth"      stroke={COLOR_WEALTH}  strokeWidth={2.4} dot={false} isAnimationActive={false} />
-            <Line type="monotone" dataKey="wealth_cum"  stroke={COLOR_WEALTH}  strokeWidth={1.6} dot={false} strokeDasharray="6 3" isAnimationActive={false} />
-            <Line type="monotone" dataKey="fame"        stroke={COLOR_FAME}    strokeWidth={2.4} dot={false} isAnimationActive={false} />
-            <Line type="monotone" dataKey="fame_cum"    stroke={COLOR_FAME}    strokeWidth={1.6} dot={false} strokeDasharray="6 3" isAnimationActive={false} />
-            <Line type="monotone" dataKey="emotion"     stroke={COLOR_EMOTION} strokeWidth={2.4} dot={false} isAnimationActive={false} />
-            <Line type="monotone" dataKey="emotion_cum" stroke={COLOR_EMOTION} strokeWidth={1.6} dot={false} strokeDasharray="6 3" isAnimationActive={false} />
-
-            {/* 关键拐点（高/中置信度） */}
-            {turning.slice(0, 12).map((t, i) => (
-              <ReferenceLine key={"t-"+i} x={t.age} stroke="#aaa" strokeDasharray="2 2" strokeOpacity={0.5}>
-                <Label value={t.trigger} position="top" fill="#666" fontSize={10} />
+            {/* === 关键年份竖线标记（peak/dip/shift） === */}
+            {keyYears.map((k, i) => (
+              <ReferenceLine key={"ky-"+i}
+                x={k.age}
+                stroke={k.kind === "peak" ? "#3d7a47" : k.kind === "dip" ? "#9a4632" : "#5a6a99"}
+                strokeDasharray="3 3" strokeOpacity={0.55} strokeWidth={1}>
+                <Label value={k.kind === "peak" ? "▲" : k.kind === "dip" ? "▼" : "◆"}
+                       position="top"
+                       fill={k.kind === "peak" ? "#3d7a47" : k.kind === "dip" ? "#9a4632" : "#5a6a99"}
+                       fontSize={11} offset={4} />
               </ReferenceLine>
             ))}
 
-            {/* 派别争议年份：黄色竖带 + ⚠ 标记 */}
-            {disputeAges.map((age, i) => (
-              <ReferenceArea
-                key={"d-"+i}
-                x1={age - 0.4} x2={age + 0.4}
-                fill="#E8B947" fillOpacity={0.18}
-                ifOverflow="extendDomain"
-                isFront={false}
-              >
-                <Label value="⚠" position="insideBottom" fill="#B07A26" fontSize={12} />
-              </ReferenceArea>
-            ))}
+            {/* === Hover Tooltip（年份 + 干支 + 大运 + 三维数 + 互动 + 盲派 + 关键年提示） === */}
+            <Tooltip content={<RichTooltip />} cursor={{stroke: "#bbb", strokeWidth: 1, strokeDasharray: "4 4"}} />
+
+            {/* === 5 年段趋势线（细虚线，背景） === */}
+            <Line type="monotone" dataKey="spirit_t" stroke={COLOR_SPIRIT}
+                  strokeWidth={1.5} strokeDasharray="5 4" strokeOpacity={0.55}
+                  dot={{ r: 2.5, fill: COLOR_SPIRIT, strokeOpacity: 0 }}
+                  connectNulls={true} isAnimationActive={false} />
+            <Line type="monotone" dataKey="wealth_t" stroke={COLOR_WEALTH}
+                  strokeWidth={1.5} strokeDasharray="5 4" strokeOpacity={0.55}
+                  dot={{ r: 2.5, fill: COLOR_WEALTH, strokeOpacity: 0 }}
+                  connectNulls={true} isAnimationActive={false} />
+            <Line type="monotone" dataKey="fame_t"   stroke={COLOR_FAME}
+                  strokeWidth={1.5} strokeDasharray="5 4" strokeOpacity={0.55}
+                  dot={{ r: 2.5, fill: COLOR_FAME, strokeOpacity: 0 }}
+                  connectNulls={true} isAnimationActive={false} />
+
+            {/* === 当年值（粗实线 + 圆点，主角） === */}
+            <Line type="monotone" dataKey="spirit" stroke={COLOR_SPIRIT}
+                  strokeWidth={2.6}
+                  dot={{ r: 2.8, fill: COLOR_SPIRIT, stroke: "#fff", strokeWidth: 1 }}
+                  connectNulls={true} isAnimationActive={false} />
+            <Line type="monotone" dataKey="wealth" stroke={COLOR_WEALTH}
+                  strokeWidth={2.6}
+                  dot={{ r: 2.8, fill: COLOR_WEALTH, stroke: "#fff", strokeWidth: 1 }}
+                  connectNulls={true} isAnimationActive={false} />
+            <Line type="monotone" dataKey="fame"   stroke={COLOR_FAME}
+                  strokeWidth={2.6}
+                  dot={{ r: 2.8, fill: COLOR_FAME, stroke: "#fff", strokeWidth: 1 }}
+                  connectNulls={true} isAnimationActive={false} />
           </ComposedChart>
         </ResponsiveContainer>
 
-        <div className="caveat">提示：实线 = 当年值；虚线 = 累积值（指数衰减加权）。浅色色带 = 大运分段。阴影 = 置信带 ±σ。⚠ 黄色竖带 = 三派分歧大、需要 LLM 辅助解读的年份。</div>
+        <div className="caveat">
+          <b>粗实线＝当年值</b>（看具体年的尖峰谷底）　|　
+          <b>淡虚线＝5 年段趋势</b>（每 5 年一段均值，描绘大运整体走势）　|　
+          基线 50（虚横线）：&gt;50 为该年偏吉，&lt;50 偏凶。
+        </div>
         {CURVES.mangpai_enabled && (
           <div className="mp-summary">
-            盲派启用：检测到 {mpYearsCount} 年触发盲派经典组合，其中 {mpHighCount} 条「重」烈度事件。
-            盲派不进 25% 融合权重，仅在三派融合后做 ±烈度档修正 + 应事断（详见每个拐点的展开行）。
+            盲派启用：{mpYearsCount} 年触发盲派经典组合（其中 {mpHighCount} 条「重」烈度），不进 25% 融合权重，仅做 ±烈度档修正。
           </div>
         )}
       </div>
 
+      {/* === P5: 历次校验记忆（仅在有 confirmed_facts 时显示） === */}
+      {ANALYSIS.confirmed_facts && Object.keys(ANALYSIS.confirmed_facts || {}).length > 0 && (
+        <details className="confirmed-facts">
+          <summary>
+            <b style={{color:"#5a6a85"}}>历次校验记忆</b>
+            <span style={{color:"#888", fontSize:11, marginLeft:8}}>
+              （上次跑同一八字时用户已确认 / 已纠正的事实，本次解读不再重复踩坑）
+            </span>
+          </summary>
+          <div style={{padding:"8px 12px", fontSize:12, lineHeight:1.7}}>
+            {(ANALYSIS.confirmed_facts.structural_corrections || []).length > 0 && (
+              <div style={{marginBottom:8}}>
+                <b style={{color:"#9a4632"}}>结构性纠错：</b>
+                <ul style={{margin:"4px 0 0 0", paddingLeft:18}}>
+                  {ANALYSIS.confirmed_facts.structural_corrections.map((s, i) => (
+                    <li key={i}>
+                      <b>{s.kind}</b>: {s.before} → {s.after}
+                      <span style={{color:"#888"}}> · {s.reason}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {(ANALYSIS.confirmed_facts.validations || []).length > 0 && (
+              <div style={{marginBottom:8}}>
+                <b style={{color:"#3a5378"}}>校验反馈（{ANALYSIS.confirmed_facts.validations.length} 条）：</b>
+                <ul style={{margin:"4px 0 0 0", paddingLeft:18}}>
+                  {ANALYSIS.confirmed_facts.validations.map((v, i) => (
+                    <li key={i}>
+                      [{v.round}] <b>{v.user_response === "对" ? "✓" : v.user_response === "不对" ? "✗" : "△"}</b>
+                      {" "}{v.trait_or_anchor}
+                      {v.user_note && <span style={{color:"#666"}}> — {v.user_note}</span>}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {(ANALYSIS.confirmed_facts.free_facts || []).length > 0 && (
+              <div>
+                <b style={{color:"#3d7a47"}}>已确认事实：</b>
+                <ul style={{margin:"4px 0 0 0", paddingLeft:18}}>
+                  {ANALYSIS.confirmed_facts.free_facts.map((f, i) => (
+                    <li key={i}>{f.fact} <span style={{color:"#aaa", fontSize:10}}>({f.added})</span></li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        </details>
+      )}
+
       {/* === 整图综合分析（默认展开） === */}
       <details className="overall-analysis" open>
-        <summary>整图综合分析（命局基本盘 + 三条曲线形状 + 累积解读 + 三大转折点 + 命主定位）</summary>
+        <summary>整图综合分析（命局基本盘 + 三条曲线形状 + 命主定位）</summary>
         {ANALYSIS.overall && ANALYSIS.overall.trim() ? (
           <Markdown source={ANALYSIS.overall} />
         ) : (
           <div className="placeholder">
-            （此处由 LLM 根据 references/multi_dim_xiangshu_protocol.md §4 写入综合分析。
-            未提供 analysis.json 时显示本提示。）
+            （此处由 LLM 根据 references/multi_dim_xiangshu_protocol.md §4 写入综合分析。）
           </div>
         )}
       </details>
 
-      {disputes.length > 0 && (
-        <div className="disputes">
-          <h2>⚠ 派别争议年份（共 {disputeAges.length} 年 / {disputes.length} 维度条目）</h2>
-          <div className="sub">
-            三派打分极差超过阈值（{CURVES.dispute_threshold}）的年份。
-            脚本只给原始数据 + 分歧线索，<b>具体推论必须由 LLM 结合命局综合判断</b>。
-            参见 <code>references/dispute_analysis_protocol.md</code>。
-          </div>
-          {disputes.map((d, i) => (
-            <div key={i} className="dispute-card">
-              <div className="dispute-head">
-                {d.year} · {d.age}岁 · {d.ganzhi} · 大运 {d.dayun} ·
-                <span className={"dim-"+d.dimension}> {DIM_LABEL[d.dimension]}维度</span>
-              </div>
-              <div className="dispute-bars">
-                {["fuyi", "tiaohou", "geju"].map(s => (
-                  <div className="dispute-bar" key={s}>
-                    <span className="name">{SCHOOL_LABELS[s]}</span>
-                    <div className="bar">
-                      <div className="fill" style={{
-                        width: d.per_school[s] + "%",
-                        background: SCHOOL_COLORS[s],
-                        opacity: s === d.leader_school ? 1 : (s === d.laggard_school ? 0.5 : 0.75),
-                      }} />
-                    </div>
-                    <span className="val">{d.per_school[s]}</span>
-                  </div>
-                ))}
-              </div>
-              <ul className="dispute-hints">
-                {d.interpretation_hints.map((h, j) => <li key={j}>{h}</li>)}
-                {d.interactions && d.interactions.length > 0 && (
-                  <li>该年互动事件：{d.interactions.map(it => it.type + (it.with ? "·"+it.with : "") + (it.wuxing ? "·"+it.wuxing : "")).join("，")}</li>
-                )}
-              </ul>
-              <details className="dispute-llm-details">
-                <summary>LLM 推论（点击展开 / 收起）</summary>
-                {ANALYSIS.disputes && ANALYSIS.disputes[String(d.year)] && ANALYSIS.disputes[String(d.year)].trim() ? (
-                  <Markdown source={ANALYSIS.disputes[String(d.year)]} />
-                ) : (
-                  <div className="placeholder">
-                    （此处由 LLM 按 references/dispute_analysis_protocol.md 写入：
-                    哪派最贴近 + 综合推论 + 论据。年份 key = "{d.year}"）
-                  </div>
-                )}
-              </details>
+      {/* === 一生三维度评价 === */}
+      <div className="card">
+        <h2>一生总评（三维度）</h2>
+        <div className="sub">三条曲线的整体走势 / 长板短板 / 各维度的人生策略建议</div>
+        <div className="life-grid">
+          {[
+            { key: "spirit", name: "精神舒畅度" },
+            { key: "wealth", name: "财富" },
+            { key: "fame",   name: "名声" },
+          ].map(d => (
+            <div key={d.key} className={"life-cell "+d.key}>
+              <div className="lc-head"><span className="lc-dot"></span>{d.name}</div>
+              {lifeReview[d.key] && lifeReview[d.key].trim() ? (
+                <Markdown source={lifeReview[d.key]} />
+              ) : (
+                <div className="placeholder">
+                  （此处由 LLM 写入一生 {d.name} 的整体评价。
+                  key = "{d.key}"）
+                </div>
+              )}
             </div>
           ))}
         </div>
+      </div>
+
+      {/* === v7.5 时代-民俗志解读层（仅在传入 zeitgeist 时显示） === */}
+      {HAS_ZEITGEIST && eraWindows.length > 0 && (
+        <div className="card">
+          <h2>时代-民俗志解读层（v7.5）</h2>
+          <div className="sub">
+            把每个 era_window（5-10 年区间）作为一段「时代镶嵌」叙事，
+            脚本只给骨架（id/label/span/keywords + 与大运的对齐情况），
+            具体「时代底色 / 标志性细节 / 命局节点 / 累计影响 / 证伪点」由 LLM 现场写
+          </div>
+          <div className="era-banner">
+            ⚠ 此层只用于「后事详写」（已发生段的精细化解读），不预测未来；
+            对未来段会自动转为「方向性提示」。详见 references/zeitgeist_protocol.md。
+          </div>
+          <div className="era-list">
+            {eraWindows.map((era, i) => {
+              const narrative = eraNarratives[era.id];
+              const span = era.span || [null, null];
+              return (
+                <details className="era-item" key={era.id || i} open={i === 0}>
+                  <summary>
+                    <span className="era-tag">{era.id}</span>
+                    <span>{era.label}</span>
+                    <span className="era-span">
+                      {span[0]}-{span[1]}　·　{era.decade_label || ""}
+                    </span>
+                    <span className="era-keywords">
+                      {(era.keywords || []).slice(0, 5).join(" · ")}
+                    </span>
+                  </summary>
+                  <div className="era-body">
+                    <div className="era-meta">
+                      <b>骨架：</b>{(era.keywords || []).join(" · ")}
+                    </div>
+                    {narrative && narrative.trim() ? (
+                      <Markdown source={narrative} />
+                    ) : (
+                      <div className="placeholder">
+                        （此处由 LLM 按 references/zeitgeist_protocol.md §3 写入「区间叙事」：
+                        ①时代底色（1-2 句不带身份名词的中性概括）　
+                        ②标志性细节（民俗志层 6 子层挑 ≥ 3 项 high/mid 置信）　
+                        ③命局给的几个具体节点（首选形态 + 备选形态）　
+                        ④累计影响（这一段如何沉淀到命主的人生轨迹）　
+                        ⑤整段证伪点。
+                        key = "{era.id}"。）
+                      </div>
+                    )}
+                  </div>
+                </details>
+              );
+            })}
+          </div>
+        </div>
       )}
 
-      {turning.length > 0 && (() => {
-        // 按年份合并：同一年的多维度收拢到一行，避免重复展示 mangpai
-        const byYear = {};
-        const yearOrder = [];
-        turning.slice(0, 30).forEach((t) => {
-          const y = t.year;
-          if (!byYear[y]) {
-            byYear[y] = { year: y, age: t.age, ganzhi: t.ganzhi, dayun: t.dayun, dims: [], triggers: new Set() };
-            yearOrder.push(y);
-          }
-          byYear[y].dims.push({ dimension: t.dimension, direction: t.direction, magnitude: t.magnitude, confidence: t.confidence });
-          if (t.trigger) byYear[y].triggers.add(t.trigger);
-        });
-        const grouped = yearOrder.slice(0, 12).map((y) => byYear[y]);
-        return (
-          <div className="turning">
-            <h2>未来 10 年关键拐点（按年份合并；点击行展开多维取象 + 盲派应事）</h2>
-            <table>
-              <thead>
-                <tr>
-                  <th></th>
-                  <th>年份</th><th>年龄</th><th>干支</th><th>大运</th>
-                  <th>受影响维度</th><th>触发条件</th>
-                </tr>
-              </thead>
-              <tbody>
-                {grouped.map((g, i) => {
-                  const pt = pointsByYear[g.year];
-                  const mpEvents = pt ? (pt.mangpai_events || []) : [];
-                  const tpAnalysisMd = ANALYSIS.turning_points && ANALYSIS.turning_points[String(g.year)];
-                  const hasMp = mpEvents.length > 0;
-                  const hasAnalysis = tpAnalysisMd && tpAnalysisMd.trim();
-                  // 同一维度内取最高置信度展示
-                  const dimsByKey = {};
-                  g.dims.forEach((d) => {
-                    const k = d.dimension;
-                    if (!dimsByKey[k] || (d.confidence === "high" && dimsByKey[k].confidence !== "high")) {
-                      dimsByKey[k] = d;
-                    }
-                  });
-                  const uniqDims = Object.values(dimsByKey);
-                  return (
-                    <React.Fragment key={i}>
-                      <tr>
-                        <td className="expand-cell" style={{ color: hasMp ? "#8b5a00" : "#ccc" }}>
-                          {hasMp ? "派" : "·"}
-                        </td>
-                        <td>{g.year}</td>
-                        <td>{g.age}</td>
-                        <td>{g.ganzhi}</td>
-                        <td>{g.dayun}</td>
-                        <td>
-                          {uniqDims.map((d, j) => (
-                            <span
-                              key={j}
-                              className={"dim-chip dim-"+d.dimension+" conf-"+d.confidence}
-                              title={"方向 "+DIR_ARROW[d.direction]+" · 置信 "+d.confidence}
-                            >
-                              {DIM_LABEL[d.dimension]} {DIR_ARROW[d.direction]}
-                            </span>
-                          ))}
-                        </td>
-                        <td className="tp-trigger">{Array.from(g.triggers).join("；") || "—"}</td>
-                      </tr>
-                      <tr className="tp-detail-row">
-                        <td colSpan={7}>
-                          <details open>
-                            <summary style={{cursor:"pointer", fontSize:12, color:"#666", padding:"2px 0"}}>
-                              ▾ {g.year} · {g.age}岁 多维取象（默认展开 / 点击收起）
-                            </summary>
-                            <MangpaiBlock events={mpEvents} />
-                            <div style={{marginTop:10}}>
-                              {hasAnalysis ? (
-                                <Markdown source={tpAnalysisMd} />
-                              ) : (
-                                <div className="tp-no-analysis">
-                                  （此处由 LLM 按 references/multi_dim_xiangshu_protocol.md §3.1 写入六维取象。
-                                  year key = "{g.year}"。
-                                  {hasMp ? "请引用上方盲派应事作为骨架。" : "该年无盲派事件，仅依三派结果展开。"}）
-                                </div>
-                              )}
-                            </div>
-                          </details>
-                        </td>
-                      </tr>
-                    </React.Fragment>
-                  );
-                })}
-              </tbody>
-            </table>
+      {/* === 大运评价 === */}
+      <div className="card">
+        <h2>大运评价（每 10 年一段）</h2>
+        <div className="sub">每个大运段对命主的整体影响评估，点开看详细推论</div>
+        <div className="dayun-list">
+          {segments.map((seg, i) => {
+            const r = dayunReview[seg.label] || {};
+            // v7.5: dayun_reviews[label] 是完整 markdown（按 dayun_review_template.md 6 块写法），优先于 r.body
+            const fullReview = dayunReviews[seg.label];
+            return (
+              <details className="dayun-item" key={i} open={i === 0}>
+                <summary>
+                  <span className="du-tag" style={{background: dayunColor(i)}}>{seg.label}</span>
+                  <span className="du-range">{seg.start_age}-{seg.end_age} 岁　{seg.start_year}-{seg.end_year}</span>
+                  <span className="du-summary">{r.headline || "—"}</span>
+                </summary>
+                <div className="du-body">
+                  {fullReview && fullReview.trim() ? (
+                    <Markdown source={fullReview} />
+                  ) : r.body && r.body.trim() ? (
+                    <Markdown source={r.body} />
+                  ) : (
+                    <div className="placeholder">
+                      （此处由 LLM 写入「{seg.label}」大运的整体评价。
+                      key = "{seg.label}"。
+                      v7.5 推荐按 references/dayun_review_template.md 的 6 块结构写：
+                      ①命理属性　②时代镶嵌（与 era_windows 对齐 · v7.5 重點）　
+                      ③三派交叉与盲派应事　④4 维曲线整体倾向　
+                      ⑤关键年份概览　⑥核心策略建议。
+                      也可写到 ANALYSIS.dayun_reviews["{seg.label}"] 字段（整体 markdown，覆盖此处）。）
+                    </div>
+                  )}
+                </div>
+              </details>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* === 关键年份评价 === */}
+      <div className="card">
+        <h2>关键年份评价（过往 + 未来）</h2>
+        <div className="sub">人生中的高峰、低谷、转折年。每条都展开了完整的大白话推论。</div>
+        {keyYears.length === 0 ? (
+          <div className="placeholder">
+            （此处由 LLM 按 references/multi_dim_xiangshu_protocol.md §3 写入关键年份。
+            数据结构：analysis.key_years = [{`{year, age, ganzhi, dayun, kind, headline, body}`}]
+            kind ∈ peak/dip/shift。建议至少覆盖 6-10 个关键年。）
           </div>
-        );
-      })()}
+        ) : keyYears.map((k, i) => {
+          const pt = pointsByYear[k.year];
+          const mpEvents = pt ? (pt.mangpai_events || []) : [];
+          const tagLabel = ({peak: "高峰", dip: "低谷", shift: "转折"}[k.kind] || k.kind);
+          return (
+            <details className="key-year" key={i} open={i < 2}>
+              <summary>
+                <span className="ky-year">{k.year} · {k.age}岁</span>
+                <span>{k.ganzhi} · {k.dayun}</span>
+                <span className={"ky-tag "+k.kind}>{tagLabel}</span>
+                <span className="ky-headline">{k.headline}</span>
+              </summary>
+              <div className="ky-body">
+                <MangpaiBlock events={mpEvents} />
+                {k.body && k.body.trim() ? (
+                  <Markdown source={k.body} />
+                ) : (
+                  <div className="placeholder">（待 LLM 写入推论）</div>
+                )}
+              </div>
+            </details>
+          );
+        })}
+      </div>
     </>
   );
 }

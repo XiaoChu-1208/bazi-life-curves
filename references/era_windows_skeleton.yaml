@@ -1,0 +1,156 @@
+# era_windows_skeleton.yaml
+#
+# 时代窗口骨架（Era Windows Skeleton）—— 给 LLM 的"锚点"骨架。
+# 每个 era_window 是 5-10 年区间，含主题、关键词、对应大运量级。
+# **不写**子节奏 / 民俗志细节 / 阶级 marker —— 这些由 LLM 现场推。
+#
+# 数据策略：项目原创的"区间划分 + 主题命名"是 LLM 不一定能精确给出的（容易切错断点），
+# 所以骨架化；但区间内部的"标志性细节"LLM 训练数据已有，所以由 LLM 现场推。
+#
+# 骨架原则：
+#   - 区间长度 7-10 年（与大运量级对齐）
+#   - keywords 限 ≤ 5 个最具代表性的（不要列长清单）
+#   - global_keywords 限 ≤ 3 个（处理非中国用户时备用）
+#   - 不写 sub_phases（由 LLM 推）
+#   - 不写 folkways（由 LLM 推）
+#
+# 文件结构：
+#   - china_main : 中国主线时代窗口（用户出生在 1977 之后默认匹配）
+#   - global_main : 全球大事件主线（非中国用户主匹配，中国用户作辅助背景）
+#   - china_pre_1977 : 中国 1977 之前的简化骨架（只覆盖大段，颗粒度更粗）
+
+version: "0.1"
+last_updated: "2026-04-20"
+
+china_main:
+  - id: cn_reform_dawn
+    label: "改革开放破晓"
+    span: [1977, 1984]
+    decade_label: "70 末-80 中"
+    keywords: [恢复高考, 农村包产到户, 国门初开, 第一批个体户, 旧体制松动]
+
+  - id: cn_reform_acceleration
+    label: "改革加速 + 文化解禁"
+    span: [1984, 1989]
+    decade_label: "80 末"
+    keywords: [价格双轨制, 文化热, 万元户, 沿海开放, 大学生意气]
+
+  - id: cn_market_emergence
+    label: "市场化萌芽 + 整顿"
+    span: [1989, 1994]
+    decade_label: "90 初"
+    keywords: [南方谈话, 海南淘金, 股票热, 三资企业, 第一波下海]
+
+  - id: cn_reform_late_90s
+    label: "国企改制 + 入世前夜"
+    span: [1995, 2002]
+    decade_label: "90 末-世纪之交"
+    keywords: [国企下岗潮, 朱镕基整顿, 香港回归, 亚洲金融危机, 房改互联网启蒙]
+
+  - id: cn_wto_age
+    label: "入世红利 + 城市化加速"
+    span: [2003, 2008]
+    decade_label: "00 中"
+    keywords: [WTO 红利, 房地产起飞, SARS, 第一波互联网创业, 北京奥运]
+
+  - id: cn_post_olympic
+    label: "金融危机后 + 4 万亿"
+    span: [2009, 2013]
+    decade_label: "00 末-10 初"
+    keywords: [4 万亿刺激, 高铁网建成, 智能手机普及, 微博兴起, 房价首次大涨]
+
+  - id: cn_mobile_internet
+    label: "移动互联网 + 创业热"
+    span: [2013, 2017]
+    decade_label: "10 中"
+    keywords: [微信生态, 共享经济, O2O 大战, 创业潮, 公众号红利]
+
+  - id: cn_consumption_upgrade
+    label: "消费升级 + 平台垄断"
+    span: [2017, 2020]
+    decade_label: "10 末"
+    keywords: [新零售, 短视频崛起, 消费分级, 中产焦虑, 教培房产末段]
+
+  - id: cn_pandemic_era
+    label: "疫情 + 政策大调整"
+    span: [2020, 2023]
+    decade_label: "20 初"
+    keywords: [疫情封控, 教培双减, 房地产调整, 平台反垄断, 共同富裕]
+
+  - id: cn_ai_economy
+    label: "AI 时代 + 经济结构转型"
+    span: [2023, 2030]
+    decade_label: "20 中-后"
+    keywords: [生成式 AI, 出海跨境, 新能源车, 银发经济, 内卷与躺平张力]
+
+global_main:
+  - id: global_late_cold_war
+    label: "冷战末期 + 全球新自由主义"
+    span: [1980, 1990]
+    keywords: [Reaganomics, 撒切尔主义, 苏联停滞, 日本泡沫顶峰]
+
+  - id: global_post_cold_war
+    label: "苏联解体 + 单极时刻"
+    span: [1990, 2000]
+    keywords: [苏东剧变, 全球化加速, 互联网泡沫, 海湾战争, 千禧年]
+
+  - id: global_post_911
+    label: "911 后 + 反恐时代"
+    span: [2001, 2008]
+    keywords: [911 反恐, 中东战争, 房产泡沫, 全球化巅峰]
+
+  - id: global_post_2008
+    label: "金融危机后 + 新平台时代"
+    span: [2008, 2016]
+    keywords: [金融危机, 智能手机普及, 占领华尔街, 阿拉伯之春, 平台公司崛起]
+
+  - id: global_polarization
+    label: "民粹回潮 + 大国竞争"
+    span: [2016, 2022]
+    keywords: [Trump-Brexit-民粹, 中美贸易战, 疫情, 通胀回归]
+
+  - id: global_ai_age
+    label: "生成式 AI 时代"
+    span: [2022, 2030]
+    keywords: [ChatGPT, AI 应用层, AI 监管, 大国 AI 竞赛, 工作重构]
+
+china_pre_1977:
+  # 颗粒度更粗（10-15 年一段），用于年长用户
+  # LLM 应主要用训练知识补充细节，本骨架仅作锚点
+  - id: cn_post_revolution
+    label: "建国初 + 三大改造"
+    span: [1949, 1957]
+    keywords: [新政权稳固, 公私合营, 抗美援朝, 一五计划, 知识分子改造]
+
+  - id: cn_great_leap
+    label: "大跃进 + 三年困难"
+    span: [1958, 1962]
+    keywords: [大跃进, 人民公社, 三年困难时期, 反右运动尾声]
+
+  - id: cn_pre_culrev
+    label: "调整时期 + 文革前夜"
+    span: [1962, 1965]
+    keywords: [七千人大会, 国民经济调整, 阶级斗争扩大化, 学雷锋]
+
+  - id: cn_cultural_revolution
+    label: "文革"
+    span: [1966, 1976]
+    keywords: [破四旧, 上山下乡, 林彪事件, 批林批孔, 唐山大地震粉碎四人帮]
+
+# alignment_hint: 提示 LLM 如何与命主大运对齐（详细规则见 zeitgeist_protocol.md §4）
+alignment_hint: |
+  - 一个 era_window 通常对应 1 个大运段（情况 A · 共振）
+  - 也可能跨 2 个大运（情况 B · 切换）
+  - 或 1 个大运跨 2 个 era_window（情况 C · era 跨大运）
+  - LLM 必须在内部 reasoning 中显式标注每个 era_window 的对齐情况
+
+usage_hint: |
+  非中国用户处理：
+    1. 用 global_main 提供宏观背景
+    2. LLM 用训练知识补充用户出生国本土 era（标 confidence: mid）
+    3. 在末尾加 caveat（"按出生地推 folkways，移民/海外华人请告知会切 prior"）
+  
+  中国用户处理：
+    1. china_main 优先匹配（confidence: high）
+    2. global_main 作辅助背景（如 1997 亚洲金融危机 / 2008 金融危机）
+    3. 1977 前出生：用 china_pre_1977，颗粒度更粗

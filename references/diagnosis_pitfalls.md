@@ -12,6 +12,10 @@
 | R3 | **格局识别 reject ≠ 空 但仍硬套** | detect_geju 返回 rejected 但 LLM 在分析时仍按该格局解读 | 严格按 primary=null 走，不能借口"近似格局"硬套 |
 | R4 | **Round 1+2 命中 < 4/6 仍出图** | handshake 总命中率不达阈值 | 一律不出图，告诉用户"八字十有八九不准，先核对时辰" |
 | R5 | **LLM 在拿到结果之前先讲故事** | LLM 在工具未返回前就生成"基于 X 你是 Y" | 必须先 solve_bazi → score → handshake → 再讲推论 |
+| R6 | **class_prior 标签直接吐给用户**（v7.5）| 输出里出现"你是 [城市知识分子 / 体制内 / 草根]"等身份命名 | 立刻改写为情境描述；详见 §13.1 + class_inference_ethics §3 |
+| R7 | **未来 era_window 写得跟过去一样细**（v7.5）| era.span 上限 > current_year 但 LLM 写"你 X 年会经历 Y" | 强制降级为"方向性提示"，禁出现具体年份事件；详见 §13.3 |
+| R8 | **folkways_anchor R2 题缺 7 铁律**（v7.5）| 缺 ≥ 2 个 suggested_direction / 缺时间窗 / 缺证伪点 / confidence=low | 不允许输出，按 §13.7 + handshake_protocol §5.4 重写 |
+| R9 | **illustrious_candidate + R3 ✗ 仍写"显赫家世"**（v7.5）| primary_class = illustrious_candidate 且 R3「整体结构」标 ✗ | 强制降级，禁用"显赫/名门/名利双收"措辞；详见 §13.5 |
 
 ---
 
@@ -233,3 +237,171 @@ LLM 看到这个 dump 后**必须**按以下话术跟用户沟通（不允许改
 - ❌ 跳过 `--dump-phase-candidates` 直接重跑 / 直接出图
 - ❌ 反演重跑后假装"还是默认相位"——必须明确告知用户「相位 = X」
 - ❌ 4 个 detect 都未触发时硬要反演（n_triggered=0 时直接走时辰扫描）
+
+---
+
+## §13 「时代-民俗志层陷阱」（v7.5 新增 · 2026-04）
+
+> 把 era_window + folkways + class_prior 引入解读后，新出现 7 类典型踩坑。
+> 每跑一段历史段叙事之前对照这一节自检。
+
+### §13.1 把 class_prior 当作"用户身份"直接吐出
+
+**症状**：LLM 看到 `class_prior_top1 = "urban_state_or_educated"` 后，在输出里写"你是城市知识分子家庭出身"、"你属于体制内中产阶层"。
+
+**为什么错**：
+1. class_prior 只是**概率分布的 top1**，不是事实；
+2. 这种叙事会给用户贴**身份标签**，违反 `class_inference_ethics.md` 的核心原则；
+3. 用户实际可能是 urban_state_or_educated 0.375 + grassroots_self_made 0.144 的混合形态——简单贴 top1 标签会丢掉重要分量。
+
+**修复**：
+- LLM 把 class_prior 当**思维材料**用，**不允许**作为输出语言
+- 输出时只能描述"情境 / 场景 / 处境"，不允许出现"你是 X 阶级 / X 家庭出身"这类身份命名
+- 详见 `class_inference_ethics.md §3 替换字典`
+
+**自检规则**：
+> 看到 class_prior 的内部标签后，把"你是 [标签]"在心里翻译成"你那段时间所处的环境通常会让人接触到 [具体情境]"——后者才是允许输出的形态。
+
+---
+
+### §13.2 把"时代背景"贴成"你一定经历了 X"
+
+**症状**：LLM 看到 era_window = `cn_reform_late_90s` 后，直接写"你 1996 年 11 岁那年家里下岗了 / 转学了"。
+
+**为什么错**：
+- era_window 是**社会层面**的时代底色，不是**个体层面**的事件
+- 同一个时代里，绝大多数人不会经历"下岗"——给的是概率背景，不是必然事件
+
+**修复**：
+- 必须按 `folkways_inference_prompt.md` 的 7 步推理流走：先建立时代底色 → 再用命局 anchor 推可能事件 → 必须给 ≥ 2 个 suggested directions 让用户选 → 必须有可证伪点
+- 严禁把 era_window 的关键词直接套到用户身上（如 era 关键词含"下岗" → 不允许直接写"你家下岗了"）
+
+**自检规则**：
+> 当你想写"你 X 年经历了 Y"时，停一下。问自己 5 个问题（folkways_protocol §4 五项自检）：时间窗 ±2 年？ era_window 对得上？class_marker 对得上？yongshen / 命局事件 anchor 在那个区间？给了 ≥ 2 个备选 direction？任何一项答不上 → 改写为"那段时间最可能的几种情境是 a / b / c，是不是其中之一？"。
+
+---
+
+### §13.3 把"未来 era_window"也细写
+
+**症状**：LLM 给 2030-2034 那段写得跟 2010-2014 一样详细，列出"你那时会经历 AI 行业 X 周期 / 新能源 Y 政策"等。
+
+**为什么错**：
+- 协议红线："**前事细，后事粗**"
+- 未来段不存在"已经发生"的可证伪事件——细写就是在过拟合不存在的事实
+
+**修复**：
+- 对 `current_year` 之后的 era_window，自动转为"方向性提示"，不写具体节点
+- 仅给 2-3 句"该段时代倾向 X 类机会 / Y 类风险，对你的 [大运取向] 是 [助 / 阻]"
+- 不允许写"你在 2032 年会 X"
+
+**自检规则**：
+> 看 era_window.span：上限 > current_year → 自动降级为"方向性提示"模板，不允许出现"你 X 年 / 你那年"这种细节句式。
+
+---
+
+### §13.4 folkways 细节用错时代
+
+**症状**：给 2010-2015 段写"你那时正赶上微博兴起、QQ 空间流行"。
+
+**为什么错**：微博 2009 兴起，2013 后才被微信替代；QQ 空间高峰是 2008-2011。把不同时代的 folkways 串错 → 用户立刻反驳"那时早就没人用 QQ 空间了"。
+
+**修复**：
+- 每个 folkways 细节必须过 `folkways_protocol §4` 的"时间窗"自检
+- 严禁把同一组 folkways 套在所有时代（移动互联网 ≠ 短视频时代 ≠ AI 时代）
+- 优先参考 `references/folkways_examples/*.md` 的样本时代切片
+
+**自检规则**：
+> 写每条具体 folkways 之前，问自己："这个东西的真实流行窗口是几年到几年？"对不上 → 换。
+
+---
+
+### §13.5 给 illustrious_candidate（古典格局疑似显赫）写"显赫家世"
+
+**症状**：class_prior 出 `illustrious_candidate` 后，LLM 写"你父辈/祖辈中有名望人物"。
+
+**为什么错**：
+- 古典命书有 survivorship bias —— 流传下来的命例 99% 是显赫案例，所以"年/月柱财官印聚合"这种结构在古书里被高估了 5-10 倍
+- 真实分布里这种结构主要出现在**普通中产 / 体制内** + 极少数显赫案例
+- 直接贴"显赫家世"会让 99% 的用户觉得"完全不对"
+
+**修复**：
+- handshake R3「原生家庭①·整体结构」被 ✗ 时**强制降级**：禁用"显赫 / 名门 / 名利双收"
+- 改写为"年/月柱财官印聚合的结构在你身上没有外显为外部资源 / 名望——结构性画像被现代环境改写了"
+- 详见 handshake_protocol §5.4 + family_profile.md
+
+**自检规则**：
+> illustrious_candidate 标签出现时，先看 R3 命中：未通过 / 0 命中 → 必须降级表达；2/2 命中 → 才允许谨慎说"父辈/祖辈中可能有人在某领域有可识别的位置"，但仍不允许"显赫"措辞。
+
+---
+
+### §13.6 era_windows 与大运对齐用错 situation
+
+**症状**：用户大运 1995-2004 是壬寅，对应 era_window 是 cn_reform_late_90s (1995-1999) + cn_wto_age (2000-2007)，alignment situation = `B_dayun_spans_eras`。LLM 把整个壬寅大运用同一段时代叙事写完，没区分前后两个 era。
+
+**为什么错**：1995-1999 vs 2000-2007 是两个不同时代底色（朱镕基改革末段 vs 入世后开放高峰）。混在一起写会丢掉"时代切换"这个最有信息量的事件。
+
+**修复**：
+- 按 `dayun_review_template.md §2 三种 alignment situation` 分别处理：
+  - **A_resonance**（一对一对齐）：直接写一段
+  - **B_dayun_spans_eras**（大运跨多个 era）：明确分段写"前 X 年是 era_A 底色 / 后 Y 年是 era_B 底色，命主在切换点 (Z 年) 经历了 ..."
+  - **C_era_spans_dayuns**（一个 era 跨多个大运）：在 era 叙事里明确指出"你的 [大运 1] 和 [大运 2] 都活在同一时代底色里，但因为大运不同 → 你对它的体感是 ..."
+
+**自检规则**：
+> 看 alignment.primary_situation 字段，按 dayun_review_template.md §2 走对应分支，禁止"用一个时代覆盖整个大运"。
+
+---
+
+### §13.7 民俗志锚点（folkways_anchor）写得跟普通历史锚点一样模糊
+
+**症状**：handshake `folkways_anchor_seeds` 已经给了 era_window + suggested_directions，LLM 却只写"你 X 岁那年财富大波动"——丢失了时代上下文。
+
+**为什么错**：违反 `handshake_protocol §5.4` 的 7 条铁律。folkways_anchor 的价值就在于"时代镶嵌 + 给用户具体情境选项让他认领"。
+
+**修复**：每个 folkways_anchor R2 题必须包含：
+1. **时间窗 ±1-2 年**（禁"小时候"）
+2. **1 句 era_window 背景**（如"1998 ± 1 年是国企整顿 + 朱镕基改革高峰"）
+3. **≥ 2 个 suggested_direction**（让用户选，不要问"是不是 X"）
+4. **明确 1 句可证伪点**
+5. **过 folkways_protocol §4 五项自检**
+6. **遵守 class_inference_ethics**（禁身份命名）
+7. **confidence 必须 high 或 mid**
+
+**自检规则**：
+> 写完每个 folkways_anchor R2 题，回头数一下：1）有没有具体年份范围？2）有没有铺一句时代背景？3）有没有 ≥ 2 个备选方向？4）有没有明确证伪点？任何一条缺失 → 不允许输出。
+
+---
+
+### 跑 v7.5 时代-民俗志层的执行清单（叠加在 §1-§12 之上）
+
+```
+[ ] 1. 跑 _class_prior.py → 拿 primary_class（仅供内部 reasoning）
+[ ] 2. 跑 _zeitgeist_loader.py → 拿 era_windows_used + alignments
+[ ] 3. 跑 handshake.py --with-zeitgeist → 拿 folkways_anchor_seeds
+[ ] 4. 写每个 era_window 叙事时：
+       [ ] 走 §13.2 7 步流程（先底色 → 再 anchor → 再 directions）
+       [ ] 过 folkways_protocol §4 五项自检
+       [ ] 严守 class_inference_ethics（禁身份命名）
+       [ ] era.span > current_year → 自动降级为"方向性提示"
+[ ] 5. 写大运评价时：
+       [ ] 看 alignment.primary_situation → 按 dayun_review_template §2 对应分支走
+       [ ] 跨 era 的大运必须明确分段
+[ ] 6. 写 family 段时（仅在用户问 family 时）：
+       [ ] R3 命中 0/2 → 不展开
+       [ ] illustrious_candidate + R3 ✗ → 强制降级（禁"显赫"措辞）
+[ ] 7. 写 folkways_anchor R2 题时：
+       [ ] 7 条铁律全部满足才允许输出
+       [ ] confidence < mid → 直接丢，不允许 low
+```
+
+---
+
+### 这一类陷阱的本质
+
+v7.5 把"时代背景 / 民俗志细节 / class_prior"当成 LLM **思维材料**而不是输出语言。
+LLM 容易踩的坑都来自一个方向：**把内部 reasoning 直接吐给用户**。
+
+护栏的核心是 4 个分离：
+1. **概率 vs 事实**：class_prior top1 ≠ 用户身份；folkways suggested_direction ≠ 一定经历
+2. **思维材料 vs 输出语言**：class_inference_ethics §3 替换字典是必经环节
+3. **后事详 vs 前事粗**：current_year 是"详写 / 粗写"的硬边界
+4. **骨架 vs 现场**：era_windows_skeleton 是骨架，folkways 细节由 LLM 现场推、过自检后才能输出

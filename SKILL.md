@@ -584,9 +584,40 @@ HTML 渲染单盘要 5–15 秒、合盘也要 3–5 秒，用户没要的时候
 - ❌ 在用户明显不想要图（"就口头说说"、"快点告诉我结论"）时仍渲染 HTML
 - ❌ 用户回了 A 之后还是把 HTML 也跑了
 
+### 3a-pre. 时代-民俗志解读层（v7.5 新增 · 在写 key_years / dayun_review 之前必读）
+
+写任何 `key_years` body / `dayun_review.body` 之前，**必须**先按以下流程构造"时代-民俗志上下文"：
+
+```
+1. 加载 references/era_windows_skeleton.yaml （时代窗口骨架，5-10 年一段）
+2. 调用 scripts/_zeitgeist_loader.py 把 era_windows 与命主大运对齐
+3. 调用 scripts/_class_prior.py 推导 class_prior（内部思维材料 · 不输出 label）
+4. 按 references/folkways_inference_prompt.md 5 步流程生成 folkways 候选
+5. 三层过滤（confidence + 五项自检 + 五行/阶级匹配）
+6. 按 references/zeitgeist_protocol.md §3.1 区间叙事模板写
+7. 按 references/dayun_review_template.md 模板组织大运段落
+```
+
+**关键铁律（违反任一即作废重写）**：
+
+- **前事细 / 后事粗**：过去年份可给"首选 + 备选"具体形态；未来年份**只能**给方向 + 大类 + 避坑，禁止具体事件
+- **思维材料 ≠ 输出语言**：阶级 prior 是 LLM 内部 reasoning 工具，**绝不**以阶级名词形式出现在用户可见输出里——见 `references/class_inference_ethics.md`
+- **三档置信**：每条民俗志推论必须标 `confidence ∈ {high, mid, low}`，**low 不能出现在断言中**（可转开放问题）
+- **五项自检**：每条 folkways 候选必须能回答 5 个问题（时间窗 / 地域 / 阶级 marker / 五行 tag / 对应命理事件）；2 项答不出 → 该条不能写
+- **区间为骨，节点为肉**：每个 era_window 写一段完整叙事（时代底色 + 标志性细节 + 命理节点 + 累计影响 + 整段证伪点），命理节点镶嵌在区间内
+
+参见：
+- `references/zeitgeist_protocol.md`（区间叙事结构 + 大运 × era_window 对齐）
+- `references/folkways_protocol.md`（6 sub-layer + 五行映射 + 三档置信 + 五项自检）
+- `references/class_inference_ethics.md`（思维材料 ≠ 输出语言；§5 红线关键词清单）
+- `references/folkways_inference_prompt.md`（完整 5 步推理模板 + 自检清单）
+- `references/folkways_examples/*.md`（few-shot 示例，模仿其颗粒度）
+
 ### 3a. LLM 流式输出五类评价（v5 流式 + v6 加感情维度：每写完一节立刻发出）
 
 按 `references/multi_dim_xiangshu_protocol.md` 的强制框架，**严格按下面的"流式分节顺序"**逐节输出：每写完一节立刻发出（用户能边读边等下一节），**禁止**把所有内容憋在末尾一次性吐。
+
+**v7.5 重要变更**：`dayun_review.body` 和 `key_years.body` 不再是"单年六维取象"格式，全部按 §3a-pre 的"区间叙事 + 节点镶嵌"重写。
 
 **流式分节顺序（v6 强制 · 共 N 节，比 v5 多一节"一生·感情"）**：
 
@@ -778,6 +809,8 @@ python3 scripts/save_confirmed_facts.py --bazi output/bazi.json --add-structural
 - **每次合盘前 / 用户给 ≥ 2 份八字** → `references/he_pan_protocol.md`（强制）
 - **每次跑 Step 2a 之前 / 用户问"盲派怎么看"** → `references/mangpai_protocol.md`（强制）
 - **每次进入 Step 3a 写 LLM 分析之前** → `references/multi_dim_xiangshu_protocol.md`（强制）
+- **每次进入 Step 3a 写 key_years / dayun_review 之前** → `references/zeitgeist_protocol.md` + `references/folkways_protocol.md` + `references/folkways_inference_prompt.md`（强制 · v7.5 · 时代-民俗志解读层）+ `references/class_inference_ethics.md`（伦理红线必读）
+- **写 dayun_review 段时** → `references/dayun_review_template.md`（v7.5 新增 · 大运段标准模板）
 - 用户问「为什么这年高/低」 → `references/methodology.md` + `references/scoring_rubric.md`
 - 用户质疑准确性 → `references/accuracy_protocol.md` + `calibration/dataset.yaml`
 - 用户质疑公正性 / 偏向 → `references/fairness_protocol.md`

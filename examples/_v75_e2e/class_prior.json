@@ -1,0 +1,29 @@
+{
+  "primary_class": "urban_state_or_educated",
+  "primary_class_label_internal_only": "城市体制/读书人家庭（仅用于 LLM 内部 reasoning）",
+  "distribution": {
+    "urban_state_or_educated": 0.375,
+    "urban_market_oriented": 0.096,
+    "institutional_family": 0.199,
+    "rural_or_county": 0.038,
+    "freelance_artisan_family": 0.0,
+    "grassroots_self_made": 0.144,
+    "early_high_pressure": 0.148
+  },
+  "evidence": [
+    "年干=丁（正印）→ urban_state_or_educated / institutional_family",
+    "年支=巳（偏印）→ 同上加权 0.6",
+    "月干=甲（七杀）→ 父辈主导动力倾向",
+    "用神=金 在原局有根 → 资源相对充足"
+  ],
+  "confidence": "mid",
+  "preferred_class_markers": [
+    "urban_middle",
+    "urban_educated"
+  ],
+  "disfavored_class_markers": [
+    "rural",
+    "elite"
+  ],
+  "_disclaimer": "⚠️ 此 class_prior 仅供 LLM 内部 reasoning。禁止以阶级名词形式输出给用户。详见 references/class_inference_ethics.md。"
+}

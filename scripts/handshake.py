@@ -1369,6 +1369,205 @@ def apply_phase_to_bazi(bazi: dict, phase_id: str) -> dict:
     return sc.apply_phase_override(bazi, phase_id)
 
 
+# ==========================================================================
+# v7.5 · folkways_anchor_seeds 生成器（民俗志锚点种子）
+# ==========================================================================
+#
+# 设计原则（详见 references/handshake_protocol.md §5.4 + folkways_protocol.md）：
+#   - 脚本只给"种子"（年份段 + era_window + 关联命理事件 + class_prior + 用神 + anchor_type）
+#   - 每个 seed 含 suggested_directions（stub 2-3 个粗方向，LLM 现场扩写细化）
+#   - LLM 收到 seed 后必须按 §5.4 的 7 条铁律写 R2 民俗志锚点（时间窗 ±1-2 年、可证伪点、≥2 directions、confidence 必须 high/mid、5 项自检通过、伦理合规）
+#   - 默认只挑 1-2 颗 seed（R2 的民俗志名额 ≤ 1）
+#
+# 关键约束：
+#   - 必须基于"过去段" anchor（year < current_year, age ≥ 6）
+#   - 必须能匹配到一个 era_window（否则丢弃该 seed）
+#   - confidence 必须能升到 high 或 mid（low 直接丢）
+
+# anchor_type → 通用 stub 方向（按 dim × direction 给）
+# LLM 看到这些 stub 方向后会按 era + class_prior 重新本地化
+_FOLKWAYS_DIRECTION_STUB = {
+    ("wealth", "up"): [
+        "家庭主要收入来源出现一次跳档（升职 / 创业首单 / 资产入手）",
+        "家庭支出结构有一次质变（购置大件 / 第一套房 / 第一辆车 / 重要消费类奢望兑现）",
+        "家中长辈在职业体系内有一次明显升级（被提拔 / 转岗到更核心位置）",
+    ],
+    ("wealth", "down"): [
+        "家庭主要收入来源出现一次明显回落（裁员 / 内退 / 减薪 / 业务塌方）",
+        "家中有一笔大额非预期支出（医疗 / 诉讼 / 投资折损 / 帮亲戚兜底）",
+        "家庭迁居 / 转学 / 学区变动等结构性「被动调整」（外部冲击导致）",
+    ],
+    ("wealth", "shock"): [
+        "家庭财务「先得后失」或「先失后得」剧烈起伏（典型过手不留）",
+        "家庭重要资产经历过一次结构性重置（房产卖出/置换 / 项目被并/拆）",
+        "亲戚 / 合伙人之间出现金钱纠纷或合作分裂",
+    ],
+    ("fame", "up"): [
+        "你或家人在所处行业 / 单位 / 学校中获得过一次「被外部看见」的机会（评奖 / 被提名 / 被报道）",
+        "进入一个之前够不到的圈子 / 平台（重点学校 / 知名公司 / 行业活动）",
+        "对外的公开身份发生升级（获得头衔 / 被授予角色 / 进入更高层级的组织）",
+    ],
+    ("fame", "down"): [
+        "主动 / 被动从某个公开身份退下来（卸任 / 转岗 / 换赛道）",
+        "原本的公开角色失去外部关注度（赛道塌陷 / 平台衰落）",
+        "外界评价或社会反馈出现一段明显冷遇期",
+    ],
+    ("fame", "shock"): [
+        "公开身份切换（换行业 / 换城市 / 重要的角色翻转）",
+        "经历一次「对外面貌」的剧烈反转（突然受关注 / 突然被遗忘）",
+    ],
+    ("spirit", "up"): [
+        "进入一段相对舒展 / 自洽 / 被环境接住的时期（学业匹配 / 工作匹配 / 关系匹配）",
+        "找到一个长期「对得上自己」的圈子（兴趣 / 信仰 / 事业方向）",
+    ],
+    ("spirit", "down"): [
+        "经历一段长期纠结 / 压抑 / 内耗的时期（人际撕裂 / 关键关系破裂 / 价值观挫败）",
+        "重要至亲的健康 / 关系出现长时间影响你心境的事件",
+        "时代背景对你的生活方式 / 选择路径产生了挤压感（行业周期 / 政策变动 / 家庭外部压力）",
+    ],
+    ("spirit", "shock"): [
+        "经历一次价值观重塑（重要信念被推翻 / 关键身份被告别）",
+        "与重要他人的关系发生剧烈震荡（断裂 / 和解 / 角色重排）",
+    ],
+}
+
+# bazi 关键事件 → 简短 associated_bazi_event 描述
+def _summarize_associated_bazi_event(c: dict) -> str:
+    """从 anchor 候选中抽 1-2 个最强烈的命理触发，供 LLM 援引。"""
+    parts: List[str] = []
+    interactions = c.get("interactions", []) or []
+    if interactions:
+        # 优先挑高烈度的
+        for it in interactions:
+            t = it.get("type", "")
+            if t in ("伏吟", "反吟", "财库被冲开", "冲日柱", "伤官见官",
+                     "三合用神局", "三合忌神局", "通关"):
+                parts.append(t)
+                break
+        if not parts:
+            parts.append(interactions[0].get("type", ""))
+    mp = c.get("mangpai_events") or []
+    if mp:
+        ev = mp[0]
+        parts.append(f"盲派 {ev.get('school','')}·{ev.get('name','')}")
+    if not parts:
+        parts.append(f"{DIM_LABEL.get(c.get('dim',''),'?')}维度大波动 ({c.get('direction','')})")
+    return " + ".join([p for p in parts if p])
+
+
+def build_folkways_anchor_seeds(
+    bazi: dict,
+    curves: dict,
+    current_year: int,
+    max_n: int = 2,
+    zeitgeist_context: Optional[dict] = None,
+    class_prior: Optional[dict] = None,
+) -> List[dict]:
+    """v7.5 · 生成 ≤ max_n 颗 folkways_anchor_seed，供 LLM 现场扩写为 R2 民俗志锚点。
+
+    步骤：
+      1. 复用 build_historical_anchors() 拿到的强烈历史段 anchor（过去段、age≥6）
+      2. 对每个 anchor，用 zeitgeist_context 找出它所属的 era_window
+         - 若拿不到 era_window → 丢弃该 seed（民俗志锚点必须挂在某段时代上）
+      3. 取 class_prior 的 primary_class（没有则 unknown）+ preferred_class_markers
+      4. 取该 anchor 的 dim/direction → 决定 _FOLKWAYS_DIRECTION_STUB[dim,direction]
+      5. 抽出强烈的命理触发作 associated_bazi_event
+      6. 组装 seed 输出（user_age_range = year ± 1-2 → 对应 age）
+
+    若 zeitgeist_context = None（脚本未启用时代-民俗志层）→ 返回空 list。
+    """
+    if zeitgeist_context is None:
+        return []
+
+    # _zeitgeist_loader 输出的字段是 era_windows_used；兼容 era_windows 旧字段名
+    eras = (
+        zeitgeist_context.get("era_windows_used")
+        or zeitgeist_context.get("era_windows")
+        or []
+    )
+    if not eras:
+        return []
+
+    primary_class = (class_prior or {}).get("primary_class", "unknown")
+    preferred_markers = (class_prior or {}).get("preferred_class_markers", [])
+    yongshen = bazi.get("yongshen", {}).get("yongshen") or curves.get("yongshen", {}).get("yongshen")
+    yongshen_match = [yongshen] if yongshen else []
+
+    anchors = build_historical_anchors(curves, current_year, max_n=6)
+    if not anchors:
+        return []
+
+    seeds: List[dict] = []
+    used_eras: set = set()
+
+    for c in anchors:
+        if len(seeds) >= max_n:
+            break
+        year = c.get("year")
+        age = c.get("age")
+        if not year or not age:
+            continue
+        # 找 era_window
+        matched_era = None
+        for era in eras:
+            span = era.get("span", [])
+            if len(span) != 2:
+                continue
+            if span[0] <= year <= span[1]:
+                matched_era = era
+                break
+        if not matched_era:
+            continue
+        era_id = matched_era.get("id")
+        if era_id in used_eras:
+            continue  # 同一个 era 不重复挂 seed
+        # 决定时间窗（year ± 1-2）
+        era_span = matched_era.get("span", [year - 2, year + 2])
+        y_lo = max(year - 2, era_span[0])
+        y_hi = min(year + 2, era_span[1])
+        a_lo = age - (year - y_lo)
+        a_hi = age + (y_hi - year)
+        # anchor_type
+        if c.get("mangpai_event"):
+            anchor_type = "mangpai_event_in_window"
+        elif c.get("interactions"):
+            anchor_type = "interaction_event_in_window"
+        else:
+            anchor_type = "single_event_in_window"
+
+        directions = list(_FOLKWAYS_DIRECTION_STUB.get(
+            (c.get("dim", ""), c.get("direction", "")),
+            ["请 LLM 按 era_window + class_prior 现场补 ≥ 2 个具体方向"],
+        ))[:3]
+
+        seed = {
+            "year_range": [y_lo, y_hi],
+            "user_age_range": [a_lo, a_hi],
+            "anchor_year": year,
+            "anchor_age": age,
+            "anchor_dim": c.get("dim"),
+            "anchor_direction": c.get("direction"),
+            "era_window_id": era_id,
+            "era_window_label": matched_era.get("label"),
+            "era_window_keywords": matched_era.get("keywords", [])[:5],
+            "associated_bazi_event": _summarize_associated_bazi_event(c),
+            "yongshen_match": yongshen_match,
+            "class_prior_top1": primary_class,
+            "preferred_class_markers": preferred_markers,
+            "anchor_type": anchor_type,
+            "suggested_directions": directions,
+            "_internal_score": c.get("internal_score"),
+            "_disclaimer": (
+                "此 seed 是脚本预选；LLM 必须按 handshake_protocol.md §5.4 + folkways_protocol.md §4 "
+                "现场扩写，并通过 5 项自检 + 伦理护栏后才能输出给用户。"
+            ),
+        }
+        seeds.append(seed)
+        used_eras.add(era_id)
+
+    return seeds
+
+
 def build_family_pair(bazi: dict) -> List[dict]:
     """v7.3 · R3 反询问·原生家庭画像 2 题。
 
@@ -1385,7 +1584,14 @@ def build_family_pair(bazi: dict) -> List[dict]:
         return []
 
 
-def build(bazi: dict, curves: dict, current_year: int, phase_id: Optional[str] = None) -> dict:
+def build(
+    bazi: dict,
+    curves: dict,
+    current_year: int,
+    phase_id: Optional[str] = None,
+    zeitgeist_context: Optional[dict] = None,
+    class_prior: Optional[dict] = None,
+) -> dict:
     if phase_id and phase_id != "day_master_dominant":
         bazi = apply_phase_to_bazi(bazi, phase_id)
         # 同步 curves 里的 strength / yongshen 字段（curves 在 score_curves --override-phase 跑过时本来就反演了，
@@ -1402,6 +1608,12 @@ def build(bazi: dict, curves: dict, current_year: int, phase_id: Optional[str] =
     emotion_pair = build_emotion_pair(bazi)    # v6 R0 = 反询问·感情画像 2 题
     family_pair = build_family_pair(bazi)      # v7.3 R3 = 反询问·原生家庭画像 2 题
     emotion_counter = build_emotion_counter_probes(bazi, emotion_pair)  # v7.4 #3 防迎合反向探针
+    folkways_seeds = build_folkways_anchor_seeds(  # v7.5 民俗志锚点种子（≤2）
+        bazi, curves, current_year,
+        max_n=2,
+        zeitgeist_context=zeitgeist_context,
+        class_prior=class_prior,
+    )
 
     # Round 0: 反询问·感情画像 2 题（v6 新增）—— 最先抛给用户
     # 校验"事件取向"是否符合命局结构 + 协助判断"该走格局派还是扶抑派"
@@ -1463,6 +1675,9 @@ def build(bazi: dict, curves: dict, current_year: int, phase_id: Optional[str] =
         "round1_candidates": round1,
         "round2_candidates": round2,
         "round3_candidates": round3,
+        "folkways_anchor_seeds": folkways_seeds,    # v7.5 · 民俗志锚点种子（LLM 现场扩写为 R2 民俗志锚点）
+        "zeitgeist_context": zeitgeist_context,     # v7.5 · 时代上下文（era_windows + dayun alignments）
+        "class_prior_internal": class_prior,        # v7.5 · 阶级先验（仅供 LLM 内部 reasoning，输出时禁出现身份名词）
         "candidates_chosen": round0 + round1 + round2 + round3,
         "candidates_pool": {
             "emotion_pair": emotion_pair,
@@ -1471,6 +1686,7 @@ def build(bazi: dict, curves: dict, current_year: int, phase_id: Optional[str] =
             "signature_traits": traits,
             "historical_anchors": anchors,
             "family_pair": family_pair,
+            "folkways_anchor_seeds": folkways_seeds,
         },
         "selection_rule": (
             "Round 0 = 反询问·感情画像（v6 新增，2 题：①偏好类型 + ②对方态度），"
@@ -1896,6 +2112,10 @@ def main():
                          "详见 references/phase_inversion_protocol.md")
     ap.add_argument("--default-hit-rate", default=None,
                     help="（仅 --dump-phase-candidates 模式）当前默认相位的命中率，如 '2/6'，仅用于记录在输出里")
+    ap.add_argument("--with-zeitgeist", action="store_true",
+                    help="v7.5 · 启用时代-民俗志层：调用 _zeitgeist_loader + _class_prior 生成 "
+                         "folkways_anchor_seeds（≤2 颗），LLM 现场扩写为 R2 民俗志锚点。"
+                         "详见 references/handshake_protocol.md §5.4 + folkways_protocol.md。")
     ap.add_argument("--phase-id", default=None,
                     help="v7.2 · 「相位反演二轮校验」专用 · 按指定 phase_id 反演 bazi 后再生成 R0/R1/R2 候选；"
                          "用户对二轮的命中率 ≥ 4/6 → 真落地（写 confirmed_facts.phase_override）；"
@@ -1923,7 +2143,24 @@ def main():
 
     cy = args.current_year or dt.date.today().year
     curves = json.loads(Path(args.curves).read_text(encoding="utf-8"))
-    result = build(bazi, curves, cy, phase_id=args.phase_id)
+
+    zeitgeist_context = None
+    class_prior = None
+    if args.with_zeitgeist:
+        try:
+            sys.path.insert(0, str(Path(__file__).resolve().parent))
+            import _zeitgeist_loader as zl
+            import _class_prior as cp
+            zeitgeist_context = zl.build_zeitgeist_context(bazi)
+            class_prior = cp.infer_class_prior(bazi)
+        except Exception as e:
+            print(f"[handshake] WARN: --with-zeitgeist failed ({e}); folkways seeds skipped",
+                  file=sys.stderr)
+
+    result = build(bazi, curves, cy,
+                   phase_id=args.phase_id,
+                   zeitgeist_context=zeitgeist_context,
+                   class_prior=class_prior)
 
     # v7.4 · 若传入 --user-responses，机械化评估并写入 evaluation 字段
     if args.user_responses and Path(args.user_responses).exists():
@@ -1941,9 +2178,11 @@ def main():
     r3_part = f" + R3={n_r3}（条件触发 · 仅在用户问家庭时抛）" if n_r3 else ""
     n_counter = len(result.get("round0_counter_probes", []))
     counter_part = f" + {n_counter} R0_counter（防迎合）" if n_counter else ""
+    n_seeds = len(result.get("folkways_anchor_seeds", []))
+    seeds_part = f" + {n_seeds} folkways_seed（民俗志锚点种子）" if n_seeds else ""
     print(f"[handshake] wrote {args.out}: "
           f"R0={len(result['round0_candidates'])}{counter_part} + R1={len(result['round1_candidates'])} + R2={len(result['round2_candidates'])}"
-          f"{r3_part} "
+          f"{r3_part}{seeds_part} "
           f"(of {len(result['candidates_pool']['emotion_pair'])} emotion + "
           f"{len(result['candidates_pool']['signature_traits'])} traits + "
           f"{len(result['candidates_pool']['historical_anchors'])} anchors + "

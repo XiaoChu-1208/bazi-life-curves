@@ -1,0 +1,1170 @@
+{
+  "version": 7,
+  "current_year": 2026,
+  "pillars_str": "丁巳 甲辰 戊寅 庚申",
+  "day_master": "戊",
+  "strength_label": "中和",
+  "yongshen": "金",
+  "climate_label": null,
+  "weakest_wuxing": null,
+  "qiyun_age": null,
+  "geju": {},
+  "phase": {
+    "id": "day_master_dominant",
+    "label": "默认 · 日主主导",
+    "is_inverted": false
+  },
+  "round0_candidates": [
+    {
+      "category": "关系①·偏好类型",
+      "side": "preference",
+      "evidence": "gender=M · orientation=hetero · 配偶星五行=无 · 日支寅藏干主气十神=七杀",
+      "claim": "【反复被吸引的特质】你命局里亲密关系核心星（异性取向 · 男看财 / 女看官杀）不显——你被吸引的对象类型常常不固定 / 凭直觉 / 没有清晰的'就是喜欢这一类'，或者你不太容易一眼心动；【偏好的关系互动模式】你偏好「强势 / 有压迫感 / 甚至带点危险气息」的关系模式 —— 太软的让你觉得没张力（推断依据：日支=寅，藏干主气=七杀）",
+      "falsifiability": "如果你回顾过往真心心动过的几个对象，他们的特质跟上面描述完全相反 → 这条错。（注意：'你最后跟谁在一起'不算，问的是'你主动想靠近的那一类'。命局只反映你内在的吸引模式，不反映对方的性别 / 你最终选择的关系形态——这些是你的现代选择，不在命局之内。）",
+      "score": 9.6
+    },
+    {
+      "category": "关系②·对方反应模式",
+      "side": "attitude",
+      "evidence": "gender=M · orientation=hetero · 亲密关系核心星（异性取向 · 男看财 / 女看官杀）强度=weak · 比劫=4.8 · 食伤=3.6 · 印=3.6 · 桃花地支=无",
+      "claim": "你回顾真心心动过的那些人，**他们对你的反应模式**通常是：你心动的对象对你的反应模式介于「主动」和「等你先动」之间，谁先动跟具体对象的性格更相关，没有非常一致的模式",
+      "falsifiability": "如果回顾你过往真心心动过的几次，对方的反应模式跟上面描述完全反向 → 这条错。（既不是描述的那种主动 / 也不是描述的那种被动，而是稳定的另一种模式）",
+      "score": 9.4
+    }
+  ],
+  "round0_counter_probes": [
+    {
+      "category": "关系①·反向探针（防迎合）",
+      "side": "preference_counter",
+      "claim": "（反向探针 · 防迎合）【反复被吸引的特质】（反向）你回顾真心心动过的人，往往带有 **稳重务实 / 安全感强 / 偏保守 / 不擅惊喜但情绪稳定 / 长期可靠** 的气质；【偏好的关系互动模式】（反向）你偏好「松弛 / 一起享受生活 / 互相照应」的关系模式 —— 太严肃高压的不长久",
+      "evidence": "故意构造的反向陈述：原 spouse_wx=None → 反向=土；原 palace=七杀 → 反向=食神",
+      "falsifiability": "如果你对原 R0 ① 答「对」，对此反向探针【也】答「对」→ 你在迎合（不可能两种相反类型都对），R0 命中率会被打折。如果你对原 R0 ① 答「不对」，对此反向探针答「对」→ 真实偏好确实在反向那边，命局推的偏好类型读反了。",
+      "expected_answer_if_consistent": "不对",
+      "paired_with": "关系①·偏好类型",
+      "score": 7.0
+    },
+    {
+      "category": "关系②·反向探针（防迎合）",
+      "side": "attitude_counter",
+      "claim": "（反向探针 · 防迎合）你心动过的人对你的反应**永远集中在一种极端**：要么全是对方主动，要么全是你单方面默默",
+      "evidence": "故意构造跟原 R0 ② 完全反向的陈述（原 spouse_strength=weak）",
+      "falsifiability": "如果你对原 R0 ② 答「对」，对此反向探针【也】答「对」→ 你在迎合（不可能两个都对），R0 命中率会被打折。如果你对原 R0 ② 答「不对」、对此反向探针答「对」 → 命局推的对方态度读反了。",
+      "expected_answer_if_consistent": "不对",
+      "paired_with": "关系②·对方反应模式",
+      "score": 7.0
+    }
+  ],
+  "round1_candidates": [
+    {
+      "category": "本性基底",
+      "evidence": "日主戊（土） + 用神金",
+      "claim": "稳重承载型——爱掌控产出、爱建结构，对'失去主导权 / 没有成果'最敏感。用神为金 → 你最舒适的活动类型是「结构化的产出 / 收割 / 定型」（写作、做产品、打磨作品、收尾）",
+      "falsifiability": "如果你觉得自己跟以上描述完全相反（比如戊土型却最享受'被人安排 + 没产出归属感'），这条就是错的",
+      "score": 9.5
+    },
+    {
+      "category": "主导动力",
+      "evidence": "月柱=甲辰，月干十神=七杀",
+      "claim": "月柱七杀 → 你的人生主线是「压力驱动 + 用挑战兑换成长」，没有挑战反而会萎缩",
+      "falsifiability": "回顾你最有动力 / 最压不住的那个时期，如果驱动你前进的根本动机不是上面描述的那种，这条就是错的",
+      "score": 8.5
+    },
+    {
+      "category": "反应模式",
+      "evidence": "日主强弱=中和（in_season=True）",
+      "claim": "日主中和 → 你在多种环境下都能适应，但最容易'被环境带偏'，所以你必须主动选环境",
+      "falsifiability": "回想 25–35 岁那段，如果你对环境匹配度的敏感程度 / 自主需求强度 与上面描述完全反向，这条就是错的",
+      "score": 8.0
+    }
+  ],
+  "round2_candidates": [
+    {
+      "category": "本性基底",
+      "evidence": "日主戊（土） + 用神金",
+      "claim": "稳重承载型——爱掌控产出、爱建结构，对'失去主导权 / 没有成果'最敏感。用神为金 → 你最舒适的活动类型是「结构化的产出 / 收割 / 定型」（写作、做产品、打磨作品、收尾）",
+      "falsifiability": "如果你觉得自己跟以上描述完全相反（比如戊土型却最享受'被人安排 + 没产出归属感'），这条就是错的",
+      "score": 9.5
+    },
+    {
+      "category": "过往大波动（盲派应事）",
+      "year": 1983,
+      "age": 6,
+      "ganzhi": "癸亥",
+      "dim": "spirit",
+      "direction": "down",
+      "evidence": "1983 癸亥 · 大运 起运前 · 精神=33.7（基线 50.0，偏离 16.3） · 置信度=high · 三派互动=反吟,相穿 · 盲派触发=日干戊的禄位=巳，流年支=亥（巳亥相冲）",
+      "claim": "6 岁那年（1983 癸亥）你的精神状态经历过一段明显的低潮——压抑、长期纠结、或与重要关系撕裂（命理触发：反吟天克地冲，「剧变 / 一翻一覆」）\n   盲派应事（段建业《盲派命理》 · 禄被冲）：移居 / 工作变动 / 关键关系切换，或身体上有意外（轻则磕碰，重则大病大手术）",
+      "falsifiability": "如果该年既无明显的居所 / 职业切换，又无身体上的强变动，这条就是错的",
+      "mangpai_event": {
+        "key": "lu_chong",
+        "name": "禄被冲",
+        "intensity": "重",
+        "canonical_event": "移居 / 工作变动 / 关键关系切换，或身体上有意外（轻则磕碰，重则大病大手术）",
+        "evidence": "日干戊的禄位=巳，流年支=亥（巳亥相冲）",
+        "school": "段建业《盲派命理》",
+        "falsifiability": "如果该年既无明显的居所 / 职业切换，又无身体上的强变动，这条就是错的"
+      },
+      "internal_score": 45.45
+    },
+    {
+      "category": "过往大波动（盲派应事）",
+      "year": 2025,
+      "age": 48,
+      "ganzhi": "乙巳",
+      "dim": "fame",
+      "direction": "down",
+      "evidence": "2025 乙巳 · 大运 己亥 · 名声=53.1（基线 65.5，偏离 12.4） · 置信度=high · 三派互动=相穿 · 盲派触发=原局有七杀无正官，流年天干乙=正官 → 补出正官 ",
+      "claim": "48 岁那年（2025 乙巳）你在外界关注度上明显回落、或主动 / 被动从某个公开身份退下来（命理触发：相穿，「明伤未必痛、暗里被磨」）\n   盲派应事（《滴天髓》《盲派命理》通用 · 官杀混杂）：身份 / 职业 / 婚姻同时承受多重压力，左右为难、不易决断；女命常应婚姻波折",
+      "falsifiability": "如果该年并无『被多重身份 / 责任挤压』的明显感受，这条就是错的",
+      "mangpai_event": {
+        "key": "guan_sha_hun_za",
+        "name": "官杀混杂",
+        "intensity": "中",
+        "canonical_event": "身份 / 职业 / 婚姻同时承受多重压力，左右为难、不易决断；女命常应婚姻波折",
+        "evidence": "原局有七杀无正官，流年天干乙=正官 → 补出正官 ",
+        "school": "《滴天髓》《盲派命理》通用",
+        "falsifiability": "如果该年并无『被多重身份 / 责任挤压』的明显感受，这条就是错的"
+      },
+      "internal_score": 39.6
+    }
+  ],
+  "round3_candidates": [
+    {
+      "category": "原生家庭①·整体结构（缺位候选）",
+      "side": "family_structure",
+      "evidence": "父=缺位 / 母=缺位 → 至少一方在原局五行分布中明显缺位 / < 5%",
+      "claim": "你家结构里父亲或母亲其中一方的存在感明显偏弱 ——可能形式是早离 / 早逝 / 长期不在身边 / 父母离异 / 重组家庭等，命局**只识别「父辈位 OR 母辈位空」这个结构**，不区分具体原因。（同时这意味着你早年很可能比同龄人更早承担一部分自我照护 / 长辈角色）",
+      "falsifiability": "如果你家整体结构跟上面描述明显不符 ——比如这条说「缺位候选」但你家其实完全是另一种画像（无明显资源 / 无明显波折 / 无明显缺位 / 或显赫程度差异极大）→ 这条错。**注意**：本条只识别「年/月柱财官印聚集 / 冲克 / 缺位」这个结构性画像，**不能**精确区分「祖辈显赫 vs 父辈才起来」、**不能**给具体的财富 / 职位 / 学历等级，**不能**判读父母是否健在 / 是否离异（这些命理推不出）。另外古典命书因为只收录显赫人物的命例（survivorship bias），「显赫候选」这一档比真实概率被高估了 5-10 倍——这条标错请直接回「不对」。",
+      "score": 9.0,
+      "primary_class": "absent_candidate",
+      "secondary_class": null
+    },
+    {
+      "category": "原生家庭②·父母存在模式（合并）",
+      "side": "parents_presence",
+      "evidence": "父=父星=偏财（水） · 出现位置=[时柱/支藏/壬] · 父星五行总分=0.0（占比 0%） · 年柱七杀=无；\n   母=母星=正印（火） · 出现位置=[年柱/干/丁] · 母星五行总分=0.0（占比 0%） · 印是否被破=是（时柱干 庚（金））",
+      "claim": "【父亲存在模式 · 缺位】父亲在你早年成长中存在感非常弱 / 缺位 ——可能形式是：父亲早离 / 早逝、父母离异且你跟母亲、父亲长期在外几乎不参与你成长，或父亲虽在但情感缺位严重；（命局只能识别「父辈位空」这个结构，不区分具体原因）\n   【母亲存在模式 · 缺位】母亲在你早年成长中存在感非常弱 / 缺位 ——可能形式是：母亲早离 / 早逝、母亲长期不在身边、或母亲虽在但情感缺位严重；（命局只能识别「母辈位空」这个结构，不区分具体原因）",
+      "falsifiability": "请分别校验父亲和母亲两条 ——如果父亲那条对、母亲那条不对 → 答「部分」并指出哪条不对；如果两条都明显反向 → 答「不对」（父星 / 母星读法可能反了，常见原因是时辰错导致月柱十神跳位、或日主性别误判）。**注意**：本条只判读「父母在你能量场里的存在模式」，**不判读**父母的社会地位 / 收入 / 职业 / 学历 / 是否健在 / 是否离异。",
+      "score": 9.2,
+      "father_mode": "absent",
+      "mother_mode": "absent"
+    }
+  ],
+  "folkways_anchor_seeds": [
+    {
+      "year_range": [
+        2023,
+        2027
+      ],
+      "user_age_range": [
+        46,
+        50
+      ],
+      "anchor_year": 2025,
+      "anchor_age": 48,
+      "anchor_dim": "fame",
+      "anchor_direction": "down",
+      "era_window_id": "cn_ai_economy",
+      "era_window_label": "AI 时代 + 经济结构转型",
+      "era_window_keywords": [
+        "生成式 AI",
+        "出海跨境",
+        "新能源车",
+        "银发经济",
+        "内卷与躺平张力"
+      ],
+      "associated_bazi_event": "名声维度大波动 (down)",
+      "yongshen_match": [
+        "金"
+      ],
+      "class_prior_top1": "urban_state_or_educated",
+      "preferred_class_markers": [
+        "urban_middle",
+        "urban_educated"
+      ],
+      "anchor_type": "mangpai_event_in_window",
+      "suggested_directions": [
+        "主动 / 被动从某个公开身份退下来（卸任 / 转岗 / 换赛道）",
+        "原本的公开角色失去外部关注度（赛道塌陷 / 平台衰落）",
+        "外界评价或社会反馈出现一段明显冷遇期"
+      ],
+      "_internal_score": 39.6,
+      "_disclaimer": "此 seed 是脚本预选；LLM 必须按 handshake_protocol.md §5.4 + folkways_protocol.md §4 现场扩写，并通过 5 项自检 + 伦理护栏后才能输出给用户。"
+    }
+  ],
+  "zeitgeist_context": {
+    "era_windows_used": [
+      {
+        "id": "cn_reform_acceleration",
+        "label": "改革加速 + 文化解禁",
+        "span": [
+          1984,
+          1989
+        ],
+        "decade_label": "80 末",
+        "keywords": [
+          "价格双轨制",
+          "文化热",
+          "万元户",
+          "沿海开放",
+          "大学生意气"
+        ]
+      },
+      {
+        "id": "cn_market_emergence",
+        "label": "市场化萌芽 + 整顿",
+        "span": [
+          1989,
+          1994
+        ],
+        "decade_label": "90 初",
+        "keywords": [
+          "南方谈话",
+          "海南淘金",
+          "股票热",
+          "三资企业",
+          "第一波下海"
+        ]
+      },
+      {
+        "id": "cn_reform_late_90s",
+        "label": "国企改制 + 入世前夜",
+        "span": [
+          1995,
+          2002
+        ],
+        "decade_label": "90 末-世纪之交",
+        "keywords": [
+          "国企下岗潮",
+          "朱镕基整顿",
+          "香港回归",
+          "亚洲金融危机",
+          "房改互联网启蒙"
+        ]
+      },
+      {
+        "id": "cn_wto_age",
+        "label": "入世红利 + 城市化加速",
+        "span": [
+          2003,
+          2008
+        ],
+        "decade_label": "00 中",
+        "keywords": [
+          "WTO 红利",
+          "房地产起飞",
+          "SARS",
+          "第一波互联网创业",
+          "北京奥运"
+        ]
+      },
+      {
+        "id": "cn_post_olympic",
+        "label": "金融危机后 + 4 万亿",
+        "span": [
+          2009,
+          2013
+        ],
+        "decade_label": "00 末-10 初",
+        "keywords": [
+          "4 万亿刺激",
+          "高铁网建成",
+          "智能手机普及",
+          "微博兴起",
+          "房价首次大涨"
+        ]
+      },
+      {
+        "id": "cn_mobile_internet",
+        "label": "移动互联网 + 创业热",
+        "span": [
+          2013,
+          2017
+        ],
+        "decade_label": "10 中",
+        "keywords": [
+          "微信生态",
+          "共享经济",
+          "O2O 大战",
+          "创业潮",
+          "公众号红利"
+        ]
+      },
+      {
+        "id": "cn_consumption_upgrade",
+        "label": "消费升级 + 平台垄断",
+        "span": [
+          2017,
+          2020
+        ],
+        "decade_label": "10 末",
+        "keywords": [
+          "新零售",
+          "短视频崛起",
+          "消费分级",
+          "中产焦虑",
+          "教培房产末段"
+        ]
+      },
+      {
+        "id": "cn_pandemic_era",
+        "label": "疫情 + 政策大调整",
+        "span": [
+          2020,
+          2023
+        ],
+        "decade_label": "20 初",
+        "keywords": [
+          "疫情封控",
+          "教培双减",
+          "房地产调整",
+          "平台反垄断",
+          "共同富裕"
+        ]
+      },
+      {
+        "id": "cn_ai_economy",
+        "label": "AI 时代 + 经济结构转型",
+        "span": [
+          2023,
+          2030
+        ],
+        "decade_label": "20 中-后",
+        "keywords": [
+          "生成式 AI",
+          "出海跨境",
+          "新能源车",
+          "银发经济",
+          "内卷与躺平张力"
+        ]
+      }
+    ],
+    "global_eras_available": [
+      {
+        "id": "global_late_cold_war",
+        "label": "冷战末期 + 全球新自由主义",
+        "span": [
+          1980,
+          1990
+        ],
+        "keywords": [
+          "Reaganomics",
+          "撒切尔主义",
+          "苏联停滞",
+          "日本泡沫顶峰"
+        ]
+      },
+      {
+        "id": "global_post_cold_war",
+        "label": "苏联解体 + 单极时刻",
+        "span": [
+          1990,
+          2000
+        ],
+        "keywords": [
+          "苏东剧变",
+          "全球化加速",
+          "互联网泡沫",
+          "海湾战争",
+          "千禧年"
+        ]
+      },
+      {
+        "id": "global_post_911",
+        "label": "911 后 + 反恐时代",
+        "span": [
+          2001,
+          2008
+        ],
+        "keywords": [
+          "911 反恐",
+          "中东战争",
+          "房产泡沫",
+          "全球化巅峰"
+        ]
+      },
+      {
+        "id": "global_post_2008",
+        "label": "金融危机后 + 新平台时代",
+        "span": [
+          2008,
+          2016
+        ],
+        "keywords": [
+          "金融危机",
+          "智能手机普及",
+          "占领华尔街",
+          "阿拉伯之春",
+          "平台公司崛起"
+        ]
+      },
+      {
+        "id": "global_polarization",
+        "label": "民粹回潮 + 大国竞争",
+        "span": [
+          2016,
+          2022
+        ],
+        "keywords": [
+          "Trump-Brexit-民粹",
+          "中美贸易战",
+          "疫情",
+          "通胀回归"
+        ]
+      },
+      {
+        "id": "global_ai_age",
+        "label": "生成式 AI 时代",
+        "span": [
+          2022,
+          2030
+        ],
+        "keywords": [
+          "ChatGPT",
+          "AI 应用层",
+          "AI 监管",
+          "大国 AI 竞赛",
+          "工作重构"
+        ]
+      }
+    ],
+    "alignments": [
+      {
+        "dayun_label": "癸卯",
+        "dayun_index": 0,
+        "dayun_span_year": [
+          1985,
+          1994
+        ],
+        "dayun_span_age": [
+          8,
+          17
+        ],
+        "covering_eras": [
+          {
+            "era_id": "cn_reform_acceleration",
+            "era_label": "改革加速 + 文化解禁",
+            "era_span": [
+              1984,
+              1989
+            ],
+            "era_keywords": [
+              "价格双轨制",
+              "文化热",
+              "万元户",
+              "沿海开放",
+              "大学生意气"
+            ],
+            "overlap_situation": "B_dayun_spans_eras",
+            "overlap_ratio_to_dayun": 0.5,
+            "overlap_years": 5
+          },
+          {
+            "era_id": "cn_market_emergence",
+            "era_label": "市场化萌芽 + 整顿",
+            "era_span": [
+              1989,
+              1994
+            ],
+            "era_keywords": [
+              "南方谈话",
+              "海南淘金",
+              "股票热",
+              "三资企业",
+              "第一波下海"
+            ],
+            "overlap_situation": "B_dayun_spans_eras",
+            "overlap_ratio_to_dayun": 0.6,
+            "overlap_years": 6
+          }
+        ],
+        "primary_situation": "B_dayun_spans_eras"
+      },
+      {
+        "dayun_label": "壬寅",
+        "dayun_index": 1,
+        "dayun_span_year": [
+          1995,
+          2004
+        ],
+        "dayun_span_age": [
+          18,
+          27
+        ],
+        "covering_eras": [
+          {
+            "era_id": "cn_reform_late_90s",
+            "era_label": "国企改制 + 入世前夜",
+            "era_span": [
+              1995,
+              2002
+            ],
+            "era_keywords": [
+              "国企下岗潮",
+              "朱镕基整顿",
+              "香港回归",
+              "亚洲金融危机",
+              "房改互联网启蒙"
+            ],
+            "overlap_situation": "A_resonance",
+            "overlap_ratio_to_dayun": 0.8,
+            "overlap_years": 8
+          },
+          {
+            "era_id": "cn_wto_age",
+            "era_label": "入世红利 + 城市化加速",
+            "era_span": [
+              2003,
+              2008
+            ],
+            "era_keywords": [
+              "WTO 红利",
+              "房地产起飞",
+              "SARS",
+              "第一波互联网创业",
+              "北京奥运"
+            ],
+            "overlap_situation": "B_dayun_spans_eras",
+            "overlap_ratio_to_dayun": 0.2,
+            "overlap_years": 2
+          }
+        ],
+        "primary_situation": "B_dayun_spans_eras"
+      },
+      {
+        "dayun_label": "辛丑",
+        "dayun_index": 2,
+        "dayun_span_year": [
+          2005,
+          2014
+        ],
+        "dayun_span_age": [
+          28,
+          37
+        ],
+        "covering_eras": [
+          {
+            "era_id": "cn_wto_age",
+            "era_label": "入世红利 + 城市化加速",
+            "era_span": [
+              2003,
+              2008
+            ],
+            "era_keywords": [
+              "WTO 红利",
+              "房地产起飞",
+              "SARS",
+              "第一波互联网创业",
+              "北京奥运"
+            ],
+            "overlap_situation": "B_dayun_spans_eras",
+            "overlap_ratio_to_dayun": 0.4,
+            "overlap_years": 4
+          },
+          {
+            "era_id": "cn_post_olympic",
+            "era_label": "金融危机后 + 4 万亿",
+            "era_span": [
+              2009,
+              2013
+            ],
+            "era_keywords": [
+              "4 万亿刺激",
+              "高铁网建成",
+              "智能手机普及",
+              "微博兴起",
+              "房价首次大涨"
+            ],
+            "overlap_situation": "B_dayun_spans_eras",
+            "overlap_ratio_to_dayun": 0.5,
+            "overlap_years": 5
+          },
+          {
+            "era_id": "cn_mobile_internet",
+            "era_label": "移动互联网 + 创业热",
+            "era_span": [
+              2013,
+              2017
+            ],
+            "era_keywords": [
+              "微信生态",
+              "共享经济",
+              "O2O 大战",
+              "创业潮",
+              "公众号红利"
+            ],
+            "overlap_situation": "B_dayun_spans_eras",
+            "overlap_ratio_to_dayun": 0.2,
+            "overlap_years": 2
+          }
+        ],
+        "primary_situation": "B_dayun_spans_eras"
+      },
+      {
+        "dayun_label": "庚子",
+        "dayun_index": 3,
+        "dayun_span_year": [
+          2015,
+          2024
+        ],
+        "dayun_span_age": [
+          38,
+          47
+        ],
+        "covering_eras": [
+          {
+            "era_id": "cn_mobile_internet",
+            "era_label": "移动互联网 + 创业热",
+            "era_span": [
+              2013,
+              2017
+            ],
+            "era_keywords": [
+              "微信生态",
+              "共享经济",
+              "O2O 大战",
+              "创业潮",
+              "公众号红利"
+            ],
+            "overlap_situation": "B_dayun_spans_eras",
+            "overlap_ratio_to_dayun": 0.3,
+            "overlap_years": 3
+          },
+          {
+            "era_id": "cn_consumption_upgrade",
+            "era_label": "消费升级 + 平台垄断",
+            "era_span": [
+              2017,
+              2020
+            ],
+            "era_keywords": [
+              "新零售",
+              "短视频崛起",
+              "消费分级",
+              "中产焦虑",
+              "教培房产末段"
+            ],
+            "overlap_situation": "B_dayun_spans_eras",
+            "overlap_ratio_to_dayun": 0.4,
+            "overlap_years": 4
+          },
+          {
+            "era_id": "cn_pandemic_era",
+            "era_label": "疫情 + 政策大调整",
+            "era_span": [
+              2020,
+              2023
+            ],
+            "era_keywords": [
+              "疫情封控",
+              "教培双减",
+              "房地产调整",
+              "平台反垄断",
+              "共同富裕"
+            ],
+            "overlap_situation": "B_dayun_spans_eras",
+            "overlap_ratio_to_dayun": 0.4,
+            "overlap_years": 4
+          },
+          {
+            "era_id": "cn_ai_economy",
+            "era_label": "AI 时代 + 经济结构转型",
+            "era_span": [
+              2023,
+              2030
+            ],
+            "era_keywords": [
+              "生成式 AI",
+              "出海跨境",
+              "新能源车",
+              "银发经济",
+              "内卷与躺平张力"
+            ],
+            "overlap_situation": "B_dayun_spans_eras",
+            "overlap_ratio_to_dayun": 0.2,
+            "overlap_years": 2
+          }
+        ],
+        "primary_situation": "B_dayun_spans_eras"
+      },
+      {
+        "dayun_label": "己亥",
+        "dayun_index": 4,
+        "dayun_span_year": [
+          2025,
+          2034
+        ],
+        "dayun_span_age": [
+          48,
+          57
+        ],
+        "covering_eras": [
+          {
+            "era_id": "cn_ai_economy",
+            "era_label": "AI 时代 + 经济结构转型",
+            "era_span": [
+              2023,
+              2030
+            ],
+            "era_keywords": [
+              "生成式 AI",
+              "出海跨境",
+              "新能源车",
+              "银发经济",
+              "内卷与躺平张力"
+            ],
+            "overlap_situation": "B_dayun_spans_eras",
+            "overlap_ratio_to_dayun": 0.6,
+            "overlap_years": 6
+          }
+        ],
+        "primary_situation": "B_dayun_spans_eras"
+      },
+      {
+        "dayun_label": "戊戌",
+        "dayun_index": 5,
+        "dayun_span_year": [
+          2035,
+          2044
+        ],
+        "dayun_span_age": [
+          58,
+          67
+        ],
+        "covering_eras": [],
+        "primary_situation": "no_match"
+      },
+      {
+        "dayun_label": "丁酉",
+        "dayun_index": 6,
+        "dayun_span_year": [
+          2045,
+          2054
+        ],
+        "dayun_span_age": [
+          68,
+          77
+        ],
+        "covering_eras": [],
+        "primary_situation": "no_match"
+      },
+      {
+        "dayun_label": "丙申",
+        "dayun_index": 7,
+        "dayun_span_year": [
+          2055,
+          2064
+        ],
+        "dayun_span_age": [
+          78,
+          87
+        ],
+        "covering_eras": [],
+        "primary_situation": "no_match"
+      }
+    ],
+    "user_birth_year": 1977,
+    "user_qiyun_age": null,
+    "user_dayun_segments": [
+      {
+        "label": "癸卯",
+        "start_year": 1985,
+        "end_year": 1994,
+        "start_age": 8,
+        "end_age": 17
+      },
+      {
+        "label": "壬寅",
+        "start_year": 1995,
+        "end_year": 2004,
+        "start_age": 18,
+        "end_age": 27
+      },
+      {
+        "label": "辛丑",
+        "start_year": 2005,
+        "end_year": 2014,
+        "start_age": 28,
+        "end_age": 37
+      },
+      {
+        "label": "庚子",
+        "start_year": 2015,
+        "end_year": 2024,
+        "start_age": 38,
+        "end_age": 47
+      },
+      {
+        "label": "己亥",
+        "start_year": 2025,
+        "end_year": 2034,
+        "start_age": 48,
+        "end_age": 57
+      },
+      {
+        "label": "戊戌",
+        "start_year": 2035,
+        "end_year": 2044,
+        "start_age": 58,
+        "end_age": 67
+      },
+      {
+        "label": "丁酉",
+        "start_year": 2045,
+        "end_year": 2054,
+        "start_age": 68,
+        "end_age": 77
+      },
+      {
+        "label": "丙申",
+        "start_year": 2055,
+        "end_year": 2064,
+        "start_age": 78,
+        "end_age": 87
+      }
+    ],
+    "_meta": {
+      "total_eras_in_skeleton_china": 10,
+      "total_eras_used_for_user": 9,
+      "skeleton_version": "0.1"
+    },
+    "_disclaimer": "era_windows 是骨架；具体的 sub_phases / folkways 细节由 LLM 现场推。详见 references/zeitgeist_protocol.md + references/folkways_protocol.md。"
+  },
+  "class_prior_internal": {
+    "primary_class": "urban_state_or_educated",
+    "primary_class_label_internal_only": "城市体制/读书人家庭（仅用于 LLM 内部 reasoning）",
+    "distribution": {
+      "urban_state_or_educated": 0.375,
+      "urban_market_oriented": 0.096,
+      "institutional_family": 0.199,
+      "rural_or_county": 0.038,
+      "freelance_artisan_family": 0.0,
+      "grassroots_self_made": 0.144,
+      "early_high_pressure": 0.148
+    },
+    "evidence": [
+      "年干=丁（正印）→ urban_state_or_educated / institutional_family",
+      "年支=巳（偏印）→ 同上加权 0.6",
+      "月干=甲（七杀）→ 父辈主导动力倾向",
+      "用神=金 在原局有根 → 资源相对充足"
+    ],
+    "confidence": "mid",
+    "preferred_class_markers": [
+      "urban_middle",
+      "urban_educated"
+    ],
+    "disfavored_class_markers": [
+      "rural",
+      "elite"
+    ],
+    "_disclaimer": "⚠️ 此 class_prior 仅供 LLM 内部 reasoning。禁止以阶级名词形式输出给用户。详见 references/class_inference_ethics.md。"
+  },
+  "candidates_chosen": [
+    {
+      "category": "关系①·偏好类型",
+      "side": "preference",
+      "evidence": "gender=M · orientation=hetero · 配偶星五行=无 · 日支寅藏干主气十神=七杀",
+      "claim": "【反复被吸引的特质】你命局里亲密关系核心星（异性取向 · 男看财 / 女看官杀）不显——你被吸引的对象类型常常不固定 / 凭直觉 / 没有清晰的'就是喜欢这一类'，或者你不太容易一眼心动；【偏好的关系互动模式】你偏好「强势 / 有压迫感 / 甚至带点危险气息」的关系模式 —— 太软的让你觉得没张力（推断依据：日支=寅，藏干主气=七杀）",
+      "falsifiability": "如果你回顾过往真心心动过的几个对象，他们的特质跟上面描述完全相反 → 这条错。（注意：'你最后跟谁在一起'不算，问的是'你主动想靠近的那一类'。命局只反映你内在的吸引模式，不反映对方的性别 / 你最终选择的关系形态——这些是你的现代选择，不在命局之内。）",
+      "score": 9.6
+    },
+    {
+      "category": "关系②·对方反应模式",
+      "side": "attitude",
+      "evidence": "gender=M · orientation=hetero · 亲密关系核心星（异性取向 · 男看财 / 女看官杀）强度=weak · 比劫=4.8 · 食伤=3.6 · 印=3.6 · 桃花地支=无",
+      "claim": "你回顾真心心动过的那些人，**他们对你的反应模式**通常是：你心动的对象对你的反应模式介于「主动」和「等你先动」之间，谁先动跟具体对象的性格更相关，没有非常一致的模式",
+      "falsifiability": "如果回顾你过往真心心动过的几次，对方的反应模式跟上面描述完全反向 → 这条错。（既不是描述的那种主动 / 也不是描述的那种被动，而是稳定的另一种模式）",
+      "score": 9.4
+    },
+    {
+      "category": "本性基底",
+      "evidence": "日主戊（土） + 用神金",
+      "claim": "稳重承载型——爱掌控产出、爱建结构，对'失去主导权 / 没有成果'最敏感。用神为金 → 你最舒适的活动类型是「结构化的产出 / 收割 / 定型」（写作、做产品、打磨作品、收尾）",
+      "falsifiability": "如果你觉得自己跟以上描述完全相反（比如戊土型却最享受'被人安排 + 没产出归属感'），这条就是错的",
+      "score": 9.5
+    },
+    {
+      "category": "主导动力",
+      "evidence": "月柱=甲辰，月干十神=七杀",
+      "claim": "月柱七杀 → 你的人生主线是「压力驱动 + 用挑战兑换成长」，没有挑战反而会萎缩",
+      "falsifiability": "回顾你最有动力 / 最压不住的那个时期，如果驱动你前进的根本动机不是上面描述的那种，这条就是错的",
+      "score": 8.5
+    },
+    {
+      "category": "反应模式",
+      "evidence": "日主强弱=中和（in_season=True）",
+      "claim": "日主中和 → 你在多种环境下都能适应，但最容易'被环境带偏'，所以你必须主动选环境",
+      "falsifiability": "回想 25–35 岁那段，如果你对环境匹配度的敏感程度 / 自主需求强度 与上面描述完全反向，这条就是错的",
+      "score": 8.0
+    },
+    {
+      "category": "本性基底",
+      "evidence": "日主戊（土） + 用神金",
+      "claim": "稳重承载型——爱掌控产出、爱建结构，对'失去主导权 / 没有成果'最敏感。用神为金 → 你最舒适的活动类型是「结构化的产出 / 收割 / 定型」（写作、做产品、打磨作品、收尾）",
+      "falsifiability": "如果你觉得自己跟以上描述完全相反（比如戊土型却最享受'被人安排 + 没产出归属感'），这条就是错的",
+      "score": 9.5
+    },
+    {
+      "category": "过往大波动（盲派应事）",
+      "year": 1983,
+      "age": 6,
+      "ganzhi": "癸亥",
+      "dim": "spirit",
+      "direction": "down",
+      "evidence": "1983 癸亥 · 大运 起运前 · 精神=33.7（基线 50.0，偏离 16.3） · 置信度=high · 三派互动=反吟,相穿 · 盲派触发=日干戊的禄位=巳，流年支=亥（巳亥相冲）",
+      "claim": "6 岁那年（1983 癸亥）你的精神状态经历过一段明显的低潮——压抑、长期纠结、或与重要关系撕裂（命理触发：反吟天克地冲，「剧变 / 一翻一覆」）\n   盲派应事（段建业《盲派命理》 · 禄被冲）：移居 / 工作变动 / 关键关系切换，或身体上有意外（轻则磕碰，重则大病大手术）",
+      "falsifiability": "如果该年既无明显的居所 / 职业切换，又无身体上的强变动，这条就是错的",
+      "mangpai_event": {
+        "key": "lu_chong",
+        "name": "禄被冲",
+        "intensity": "重",
+        "canonical_event": "移居 / 工作变动 / 关键关系切换，或身体上有意外（轻则磕碰，重则大病大手术）",
+        "evidence": "日干戊的禄位=巳，流年支=亥（巳亥相冲）",
+        "school": "段建业《盲派命理》",
+        "falsifiability": "如果该年既无明显的居所 / 职业切换，又无身体上的强变动，这条就是错的"
+      },
+      "internal_score": 45.45
+    },
+    {
+      "category": "过往大波动（盲派应事）",
+      "year": 2025,
+      "age": 48,
+      "ganzhi": "乙巳",
+      "dim": "fame",
+      "direction": "down",
+      "evidence": "2025 乙巳 · 大运 己亥 · 名声=53.1（基线 65.5，偏离 12.4） · 置信度=high · 三派互动=相穿 · 盲派触发=原局有七杀无正官，流年天干乙=正官 → 补出正官 ",
+      "claim": "48 岁那年（2025 乙巳）你在外界关注度上明显回落、或主动 / 被动从某个公开身份退下来（命理触发：相穿，「明伤未必痛、暗里被磨」）\n   盲派应事（《滴天髓》《盲派命理》通用 · 官杀混杂）：身份 / 职业 / 婚姻同时承受多重压力，左右为难、不易决断；女命常应婚姻波折",
+      "falsifiability": "如果该年并无『被多重身份 / 责任挤压』的明显感受，这条就是错的",
+      "mangpai_event": {
+        "key": "guan_sha_hun_za",
+        "name": "官杀混杂",
+        "intensity": "中",
+        "canonical_event": "身份 / 职业 / 婚姻同时承受多重压力，左右为难、不易决断；女命常应婚姻波折",
+        "evidence": "原局有七杀无正官，流年天干乙=正官 → 补出正官 ",
+        "school": "《滴天髓》《盲派命理》通用",
+        "falsifiability": "如果该年并无『被多重身份 / 责任挤压』的明显感受，这条就是错的"
+      },
+      "internal_score": 39.6
+    },
+    {
+      "category": "原生家庭①·整体结构（缺位候选）",
+      "side": "family_structure",
+      "evidence": "父=缺位 / 母=缺位 → 至少一方在原局五行分布中明显缺位 / < 5%",
+      "claim": "你家结构里父亲或母亲其中一方的存在感明显偏弱 ——可能形式是早离 / 早逝 / 长期不在身边 / 父母离异 / 重组家庭等，命局**只识别「父辈位 OR 母辈位空」这个结构**，不区分具体原因。（同时这意味着你早年很可能比同龄人更早承担一部分自我照护 / 长辈角色）",
+      "falsifiability": "如果你家整体结构跟上面描述明显不符 ——比如这条说「缺位候选」但你家其实完全是另一种画像（无明显资源 / 无明显波折 / 无明显缺位 / 或显赫程度差异极大）→ 这条错。**注意**：本条只识别「年/月柱财官印聚集 / 冲克 / 缺位」这个结构性画像，**不能**精确区分「祖辈显赫 vs 父辈才起来」、**不能**给具体的财富 / 职位 / 学历等级，**不能**判读父母是否健在 / 是否离异（这些命理推不出）。另外古典命书因为只收录显赫人物的命例（survivorship bias），「显赫候选」这一档比真实概率被高估了 5-10 倍——这条标错请直接回「不对」。",
+      "score": 9.0,
+      "primary_class": "absent_candidate",
+      "secondary_class": null
+    },
+    {
+      "category": "原生家庭②·父母存在模式（合并）",
+      "side": "parents_presence",
+      "evidence": "父=父星=偏财（水） · 出现位置=[时柱/支藏/壬] · 父星五行总分=0.0（占比 0%） · 年柱七杀=无；\n   母=母星=正印（火） · 出现位置=[年柱/干/丁] · 母星五行总分=0.0（占比 0%） · 印是否被破=是（时柱干 庚（金））",
+      "claim": "【父亲存在模式 · 缺位】父亲在你早年成长中存在感非常弱 / 缺位 ——可能形式是：父亲早离 / 早逝、父母离异且你跟母亲、父亲长期在外几乎不参与你成长，或父亲虽在但情感缺位严重；（命局只能识别「父辈位空」这个结构，不区分具体原因）\n   【母亲存在模式 · 缺位】母亲在你早年成长中存在感非常弱 / 缺位 ——可能形式是：母亲早离 / 早逝、母亲长期不在身边、或母亲虽在但情感缺位严重；（命局只能识别「母辈位空」这个结构，不区分具体原因）",
+      "falsifiability": "请分别校验父亲和母亲两条 ——如果父亲那条对、母亲那条不对 → 答「部分」并指出哪条不对；如果两条都明显反向 → 答「不对」（父星 / 母星读法可能反了，常见原因是时辰错导致月柱十神跳位、或日主性别误判）。**注意**：本条只判读「父母在你能量场里的存在模式」，**不判读**父母的社会地位 / 收入 / 职业 / 学历 / 是否健在 / 是否离异。",
+      "score": 9.2,
+      "father_mode": "absent",
+      "mother_mode": "absent"
+    }
+  ],
+  "candidates_pool": {
+    "emotion_pair": [
+      {
+        "category": "关系①·偏好类型",
+        "side": "preference",
+        "evidence": "gender=M · orientation=hetero · 配偶星五行=无 · 日支寅藏干主气十神=七杀",
+        "claim": "【反复被吸引的特质】你命局里亲密关系核心星（异性取向 · 男看财 / 女看官杀）不显——你被吸引的对象类型常常不固定 / 凭直觉 / 没有清晰的'就是喜欢这一类'，或者你不太容易一眼心动；【偏好的关系互动模式】你偏好「强势 / 有压迫感 / 甚至带点危险气息」的关系模式 —— 太软的让你觉得没张力（推断依据：日支=寅，藏干主气=七杀）",
+        "falsifiability": "如果你回顾过往真心心动过的几个对象，他们的特质跟上面描述完全相反 → 这条错。（注意：'你最后跟谁在一起'不算，问的是'你主动想靠近的那一类'。命局只反映你内在的吸引模式，不反映对方的性别 / 你最终选择的关系形态——这些是你的现代选择，不在命局之内。）",
+        "score": 9.6
+      },
+      {
+        "category": "关系②·对方反应模式",
+        "side": "attitude",
+        "evidence": "gender=M · orientation=hetero · 亲密关系核心星（异性取向 · 男看财 / 女看官杀）强度=weak · 比劫=4.8 · 食伤=3.6 · 印=3.6 · 桃花地支=无",
+        "claim": "你回顾真心心动过的那些人，**他们对你的反应模式**通常是：你心动的对象对你的反应模式介于「主动」和「等你先动」之间，谁先动跟具体对象的性格更相关，没有非常一致的模式",
+        "falsifiability": "如果回顾你过往真心心动过的几次，对方的反应模式跟上面描述完全反向 → 这条错。（既不是描述的那种主动 / 也不是描述的那种被动，而是稳定的另一种模式）",
+        "score": 9.4
+      }
+    ],
+    "emotion_counter_probes": [
+      {
+        "category": "关系①·反向探针（防迎合）",
+        "side": "preference_counter",
+        "claim": "（反向探针 · 防迎合）【反复被吸引的特质】（反向）你回顾真心心动过的人，往往带有 **稳重务实 / 安全感强 / 偏保守 / 不擅惊喜但情绪稳定 / 长期可靠** 的气质；【偏好的关系互动模式】（反向）你偏好「松弛 / 一起享受生活 / 互相照应」的关系模式 —— 太严肃高压的不长久",
+        "evidence": "故意构造的反向陈述：原 spouse_wx=None → 反向=土；原 palace=七杀 → 反向=食神",
+        "falsifiability": "如果你对原 R0 ① 答「对」，对此反向探针【也】答「对」→ 你在迎合（不可能两种相反类型都对），R0 命中率会被打折。如果你对原 R0 ① 答「不对」，对此反向探针答「对」→ 真实偏好确实在反向那边，命局推的偏好类型读反了。",
+        "expected_answer_if_consistent": "不对",
+        "paired_with": "关系①·偏好类型",
+        "score": 7.0
+      },
+      {
+        "category": "关系②·反向探针（防迎合）",
+        "side": "attitude_counter",
+        "claim": "（反向探针 · 防迎合）你心动过的人对你的反应**永远集中在一种极端**：要么全是对方主动，要么全是你单方面默默",
+        "evidence": "故意构造跟原 R0 ② 完全反向的陈述（原 spouse_strength=weak）",
+        "falsifiability": "如果你对原 R0 ② 答「对」，对此反向探针【也】答「对」→ 你在迎合（不可能两个都对），R0 命中率会被打折。如果你对原 R0 ② 答「不对」、对此反向探针答「对」 → 命局推的对方态度读反了。",
+        "expected_answer_if_consistent": "不对",
+        "paired_with": "关系②·对方反应模式",
+        "score": 7.0
+      }
+    ],
+    "health_triple": [],
+    "signature_traits": [
+      {
+        "category": "本性基底",
+        "evidence": "日主戊（土） + 用神金",
+        "claim": "稳重承载型——爱掌控产出、爱建结构，对'失去主导权 / 没有成果'最敏感。用神为金 → 你最舒适的活动类型是「结构化的产出 / 收割 / 定型」（写作、做产品、打磨作品、收尾）",
+        "falsifiability": "如果你觉得自己跟以上描述完全相反（比如戊土型却最享受'被人安排 + 没产出归属感'），这条就是错的",
+        "score": 9.5
+      },
+      {
+        "category": "主导动力",
+        "evidence": "月柱=甲辰，月干十神=七杀",
+        "claim": "月柱七杀 → 你的人生主线是「压力驱动 + 用挑战兑换成长」，没有挑战反而会萎缩",
+        "falsifiability": "回顾你最有动力 / 最压不住的那个时期，如果驱动你前进的根本动机不是上面描述的那种，这条就是错的",
+        "score": 8.5
+      },
+      {
+        "category": "反应模式",
+        "evidence": "日主强弱=中和（in_season=True）",
+        "claim": "日主中和 → 你在多种环境下都能适应，但最容易'被环境带偏'，所以你必须主动选环境",
+        "falsifiability": "回想 25–35 岁那段，如果你对环境匹配度的敏感程度 / 自主需求强度 与上面描述完全反向，这条就是错的",
+        "score": 8.0
+      }
+    ],
+    "historical_anchors": [
+      {
+        "category": "过往大波动（盲派应事）",
+        "year": 1983,
+        "age": 6,
+        "ganzhi": "癸亥",
+        "dim": "spirit",
+        "direction": "down",
+        "evidence": "1983 癸亥 · 大运 起运前 · 精神=33.7（基线 50.0，偏离 16.3） · 置信度=high · 三派互动=反吟,相穿 · 盲派触发=日干戊的禄位=巳，流年支=亥（巳亥相冲）",
+        "claim": "6 岁那年（1983 癸亥）你的精神状态经历过一段明显的低潮——压抑、长期纠结、或与重要关系撕裂（命理触发：反吟天克地冲，「剧变 / 一翻一覆」）\n   盲派应事（段建业《盲派命理》 · 禄被冲）：移居 / 工作变动 / 关键关系切换，或身体上有意外（轻则磕碰，重则大病大手术）",
+        "falsifiability": "如果该年既无明显的居所 / 职业切换，又无身体上的强变动，这条就是错的",
+        "mangpai_event": {
+          "key": "lu_chong",
+          "name": "禄被冲",
+          "intensity": "重",
+          "canonical_event": "移居 / 工作变动 / 关键关系切换，或身体上有意外（轻则磕碰，重则大病大手术）",
+          "evidence": "日干戊的禄位=巳，流年支=亥（巳亥相冲）",
+          "school": "段建业《盲派命理》",
+          "falsifiability": "如果该年既无明显的居所 / 职业切换，又无身体上的强变动，这条就是错的"
+        },
+        "internal_score": 45.45
+      },
+      {
+        "category": "过往大波动（盲派应事）",
+        "year": 2025,
+        "age": 48,
+        "ganzhi": "乙巳",
+        "dim": "fame",
+        "direction": "down",
+        "evidence": "2025 乙巳 · 大运 己亥 · 名声=53.1（基线 65.5，偏离 12.4） · 置信度=high · 三派互动=相穿 · 盲派触发=原局有七杀无正官，流年天干乙=正官 → 补出正官 ",
+        "claim": "48 岁那年（2025 乙巳）你在外界关注度上明显回落、或主动 / 被动从某个公开身份退下来（命理触发：相穿，「明伤未必痛、暗里被磨」）\n   盲派应事（《滴天髓》《盲派命理》通用 · 官杀混杂）：身份 / 职业 / 婚姻同时承受多重压力，左右为难、不易决断；女命常应婚姻波折",
+        "falsifiability": "如果该年并无『被多重身份 / 责任挤压』的明显感受，这条就是错的",
+        "mangpai_event": {
+          "key": "guan_sha_hun_za",
+          "name": "官杀混杂",
+          "intensity": "中",
+          "canonical_event": "身份 / 职业 / 婚姻同时承受多重压力，左右为难、不易决断；女命常应婚姻波折",
+          "evidence": "原局有七杀无正官，流年天干乙=正官 → 补出正官 ",
+          "school": "《滴天髓》《盲派命理》通用",
+          "falsifiability": "如果该年并无『被多重身份 / 责任挤压』的明显感受，这条就是错的"
+        },
+        "internal_score": 39.6
+      }
+    ],
+    "family_pair": [
+      {
+        "category": "原生家庭①·整体结构（缺位候选）",
+        "side": "family_structure",
+        "evidence": "父=缺位 / 母=缺位 → 至少一方在原局五行分布中明显缺位 / < 5%",
+        "claim": "你家结构里父亲或母亲其中一方的存在感明显偏弱 ——可能形式是早离 / 早逝 / 长期不在身边 / 父母离异 / 重组家庭等，命局**只识别「父辈位 OR 母辈位空」这个结构**，不区分具体原因。（同时这意味着你早年很可能比同龄人更早承担一部分自我照护 / 长辈角色）",
+        "falsifiability": "如果你家整体结构跟上面描述明显不符 ——比如这条说「缺位候选」但你家其实完全是另一种画像（无明显资源 / 无明显波折 / 无明显缺位 / 或显赫程度差异极大）→ 这条错。**注意**：本条只识别「年/月柱财官印聚集 / 冲克 / 缺位」这个结构性画像，**不能**精确区分「祖辈显赫 vs 父辈才起来」、**不能**给具体的财富 / 职位 / 学历等级，**不能**判读父母是否健在 / 是否离异（这些命理推不出）。另外古典命书因为只收录显赫人物的命例（survivorship bias），「显赫候选」这一档比真实概率被高估了 5-10 倍——这条标错请直接回「不对」。",
+        "score": 9.0,
+        "primary_class": "absent_candidate",
+        "secondary_class": null
+      },
+      {
+        "category": "原生家庭②·父母存在模式（合并）",
+        "side": "parents_presence",
+        "evidence": "父=父星=偏财（水） · 出现位置=[时柱/支藏/壬] · 父星五行总分=0.0（占比 0%） · 年柱七杀=无；\n   母=母星=正印（火） · 出现位置=[年柱/干/丁] · 母星五行总分=0.0（占比 0%） · 印是否被破=是（时柱干 庚（金））",
+        "claim": "【父亲存在模式 · 缺位】父亲在你早年成长中存在感非常弱 / 缺位 ——可能形式是：父亲早离 / 早逝、父母离异且你跟母亲、父亲长期在外几乎不参与你成长，或父亲虽在但情感缺位严重；（命局只能识别「父辈位空」这个结构，不区分具体原因）\n   【母亲存在模式 · 缺位】母亲在你早年成长中存在感非常弱 / 缺位 ——可能形式是：母亲早离 / 早逝、母亲长期不在身边、或母亲虽在但情感缺位严重；（命局只能识别「母辈位空」这个结构，不区分具体原因）",
+        "falsifiability": "请分别校验父亲和母亲两条 ——如果父亲那条对、母亲那条不对 → 答「部分」并指出哪条不对；如果两条都明显反向 → 答「不对」（父星 / 母星读法可能反了，常见原因是时辰错导致月柱十神跳位、或日主性别误判）。**注意**：本条只判读「父母在你能量场里的存在模式」，**不判读**父母的社会地位 / 收入 / 职业 / 学历 / 是否健在 / 是否离异。",
+        "score": 9.2,
+        "father_mode": "absent",
+        "mother_mode": "absent"
+      }
+    ],
+    "folkways_anchor_seeds": [
+      {
+        "year_range": [
+          2023,
+          2027
+        ],
+        "user_age_range": [
+          46,
+          50
+        ],
+        "anchor_year": 2025,
+        "anchor_age": 48,
+        "anchor_dim": "fame",
+        "anchor_direction": "down",
+        "era_window_id": "cn_ai_economy",
+        "era_window_label": "AI 时代 + 经济结构转型",
+        "era_window_keywords": [
+          "生成式 AI",
+          "出海跨境",
+          "新能源车",
+          "银发经济",
+          "内卷与躺平张力"
+        ],
+        "associated_bazi_event": "名声维度大波动 (down)",
+        "yongshen_match": [
+          "金"
+        ],
+        "class_prior_top1": "urban_state_or_educated",
+        "preferred_class_markers": [
+          "urban_middle",
+          "urban_educated"
+        ],
+        "anchor_type": "mangpai_event_in_window",
+        "suggested_directions": [
+          "主动 / 被动从某个公开身份退下来（卸任 / 转岗 / 换赛道）",
+          "原本的公开角色失去外部关注度（赛道塌陷 / 平台衰落）",
+          "外界评价或社会反馈出现一段明显冷遇期"
+        ],
+        "_internal_score": 39.6,
+        "_disclaimer": "此 seed 是脚本预选；LLM 必须按 handshake_protocol.md §5.4 + folkways_protocol.md §4 现场扩写，并通过 5 项自检 + 伦理护栏后才能输出给用户。"
+      }
+    ]
+  },
+  "selection_rule": "Round 0 = 反询问·感情画像（v6 新增，2 题：①偏好类型 + ②对方态度），在最开始抛给用户做「取向校准」——验证八字大致对/不对 + 协助判断走格局派还是扶抑派；Round 1 = 三个不同侧面的健康问题（固定：①寒热出汗 + ②睡眠精力 + ③脏腑短板），全部从命局静态结构导出；Round 2 = 1 本性 trait + 2 历史锚点（用作交叉验证）。Round 3 = 反询问·原生家庭画像（v7.3 新增，2 题：①整体家庭结构 + ②父母存在模式合并）—— **条件触发**：仅在用户主动问 family / 父母 / 家庭 / 出身 等关键词时抛；正交于 R0/R1/R2（不算入命局准确度），仅用于决定 family 段写不写 / 怎么写。若健康三问缺数据（< 3 条）→ 由 traits / anchors 补足 R1；本性 traits 按 (基底 → 反应模式 → 主导动力) 顺序；锚点 anchors 按 (deviation*1.5 + conf*4 - dispute*6 + interaction_bonus + recency_bonus + life_stage_bonus + mp_bonus) 排序。",
+  "accuracy_grading": {
+    "rule": "v6 改版：分两层判定。（一）取向准确度 = R0 命中数（满分 2）：2/2 取向高（命局结构 + 用户事件高度一致）；1/2 取向中（部分对，可能要在格局/扶抑取向上做选择）；0/2 取向低（八字大概率不准 / 或者你对自己感情认知偏差大）。（二）命局准确度 = R1 命中数（满分 3）：3/3 高、2/3 中、≤1/3 低。整体放行：R0 ≥ 1/2 且 R1 ≥ 2/3 → 进；R1 < 2/3 → 走 R2 凑 ≥ 4/6；R0 = 0 + R1 ≤ 1 → 强烈建议核对时辰 / 性别。",
+    "high": "直接进入下一步（绘图 / 合盘评分）",
+    "mid": "触发 Round 2；R1+R2 合计 ≥ 4/6 继续 + 加 caveat",
+    "low": "触发 Round 2；R1+R2 合计 ≥ 4/6 谨慎继续 + 强 caveat",
+    "reject": "不再追问，强烈建议核对八字本身（时辰多半错）"
+  },
+  "pass_threshold": {
+    "round0": "命中 ≥ 1/2 → 取向 OK；2/2 → 命局取向无悬念（格局/扶抑可直接按主流派走）；0/2 → 配偶星 / 配偶宫读法可能反了，停下重审日支 + 配偶星（也常见于性别 / 时辰输错）",
+    "round1": "命中 ≥ 2/3 → 通过；命中 3/3 → 可跳过 Round 2 直接进入下一步",
+    "round2": "Round 1 + Round 2 合计命中 ≥ 4/6 → 进入下一步；否则视为八字不准（强烈建议核对时辰）",
+    "round3": "v7.3 新增 · R3 命中 → 决定 family 段写不写 / 怎么写：2/2 → 高置信展开（按 primary_class）；1/2 → 命中那条可展开、未命中那条省略或标「取向歧义」；0/2 → family 段不展开具体内容，只写一句「原生家庭推断未通过校验，本次不展开」。R3 与 R0/R1/R2 正交，不算入命局准确度。**触发条件**：仅在用户主动问 family / 父母 / 家庭 / 出身 等关键词时抛 R3。",
+    "red_line_temperature": "★ 健康①·寒热出汗 ✗ → climate 判读多半反了，停下重判命局结构",
+    "red_line_organ": "★ 健康③·脏腑短板 ✗ → 五行权重多半算偏，停下重核八字（常见于时辰错）",
+    "red_line_emotion_preference": "★ 感情①·偏好类型 ✗ 且 R1 也 ≤ 1/3 → 八字大概率不准（最常见是性别 / 时辰输错），停下复核",
+    "red_line_family_illustrious_miss": "★ v7.3 新增 · 原生家庭①·整体结构标「不对」且 primary_class = illustrious_candidate → 这是 LLM 最容易翻车的场景（古法 survivorship bias 推过头）→ family 段必须降级、禁用「显赫 / 名门 / 名利双收」等措辞，改写为「年/月柱财官印聚合的结构在你身上没有外显为『资源 / 名望』，结构性画像被现代环境改写了」。",
+    "red_line_family_parents_both_miss": "★ v7.3 新增 · 原生家庭②·父母存在模式两条都标「不对」→ 父星 / 母星读法多半反了 → family 段直接省略，告知用户「父母存在模式校验未通过」"
+  },
+  "qixiang_decision_hint": {
+    "格局可信": "R0 ≥ 1/2 + 命局成格 → 优先按 geju 主格局取用神（格局派）",
+    "扶抑可信": "R0 ≥ 1/2 + 命局未明显成格 → 走经典扶抑（按 strength 调用神）",
+    "调候优先": "R0 ≥ 1/2 + climate.label ∈ {燥实, 寒湿} → 调候用神优先于格局/扶抑",
+    "三派分歧大": "R0 = 0 + R1 = 2/3 + climate ∈ {外燥内湿, 外湿内燥} → 取向上保留双解，不强行二选一"
+  },
+  "instruction_for_llm": "按【三阶段 / 最多 8 条 = R0 反询问 2 + R1 健康 3 + R2 交叉 3】校验流程把脚本给的候选转述给用户，不允许添加候选数据中没有的事实。\n顺序固定：先 R0（反询问·感情画像）→ 再 R1（健康三问）→ R1 不达标才 R2。\n\n== Round 0（反询问·感情画像，v6 新增 · **最先抛**）==\n取 round0_candidates 里的 2 条（①偏好类型 + ②对方态度）。\n**这是\"反询问窗口\"**——主动把感情类问题抛给用户，用于：\n  · 校准八字大致对/不对（感情记忆是用户最深刻、最难骗的事件记忆）\n  · 协助判断命局取向（走格局派还是扶抑派 / 是否需要调候）\n\n输出模板（必须严格按此格式）：\n----\n开始之前先问你两个感情相关的问题——这两题不评判 / 不打标签，只用来快速判断你的八字大概率\"对/不对\"，\n以及该按哪种取向（格局 / 扶抑 / 调候）来给你解。请凭直觉答「对 / 不对 / 部分」。\n\n⓪-① 【{round0[0].category}】{round0[0].claim}\n   依据：{round0[0].evidence}\n   可证伪点：{round0[0].falsifiability}\n\n⓪-② 【{round0[1].category}】{round0[1].claim}\n   依据：{round0[1].evidence}\n   可证伪点：{round0[1].falsifiability}\n----\n\nR0 命中 → 取向准确度：\n  · 2/2 → 命局取向无悬念，按 geju 主格局 / 主流扶抑直接走\n  · 1/2 → 取向部分对，做分析时主动告诉用户\"配偶星 / 配偶宫读法存在歧义，X 段可能更符合 [另一种取向]\"\n  · 0/2 → **配偶星 / 配偶宫读法可能反了**，常见原因：性别输错 / 时辰错 / 八字本身不准 → 立刻提醒用户复核\n\n== Round 0 反迎合·交叉验证（v7.4 #3 新增）==\n取 round0_counter_probes 里的 ≤ 2 条（每条原 R0 题对应 1 条反向 probe）。\n**这是为防止\"用户迎合性答 yes\"设计的**——给每条 R0 推论再附一条**完全相反**的描述，\n两个相反的命题不可能同时为真：\n\n  原 R0 ① \"你被吸引的是 [金] 型（干练果决）\"  ← 用户答「对」\n  反 ① \"你被吸引的是 [木] 型（理想感、温和、成长型）\"  ← 用户也答「对」 ⚠ 矛盾 → 迎合标记\n\n抛 counter probes 的位置：在 R0 ② 答完后、R1 之前。可以一起抛 2 条：\n\n----\n为了避免你\"迎合性\"答题（命局推啥就说啥），我再抛 2 条**故意构造的反向陈述**让你校验。\n你只需对每条回 「对 / 不对 / 部分」，按你真实记忆答即可——\n如果你两条都答「对」，意味着相反的两种描述你都觉得像，逻辑上不可能 → 我会自动给 R0 命中率打折。\n\n⓪'-① 【{round0_counter[0].category}】{round0_counter[0].claim}\n   依据：{round0_counter[0].evidence}\n   可证伪点：{round0_counter[0].falsifiability}\n\n⓪'-② 【{round0_counter[1].category}】{round0_counter[1].claim}\n   依据：{round0_counter[1].evidence}\n   可证伪点：{round0_counter[1].falsifiability}\n----\n\n反迎合判定（机械化在 evaluate_responses 里跑，LLM 不要自己算）：\n  · contradiction（原=对 + 反=对）≥ 1   → consistency_grade = \"sycophantic\"，R0 命中率 × 0.5\n  · mirror（原=不对 + 反=对）≥ 1 且无 contradiction → consistency_grade = \"mirror\"，\n    建议触发 --dump-phase-candidates（命局推的偏好/态度方向多半反了）\n  · 其余 → \"consistent\"\n\n**LLM 输出反迎合结果给用户的固定模板**（evaluation.anti_sycophancy.warning 不为 null 时必须复述）：\n\n----\n反迎合校验结果：[consistency_grade]\n[evaluation.anti_sycophancy.warning]\n[如果 sycophantic：请你重新逐条对比，告诉我哪种描述真的更接近你？]\n[如果 mirror：建议我跑相位反演重新生成 R0 题让你验证，要试吗？]\n----\n\nR0 完成后**不论命中几条**都继续 R1（R0 只是取向校准，R1 才是命局结构校准）。\n两层都过（R0_adjusted ≥ 1/2 + R1 ≥ 2/3）才允许进 Step 2.7（询问输出格式）。\n\n== Round 1（首轮 3 条 = 三个不同侧面的健康问题，v3 改版）==\n取 round1_candidates 里的 3 条，固定顺序为：\n  ① 健康①·寒热出汗（temperature） —— 命局 climate 直接导出\n  ② 健康②·睡眠精力（sleep_energy）—— climate × strength 组装\n  ③ 健康③·脏腑短板（organ）       —— 五行最弱 → 对应脏腑\n\n输出模板（必须严格按此格式）：\n----\n在画图 / 合盘之前，我先用 3 个不同侧面的「健康/体感」问题来校验一下八字的准确度。\n**请逐条回 「对 / 不对 / 部分」**。这三条都是终生稳定的体感证据，最不容易自欺。\n（命中率 → 准确度：3/3 高 → 直接进下一步；2/3 中 → 我再给你 3 条交叉验证；\n  ≤ 1/3 低 → 八字十有八九不准，请核对出生时辰）\n\n① 【{round1[0].category}】{round1[0].claim}\n   依据：{round1[0].evidence}\n   可证伪点：{round1[0].falsifiability}\n\n② 【{round1[1].category}】{round1[1].claim}\n   依据：{round1[1].evidence}\n   可证伪点：{round1[1].falsifiability}\n\n③ 【{round1[2].category}】{round1[2].claim}\n   依据：{round1[2].evidence}\n   可证伪点：{round1[2].falsifiability}\n----\n\n== Round 2（追问 3 条，仅在 Round 1 命中 < 3 时触发）==\n取 round2_candidates 里的 3 条（本性画像 + 历史大波动），覆盖 R1 没出现过的维度：\n----\n为了把八字校验得更扎实，我再给你 3 条交叉验证。请继续回「对 / 不对 / 部分」。\n两轮合计命中 ≥ 4/6 → 进入下一步；< 4 → 八字十有八九不准（多半是时辰偏 1 小时）。\n\n④ ...   ⑤ ...   ⑥ ...\n----\n\n== Round 3（反询问·原生家庭画像 2 题，v7.3 新增 · **条件触发**）==\n取 round3_candidates 里的 2 条（①整体家庭结构 + ②父母存在模式合并）。\n\n**触发时机**（重要 · 默认 NOT 触发，避免无关问题打扰用户）：\n- ✓ 用户在初次提问中提到「家庭 / 父母 / 父亲 / 母亲 / 原生家庭 / 出身 / 家世 / 我爸 / 我妈」等关键词 → **必须抛 R3**\n- ✓ 用户在分析过程中追问「我家怎么样 / 我爸是什么样 / 我妈呢」 → **必须抛 R3**（在写 family 段之前）\n- ✗ 用户没主动问家庭 → **不要抛 R3**（不写 family 段也不会缺胳膊少腿）\n\n**抛 R3 的位置**：在 R0 之后、R1 之前；或在 R1/R2 通过后、写 family 段之前。\n不要把 R3 跟 R0/R1 混在一组里抛——R3 是独立的\"原生家庭专项校验\"。\n\n输出模板（必须严格按此格式）：\n----\n我顺便用 2 个原生家庭相关的问题校验一下命局结构 —— 这两题不评判 / 不打标签，\n只用来判断你家的整体结构和父母存在模式跟命局的\"年/月柱画像\"是否对得上。\n请凭直觉答「对 / 不对 / 部分」。\n\n⚠ 重要前提（必读）：\n命局只反映「父母在你能量场里的存在模式」+「年/月柱财官印聚合的结构画像」，\n**不反映**父母的社会地位 / 收入 / 职业 / 学历 / 是否健在 / 是否离异。\n另外古典命书因为只收录显赫人物的命例（survivorship bias），\n显赫候选这一档比真实概率被高估了 5-10 倍——标错请直接回\"不对\"。\n\n③-① 【{round3[0].category}】{round3[0].claim}\n   依据：{round3[0].evidence}\n   可证伪点：{round3[0].falsifiability}\n\n③-② 【{round3[1].category}】{round3[1].claim}\n   依据：{round3[1].evidence}\n   可证伪点：{round3[1].falsifiability}\n----\n\nR3 命中 → family 段权重：\n  · 2/2 → 高置信，按 primary_class 展开（比如真显赫候选 + 用户确认 → 可以谨慎说\"父辈/祖辈中可能有人在某领域有可识别的位置\"）\n  · 1/2 → 中置信，命中那条可展开；未命中那条标\"取向歧义\"或省略\n  · 0/2 → 低置信，**family 段不展开具体内容**，只写一句\"原生家庭推断未通过校验，本次不展开（命局对家庭的读法可能反了）\"\n\nR3 红线（v7.3 新增）：\n  ★ 若【原生家庭①·整体结构】被标\"不对\"且 primary_class = illustrious_candidate\n    → 这是 LLM 最容易翻车的场景（古法 survivorship bias 推过头，把\"年柱财官印聚合\"\n       当成了\"显赫家世\"）→ family 段必须降级、**禁用**\"显赫 / 名门 / 名利双收\"等措辞\n  ★ 若【原生家庭②·父母存在模式】两条都被标\"不对\"\n    → 父星 / 母星读法多半反了 → family 段直接省略\n\nR3 命中级别和 R0/R1 校验是**正交**的（R3 不算入命局准确度，仅决定 family 段写不写 / 怎么写）。\n\nfamily 段写作必须遵守 fairness_protocol.md §11（原生家庭解读铁律）：\n- 必须援引 R3 命中（\"R3 = 2/2 → 高置信展开\"）\n- 必须前置声明（\"命局只反映父母在你能量场里的存在模式，不反映社会地位 / 职业 / 学历 / 是否健在\"）\n- 禁用措辞清单：参考 §11.2\n\n== 命中率 → 准确度判定（必须严格执行 · v6 改双层）==\n\n第一层 · 取向准确度（R0）：\n| R0 命中 | 取向 grade | 后续 |\n|---|---|---|\n| 2/2 | high  | 命局取向无悬念，按主流派系（geju 主格局 / 经典扶抑）直接走 |\n| 1/2 | mid   | 取向部分对，分析时主动注明\"在 X 处取向有歧义\" |\n| 0/2 | low   | 配偶星 / 配偶宫读法可能反了 → 提醒用户复核性别 / 时辰，**仍继续 R1** |\n\n第二层 · 命局准确度（R1）：\n| R1 命中  | accuracy_grade | 后续动作 |\n|---|---|---|\n| 3/3      | high           | 若 R0 ≥ 1/2 → 直接进 Step 2.7；R0 = 0 → 进但加强 caveat |\n| 2/3      | mid            | 触发 Round 2；R1+R2 ≥ 4/6 → 继续，加 caveat；< 4/6 → 停 |\n| 1/3      | low            | 触发 Round 2；R1+R2 ≥ 4/6 → 谨慎继续 + 强 caveat；< 4/6 → 停 |\n| 0/3      | reject         | 不再追问，强烈建议核对八字本身（时辰多半错） |\n\n**整体放行条件**：R0 ≥ 1/2 且（R1 ≥ 2/3 或 R1+R2 ≥ 4/6）。\n**整体拒绝条件**：R0 = 0/2 且 R1 ≤ 1/3 → 八字大概率不准（最常见：性别输错 / 时辰差 1 小时）→ 让用户复核后再来。\n\n== 红线规则（v3 调整）==\n★ 若【健康①·寒热出汗】被用户标 \"✗\"：\n  → climate.label 多半判错了，**不论其他几条命中率都要先停下**，\n    告诉用户：\"寒热体感没对上 → climate 判读可能反了 → 我需要重新审视命局结构再给你跑一遍\"。\n  → 不要绕过这一条直接进下一步。\n\n★ 若【健康③·脏腑短板】被用户标 \"✗\"：\n  → 五行权重多半算偏了（常见于时辰错导致月柱 / 时柱跳位），需重核八字。\n\n★ 若【感情①·偏好类型】被用户标 \"✗\" 且 R1 命中 ≤ 1/3：\n  → 配偶星五行 / 性别 多半弄错了（最常见：性别字段输错、或时辰跳位导致月柱财官位置变动），**立即停下**，\n    告诉用户：\"感情偏好和健康两层都不对 → 八字基础数据有较大概率不准 → 建议你先核对（1）性别 是否正确（2）出生时辰 是否准确\"。\n\n== 合盘场景特别说明 ==\n- 用户输入多份八字做合盘时，**每份八字都要单独跑 R0 + R1**。\n- R0 在合盘中**只对用户自己的八字问**（用户对对方的感情史不一定知道——除非是夫妻 / 直系家人，且用户主动承担作答）。对方八字仅跑 R1（健康三问可由用户代答 / 凭对对方的了解作答）。\n- 只有自己 R0+R1 通过 + 对方 R1 ≥ 2/3 的组合才进合盘评分；任何一方不达 → caveat 或退回让用户复核。\n- 用户对自己的八字答得最准；对配偶 / 合伙人的八字若答不上来 → 注明\"对方信息不全，合盘结论降权\"。\n\n== 校验通过 → 进入 Step 2.7（询问输出格式）== v5 强制\nR1（或 R1+R2）通过后**绝对不要直接进 Step 3 渲染 HTML**，先主动问用户：\n\n----\n校验通过 ✓。在我开始写分析之前，问一下你想要哪种输出：\n\n(A) 纯 markdown 流式输出 —— 我每写完一节就立刻发给你，最快、最适合手机 / 复制 / 转发\n(B) markdown 流式 + 最后渲染 HTML 交互图 —— 多等 5-15 秒，可以鼠标 hover 查看每年详情、details 折叠\n\n回 A 或 B（默认 A）。\n----\n\n默认值：单盘默认 A；合盘默认 A（合盘没有\"曲线图\"刚需 HTML）。\n若用户初次提问已说\"画图 / 出 artifact / 给我图\" → 直接走 B；说\"口头说说 / 不用图\" → 直接走 A。\n\n== Step 3a 必须流式分节输出（v5 硬要求 · v6 加感情维度）==\n无论 A / B，所有文字分析必须**按节流式输出**：每写完一节立刻发出，**禁止**把整段憋到末尾一次性吐。\n节序：整图综合分析 → 一生**四**维度（精神 → 财富 → 名声 → **感情**）→ 大运评价（每段 1 节，含感情看点）→ 关键年份（每条 1 节）。\n每节用 markdown 标题（## 整图综合分析 / ## 一生 · 感情 / ## 大运评价 · 辛丑（25-34 岁）/ ## 关键年份 · 2031 等）。\n**感情维度的内容来源**：R0 你已经验证过用户的\"偏好类型 + 对方态度\"，写感情段时必须援引 R0 的命中情况\n（例如：\"你 R0 验证了喜欢[木]型 + 对方常主动 → 那么大运走 火 / 木 时感情更顺，走 金 / 水 时易冷淡 / 暧昧\"）。\nHTML 渲染（仅 B）放最后一步，此时用户已读完文字，不再有\"等图\"焦虑。\n\n数据不足时（脚本只挑出 N < 6 条），如实输出 N 条并告知用户\"脚本只挑出 N 条不强行凑\"。\n"
+}
