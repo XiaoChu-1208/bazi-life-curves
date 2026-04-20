@@ -379,7 +379,7 @@ LLM 在 R 命中率 ≤ 2/6 时**必须**做的事：
 |---|---|---|
 | **v7 MVP** | 协议文档 + 4 个 detect (P1-P4) + score_curves --override-phase + handshake dump 候选 + LLM 话术强制 | ✓ |
 | **v7.1 增补** | 重写 P1（看比劫 / 印通根而非点数）+ 重写 P4（综合判 has_self_help）+ 新增 P5（三气成象）| ✓ |
-| **v8 Auto-Loop** | handshake 自动调用 score_curves 重跑 + 用户一句话确认即落地 | deferred |
+| **v7.2 闭环** | 1) `apply_structural_corrections` 移植 GitHub 版（confirmed_facts 闭环）；2) `handshake.py --phase-id` 二轮校验（按反演相位重生成 6 题）；3) `phase_inversion_loop.py` Auto-Loop 一键编排；4) `solve_bazi.py --longitude` 真太阳时校正 | ✓ |
 | **v9 Calibration** | 相位反演的命中率历史回测 + 每类 phase 的假阳率 / 假阴率 | deferred |
 | **v10 Multi-Phase Ensemble** | 不强制选一个相位，对前 2 个相位都跑曲线并叠加置信带 | deferred |
 
@@ -433,14 +433,57 @@ $ python scripts/handshake.py --bazi /tmp/.../bazi.json --dump-phase-candidates
 
 ---
 
-## 10. 检查清单（每次跑相位反演前）
+## 12. v7.2 升级记录 · 闭环（confirmed_facts + 二轮校验 + Auto-Loop + 真太阳时）
+
+### 12.1 v7.1 留下的 4 个问题
+
+| # | 问题 | 严重性 |
+|---|---|---|
+| 1 | `apply_structural_corrections` Documents 版有但 GitHub 部署版没有 → 写入 confirmed_facts 没人读 | **★★★★★** |
+| 2 | phase 反演候选挑出来后**直接出图**，**没让用户用反演相位重新答题校验** | **★★★★** |
+| 3 | LLM 要手动跑 4 个 shell 命令（dump → 选 → score → handshake），易出错 | **★★★** |
+| 4 | 真太阳时 `--longitude` 未实现 → 边境/海外用户经常被时辰判错 | **★★★** |
+
+### 12.2 v7.2 全部解决
+
+#### 12.2.1 `apply_structural_corrections` 闭环（GitHub 版同步）
+
+`scripts/score_curves.py` 加入 `apply_structural_corrections(bazi, confirmed_facts)`，支持 5 种 kind：
+- `climate / strength / yongshen / geju`（v3 P0-2c · 现有）
+- **`phase_override`**（v7.2 新增，`after = phase_id`，调用 `apply_phase_override`）
+
+`scripts/save_confirmed_facts.py` 移植到 GitHub 版（含 `--add-structural` 子命令）。
+
+闭环流程：phase 反演二轮校验通过 → `save_confirmed_facts --add-structural phase_override day_master_dominant <pick>` → 之后所有 `score_curves --confirmed-facts` 自动应用反演。
+
+#### 12.2.2 phase 反演二轮校验（**新需求**）
+
+**问题**：旧流程是「dump 候选 → 用户同意 → 出图」，没让用户**重新答题**校验反演是否真的对。
+**修复**：`scripts/handshake.py` 加 `--phase-id <phase_id>` 参数，用反演后的 strength/yongshen/climate **重生成 R0/R1/R2 6 题**。例如 1996 case：
+- 默认相位（弱身）R1[1] = 「精力起伏大、断电式疲倦」（用户答：不对）
+- 反演相位（弃命从财，按"强"读）R1[1] = 「精力旺盛、坐不住、闲下来烦躁」（用户答：对！）
+
+只有二轮命中率 ≥ 4/6 才真正落地反演。
+
+#### 12.2.3 Auto-Loop 编排（v8）
+
+新增 `scripts/phase_inversion_loop.py`：一条命令完成 dump → pick → override-phase → handshake --phase-id 4 步，输出含 LLM next_step + 落地命令模板。
+
+#### 12.2.4 真太阳时 `--longitude` 校正
+
+`scripts/solve_bazi.py` 加 `--longitude <degree>` 参数。中国大陆「北京时间」按经度 120° 中心；偏离每 1° = ±4 分钟。例：
+- 乌鲁木齐（87.6° E）→ -129.6 分钟，钟表 14:30 → 真太阳时 12:20 **跨过午时边界**，时柱由 丁未 变成 丙午
+- 上海（121.5° E）→ +6 分钟（一般无柱位变化但精度提升）
+
+### 12.3 v7.2 新增检查清单（每次跑相位反演前）
 
 - [ ] 默认相位的 R0+R1+R2 命中率 ≤ 2/6（满足触发条件）
 - [ ] `detect_all_phase_candidates` 返回了至少 1 个候选
-- [ ] 候选命中率 ≥ 4/6（达标）
-- [ ] 候选命中率比默认相位**至少**高 2 个绝对值（避免噪音）
+- [ ] **跑 `phase_inversion_loop.py` 拿到 top-1 候选**
+- [ ] **二轮校验 6 题已抛给用户作答**（v7.2 新增·强制）
+- [ ] **二轮命中率 ≥ 4/6**（v7.2 新增·强制）
 - [ ] 用户已知情同意"我们要用反演相位重跑"
 - [ ] 重跑后第一段输出明确告知"已反演到 [phase]"
-- [ ] confirmed_facts 已写入 `kind: phase_override`
+- [ ] **confirmed_facts 已写入 `kind: phase_override`**（v7.2 新增 `--add-structural`）
 
 任意一条 NO → 不允许进入相位反演重跑。

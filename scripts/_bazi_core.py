@@ -962,6 +962,21 @@ def detect_all_phase_candidates(bazi_dict: Dict) -> List[Dict]:
     ]
     triggered = [r for r in results if r["triggered"]]
     not_triggered = [r for r in results if not r["triggered"]]
+
+    # v7.2 · 触发候选按置信度排序：先按 hit/total 比值降序，平手时按 hit 绝对值降序
+    # （hit 越多 = 越多条件命中 = detector 内在更扎实），P4 没分数 → ratio=0.5/hit=0
+    def _conf(det: Dict) -> tuple[float, int]:
+        s = det.get("score", "")
+        if not s or "/" not in str(s):
+            return (0.5, 0)
+        try:
+            hit, tot = str(s).split("/")
+            hit_f, tot_f = float(hit), float(tot)
+            return (hit_f / tot_f if tot_f > 0 else 0.5, int(hit_f))
+        except Exception:
+            return (0.5, 0)
+
+    triggered.sort(key=lambda r: (-_conf(r)[0], -_conf(r)[1], r["phase_id"]))
     return {
         "triggered_candidates": triggered,
         "all_detection_details": results,

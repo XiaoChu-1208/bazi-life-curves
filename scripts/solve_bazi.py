@@ -35,6 +35,42 @@ from _bazi_core import (
 )
 
 
+def _apply_true_solar_time(gregorian: str, longitude: float) -> tuple[str, dict]:
+    """v7.2 · 真太阳时校正：把出生地经度对应的钟表时刻换算成真太阳时。
+
+    中国大陆使用东八区（UTC+8 = 经度 120° E 中心）的「北京时间」。当事人若不在
+    经度 120° 出生，钟表时间跟当地真太阳时存在偏差：
+        offset_minutes = (longitude - 120) × 4  （东经为正、西经为负）
+
+    例如：
+        - 乌鲁木齐 (87.6° E) → -129.6 分钟（北京时 12:00 = 当地真太阳时 ~9:50）
+        - 上海 (121.5° E) → +6 分钟
+        - 北京 (116.4° E) → -14.4 分钟
+
+    返回：(校正后的 gregorian 字符串, info dict)
+    """
+    import datetime as dt
+    offset_min = (longitude - 120.0) * 4.0
+    fmt_in = "%Y-%m-%d %H:%M"
+    try:
+        t0 = dt.datetime.strptime(gregorian.strip(), fmt_in)
+    except ValueError:
+        # 容错：支持秒
+        t0 = dt.datetime.strptime(gregorian.strip(), "%Y-%m-%d %H:%M:%S")
+    t1 = t0 + dt.timedelta(minutes=offset_min)
+    info = {
+        "longitude": longitude,
+        "offset_minutes": round(offset_min, 2),
+        "clock_time": t0.strftime(fmt_in),
+        "true_solar_time": t1.strftime(fmt_in),
+        "note": (
+            f"经度 {longitude}° → 时差 {offset_min:+.1f} 分钟；"
+            f"钟表 {t0.strftime('%H:%M')} → 真太阳时 {t1.strftime('%H:%M')}"
+        ),
+    }
+    return t1.strftime(fmt_in), info
+
+
 def solve(
     pillars_str: str | None,
     gregorian: str | None,
@@ -43,20 +79,36 @@ def solve(
     n_years: int = 80,
     qiyun_age: int | None = None,
     orientation: str = "hetero",
+    longitude: float | None = None,
 ) -> dict:
     qiyun_source = "user_specified" if qiyun_age is not None else None
+    true_solar_info: dict | None = None
     if pillars_str:
         pillars = parse_pillars(pillars_str)
         if birth_year is None:
             raise ValueError("--birth-year required when using --pillars")
         by = birth_year
+        if longitude is not None:
+            # pillars 模式下 longitude 仅用于 metadata；不会重算柱位
+            true_solar_info = {
+                "longitude": longitude,
+                "warning": "pillars 模式不会用 longitude 重算柱位（柱位已固定）。"
+                           "若想用真太阳时校正，请改用 --gregorian + --longitude。",
+            }
     elif gregorian:
-        pillars, by = pillars_from_gregorian(gregorian, gender)
+        if longitude is not None:
+            gregorian_corrected, true_solar_info = _apply_true_solar_time(gregorian, longitude)
+        else:
+            gregorian_corrected = gregorian
+        pillars, by = pillars_from_gregorian(gregorian_corrected, gender)
         if qiyun_age is None:
-            calc = compute_qiyun_age_from_gregorian(gregorian, gender)
+            calc = compute_qiyun_age_from_gregorian(gregorian_corrected, gender)
             if calc is not None:
                 qiyun_age = calc
-                qiyun_source = "lunar_python_精算"
+                qiyun_source = (
+                    "lunar_python_精算（已校正真太阳时）" if longitude is not None
+                    else "lunar_python_精算"
+                )
     else:
         raise ValueError("Must provide --pillars or --gregorian")
 
@@ -133,6 +185,7 @@ def solve(
         "strongest_wuxing": strongest_wx,
         "qiyun_age": qiyun_age,
         "qiyun_source": qiyun_source,
+        "true_solar_time": true_solar_info,
         "dayun": dayun,
         "liunian": liunian,
     }
@@ -158,11 +211,18 @@ def main():
     ap.add_argument("--qiyun-age", type=int, default=None,
                     help="起运岁（虚岁）。gregorian 模式默认用 lunar-python 精算；"
                          "pillars 模式默认 8 岁，强烈建议显式指定。")
+    ap.add_argument("--longitude", type=float, default=None,
+                    help="v7.2 · 出生地经度（° E，东经为正、西经为负），用于真太阳时校正。"
+                         "中国大陆的「北京时间」按经度 120° 中心；当事人不在 120° 出生时"
+                         "钟表时间和当地真太阳时存在偏差（每偏离 1° = ±4 分钟）。"
+                         "仅在 --gregorian 模式下生效（--pillars 模式柱位已固定）。"
+                         "示例：北京 116.4 / 上海 121.5 / 乌鲁木齐 87.6 / 西安 108.9。")
     ap.add_argument("--out", default="bazi.json", help="输出 JSON 路径")
     args = ap.parse_args()
 
     extras = {k: v for k, v in vars(args).items() if v is not None and k not in {
-        "pillars", "gregorian", "gender", "orientation", "birth_year", "n_years", "qiyun_age", "out"
+        "pillars", "gregorian", "gender", "orientation", "birth_year", "n_years", "qiyun_age",
+        "longitude", "out",
     }}
     validate_blind_input(extras)
 
@@ -174,16 +234,20 @@ def main():
         n_years=args.n_years,
         qiyun_age=args.qiyun_age,
         orientation=args.orientation,
+        longitude=args.longitude,
     )
     Path(args.out).write_text(
         json.dumps(data, ensure_ascii=False, indent=2),
         encoding="utf-8",
     )
+    tst = data.get("true_solar_time")
+    tst_msg = f", 真太阳时={tst['note']}" if tst and "note" in tst else ""
     print(f"[solve_bazi] wrote {args.out}: 八字={data['pillars_str']}, "
           f"日主={data['day_master']}({data['day_master_wuxing']}), "
           f"强弱={data['strength']['label']}, "
           f"用神={data['yongshen']['yongshen']}, "
-          f"起运={data['qiyun_age']}岁（{data['qiyun_source']}）")
+          f"起运={data['qiyun_age']}岁（{data['qiyun_source']}）"
+          f"{tst_msg}")
 
 
 if __name__ == "__main__":

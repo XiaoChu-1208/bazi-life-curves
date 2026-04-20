@@ -262,7 +262,7 @@ done
 
 **幅度差** = 60 个百分点。这不是八字错，是**算法的相位选择反了**。本协议把这种"算法读反"的兜底纠错机械化、纳入闭环。
 
-### 13.2 强制流程（不允许跳过）
+### 13.2 强制流程（不允许跳过 · v7.2 加二轮校验 + Auto-Loop）
 
 ```
 R0 + R1 + R2 命中率
@@ -270,26 +270,33 @@ R0 + R1 + R2 命中率
   ≥ 4/6 → 进入 Step 3 出图（happy path）
   ≤ 2/6 → 【强制】进入相位反演校验循环 ↓
        ↓
-       (1) python scripts/handshake.py --bazi <bazi.json> --dump-phase-candidates --default-hit-rate "X/6"
-       (2) 读 phase_dump.json 的 phase_candidates，按列表顺序跟用户讲：
+       【v7.2 推荐 · 一条命令】
+       python scripts/phase_inversion_loop.py --bazi <bazi.json> --out-dir out/ --default-hit-rate "X/6"
+         自动 4 步：dump 候选 → pick top-1 → score_curves --override-phase → handshake --phase-id（二轮 6 题）
+         输出 handshake_round2.json（按反演相位重生成的 R0/R1/R2 6 题）
+       ↓
+       (1) 读 handshake_round2.json，按 v7.2 话术抛 6 题给用户：
            「命中率 X/6 比较低，但这**不一定意味着**你八字错。
             另一种常见可能是『**算法读法方向反了**』。
-            我跑了 4 类反向假设，最有希望的是 [候选 1]，
-            因为 [evidence]。要不要按 [候选 1] 重跑？」
-       (3) 用户同意 → 跑 rerun_command（已在 phase_dump.json 里给出）
-                    → 重新生成 R0/R1（用新 bazi + 新 curves 跑 handshake）
-                    → 用户重新回答（最少 R1 三问，R0 两问可选复用）
-                    → 重新计算命中率
-       (4) 命中率跳升 ≥ 4/6 → 写 confirmed_facts.structural_corrections
-                              → 进 Step 3 出图（带「相位已反演到 X」标记）
-       (5) 命中率仍 < 4/6 → 试候选 2 / 3 → 全部失败再去 §12 时辰扫描
+            最有希望的反向假设是 [pick]：[pick_explain_for_user]。
+            为了证伪/证实这个猜测，我按反演相位重新出了 6 题——
+            这 6 题在反演相位下的答案应该跟之前**显著不同**，请你重新作答。」
+       (2) 用户作答 → 算二轮命中率
+       (3) 二轮命中率 ≥ 4/6 → 落地：
+           python scripts/save_confirmed_facts.py --bazi <bazi.json> \
+               --add-structural phase_override day_master_dominant <pick> \
+               --reason '二轮校验 X/6 → 反演落地'
+           之后所有 score_curves --confirmed-facts 自动应用反演 → 进 Step 3 出图（带「相位 = X」标记）
+       (4) 二轮命中率 < 4/6 + 还有候选 → 重跑 phase_inversion_loop.py --pick <next_id>
+       (5) 全部候选都 < 4/6 → §12 时辰扫描
 ```
 
-### 13.3 LLM 必守 3 条话术铁律（详见 phase_inversion_protocol.md §5）
+### 13.3 LLM 必守 4 条话术铁律（v7.2 · 详见 phase_inversion_protocol.md §5）
 
 1. **不允许第一句话就说"八字错"**：必须先说"另一种可能是算法读反"
 2. **不允许反演后默认跑**：必须用户同意才跑
-3. **重跑后必须明确告知"已反演"**：第一段输出必带「相位 = X，不是默认相位」
+3. **二轮校验是强制的**：把 `handshake_round2.json` 的 6 题完整抛给用户重新作答，**禁止**根据反演候选直接出图
+4. **重跑后必须明确告知"已反演"**：第一段输出必带「相位 = X，不是默认相位」
 
 ### 13.4 何时**跳过**相位反演
 

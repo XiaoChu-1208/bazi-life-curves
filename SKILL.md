@@ -348,56 +348,84 @@ R0 命中 → 取向准确度（不论命中几条，都继续走 R1）：
 
 完整规则见 `references/handshake_protocol.md`、`references/he_pan_protocol.md` §4 和 `references/diagnosis_pitfalls.md` §0 红线表。
 
-### 2.55 【v7 强制】R0+R1+R2 ≤ 2/6 时 · 相位反演校验循环（P1-7）→ `python scripts/handshake.py --dump-phase-candidates`
+### 2.55 【v7 强制 · v7.2 加二轮校验】R0+R1+R2 ≤ 2/6 时 · 相位反演校验循环（P1-7）
 
 **触发条件**：Step 2.5 总命中率 ≤ 2/6（含 R0 + R1 + R2）。
-**目的**：在跳到"八字错 / 时辰错"结论之前，先排除「**算法的相位选择反了**」这种可能。
+**目的**：在跳到"八字错 / 时辰错"结论之前，先排除「**算法的相位选择反了**」这种可能。**反演不是直接信，要再让用户答一遍二轮校验**——命中率 ≥ 4/6 才落地。
 
-**为什么必须做**：某用户 1996 八字 `丙子 庚子 己卯 己巳`，默认相位命中率 30%，反向到 `climate_inversion_dry_top` 后跳到 90%——60 个百分点的差异。这是算法的盲区，不是用户的八字错。详见 `references/phase_inversion_protocol.md` 和 `references/diagnosis_pitfalls.md §12`。
+**为什么必须做**：某用户 1996 八字 `丙子 庚子 己卯 己巳`，默认相位命中率 1/6 = 17%，反向到 `floating_dms_to_cong_cai` (P5 三气成象 4/4) 后跳到 5/6 ≈ 83%——66 个百分点的差异。这是算法的盲区，不是用户的八字错。详见 `references/phase_inversion_protocol.md` §11 和 `references/diagnosis_pitfalls.md §12`。
+
+#### v7.2 推荐用法 · 一条命令搞定 4 步（Auto-Loop）
 
 ```bash
-python scripts/handshake.py \
+python scripts/phase_inversion_loop.py \
     --bazi out/bazi.json \
-    --dump-phase-candidates \
-    --default-hit-rate "2/6" \
-    --out out/phase_dump.json
+    --out-dir out/ \
+    --default-hit-rate "1/6"
 ```
 
-输出 `phase_dump.json` 含 4 类相位候选（P1 日主虚浮 / P2 旺神得令 / P3 调候反向 / P4 假从-真从）中触发的子集 + 每个候选的 evidence + LLM 给用户的解释 + 重跑指令。
+它会自动：
+1. dump 5 类相位反演候选（P1 日主虚浮 / P2 旺神得令 / P3 调候反向 / P4 假从-真从 / P5 三气成象）
+2. 自动选 top-1（按 detector 置信度排序）
+3. 跑 `score_curves --override-phase <pick>` → `curves_phase_inverted.json`
+4. 跑 `handshake --phase-id <pick>` → `handshake_round2.json`（**按反演相位重新生成 6 题**）
 
-**LLM 必守的 3 条话术铁律**（详见 `references/phase_inversion_protocol.md §5`）：
+输出含完整的 `next_step_for_llm` + 落地命令模板。
+
+#### LLM 必守的 4 条话术铁律（v7.2）
 
 1. **不允许第一句话就说"八字错"**：必须先讲"另一种可能是算法读反"
-2. **不允许反演后默默重跑**：必须用户同意才跑（**带上 `phase_dump.llm_explain_for_user` 的解释**）
-3. **重跑后必须明确告知"已反演"**：第一段输出必带「相位 = X，不是默认相位」
+2. **不允许反演后默默重跑**：必须先用 `pick_explain_for_user` 跟用户说清楚反演是什么
+3. **二轮校验是强制的**：把 `handshake_round2.json` 的 6 题完整抛给用户重新作答，**禁止**根据反演候选直接出图
+4. **重跑后必须明确告知"已反演"**：第一段输出必带「相位 = X，不是默认相位」
 
-**重跑流程**：
+#### 二轮校验落地条件
 
+| 二轮命中率 | 动作 |
+|---|---|
+| **≥ 4/6** | 写 `confirmed_facts.structural_corrections` (kind=phase_override) → 进 Step 3 出图（带「相位 = X」标记） |
+| **< 4/6 且还有候选** | 重跑 `phase_inversion_loop.py --pick <next_id>` 试下一个候选 |
+| **全部候选都 < 4/6** | 真正进入"建议核对时辰"流程（详见 `references/diagnosis_pitfalls.md §0`） |
+
+#### 落地命令（用户二轮命中率 ≥ 4/6 后）
+
+```bash
+# 1. 写入 confirmed_facts
+python scripts/save_confirmed_facts.py \
+    --bazi out/bazi.json \
+    --out out/confirmed_facts.json \
+    --add-structural phase_override day_master_dominant <pick> \
+    --reason '二轮校验命中率 5/6 → 反演相位落地'
+
+# 2. 用 confirmed_facts 重跑 score_curves（之后所有重算都自动应用反演）
+python scripts/score_curves.py \
+    --bazi out/bazi.json \
+    --confirmed-facts out/confirmed_facts.json \
+    --out out/curves_final.json
 ```
-[1] 读 phase_dump.phase_candidates，按列表顺序跟用户讲解最有希望的候选
-[2] 用户同意 → 跑 phase_dump.phase_candidates[i].rerun_command（已生成好）
-              → 把生成的 curves_phase_inverted.json 当作新 curves
-              → 重新跑 handshake.py 生成新 R0/R1 候选
-              → 让用户重新回答 R1 三问（R0 已有答案可复用）
-[3] 重新计算命中率
-    ≥ 4/6 → 写 confirmed_facts.structural_corrections（kind=phase_override）
-            → 进 Step 3 出图（带「相位 = X」标记）
-    < 4/6 → 试候选 [i+1] / [i+2] ... → 全部失败再去时辰扫描（Step 2.5 §12）
+
+#### v7 旧用法（仍可用 · 手工分步）
+
+```bash
+python scripts/handshake.py --bazi out/bazi.json --dump-phase-candidates --out out/phase_dump.json
+python scripts/score_curves.py --bazi out/bazi.json --override-phase <pick> --out out/curves_inverted.json
+python scripts/handshake.py --bazi out/bazi.json --curves out/curves_inverted.json --phase-id <pick> --out out/handshake_round2.json
 ```
 
-**跳过相位反演的条件**：
+#### 跳过相位反演的条件
 
 - 默认相位 R0+R1+R2 ≥ 4/6（happy path，本来就不需要）
-- `dump_phase_candidates` 返回 `n_triggered = 0`（4 类 detect 都没触发，命中率低更可能是八字错）
+- `dump_phase_candidates` 返回 `n_triggered = 0`（5 类 detect 都没触发，命中率低更可能是八字错）
 - 用户明确说"我确定八字对，不需要试反向假设"
 
-**禁止**：
+#### 禁止
 
 - ❌ R0+R1+R2 ≤ 2/6 时跳过这一步直接判"八字错 / 时辰错"
 - ❌ 跳过 `--dump-phase-candidates` 直接 `score_curves --override-phase`（必须先看 detect 触发了什么）
+- ❌ **跳过二轮校验**（v7.2 强制）：phase 反演候选挑出来后，必须按 `--phase-id` 重新生成 6 题让用户答，不允许直接相信
 - ❌ 反演重跑后第一段还按默认相位的语义解读
 
-完整流程见 `references/phase_inversion_protocol.md` 和 `references/handshake_protocol.md §13`。
+完整流程见 `references/phase_inversion_protocol.md` §5 + §11 和 `references/handshake_protocol.md §13`。
 
 ### 2.6 合盘分支（仅当输入 ≥ 2 份八字时执行）→ `python scripts/he_pan.py`
 

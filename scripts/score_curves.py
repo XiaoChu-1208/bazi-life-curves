@@ -915,6 +915,78 @@ def cumulative_curve(yearly: List[float], lam: float) -> List[float]:
 
 # ---------- 主入口 ----------
 
+def apply_structural_corrections(bazi: dict, confirmed_facts: dict | None) -> Tuple[dict, List[dict]]:
+    """v7.2 · 根据 confirmed_facts.structural_corrections 修正 bazi 的 climate / strength / yongshen / geju / phase。
+
+    用户在前序校验中已经把"原本判 燥实，但我体感是寒湿"或"算法默认主导，但 R0+R1+R2 验证后改用从财格"
+    这种纠错固化进了 confirmed_facts.json；score 时应该尊重这些纠错，避免把同一错误再算一遍。
+
+    支持的 kind:
+        climate         → 修改 bazi["yongshen"]["climate"]["label"]
+        strength        → 修改 bazi["strength"]["label"]
+        yongshen        → 修改 bazi["yongshen"]["yongshen"]
+        geju            → 修改 bazi["geju"]["primary"]
+        phase_override  → 调用 apply_phase_override(bazi, after) 整体反演相位（v7.1+）
+    """
+    applied: List[dict] = []
+    if not confirmed_facts:
+        return bazi, applied
+    corrections = confirmed_facts.get("structural_corrections", []) or []
+    if not corrections:
+        return bazi, applied
+
+    import copy
+    bazi = copy.deepcopy(bazi)
+
+    for c in corrections:
+        kind = c.get("kind")
+        before = c.get("before")
+        after = c.get("after")
+        reason = c.get("reason", "")
+        if not kind or not after:
+            continue
+
+        if kind == "climate":
+            climate = bazi.setdefault("yongshen", {}).setdefault("climate", {})
+            climate["label"] = after
+            climate.setdefault("structural_correction_history", []).append({
+                "before": before, "after": after, "reason": reason,
+            })
+            applied.append({"kind": "climate", "before": before, "after": after, "reason": reason})
+
+        elif kind == "strength":
+            strength = bazi.setdefault("strength", {})
+            strength["label"] = after
+            strength.setdefault("structural_correction_history", []).append({
+                "before": before, "after": after, "reason": reason,
+            })
+            applied.append({"kind": "strength", "before": before, "after": after, "reason": reason})
+
+        elif kind == "yongshen":
+            yong = bazi.setdefault("yongshen", {})
+            yong["yongshen"] = after
+            yong.setdefault("structural_correction_history", []).append({
+                "before": before, "after": after, "reason": reason,
+            })
+            applied.append({"kind": "yongshen", "before": before, "after": after, "reason": reason})
+
+        elif kind == "geju":
+            geju = bazi.setdefault("geju", {})
+            geju["primary"] = after
+            geju.setdefault("structural_correction_history", []).append({
+                "before": before, "after": after, "reason": reason,
+            })
+            applied.append({"kind": "geju", "before": before, "after": after, "reason": reason})
+
+        elif kind == "phase_override":
+            # v7.1+ phase 反演：after = phase_id（如 "floating_dms_to_cong_cai"）
+            bazi = apply_phase_override(bazi, after)
+            applied.append({"kind": "phase_override", "before": before or "day_master_dominant",
+                            "after": after, "reason": reason})
+
+    return bazi, applied
+
+
 def apply_phase_override(bazi: dict, phase_id: str) -> dict:
     """v7 P1-7 · 相位反演：按 phase_id 改写 strength.label / yongshen / climate / 加 phase 字段。
 
@@ -1064,6 +1136,7 @@ def score(
     dispute_threshold: float = 20.0,
     mangpai: dict | None = None,
     override_phase: str | None = None,
+    confirmed_facts: dict | None = None,
 ) -> dict:
     """计算 [age_start, age_end] 范围内的曲线 + 未来 forecast_window 年的拐点表。
 
@@ -1074,9 +1147,13 @@ def score(
         dispute_threshold: 三派极差超过此值则判定为「派别争议年份」，默认 20
         mangpai: mangpai_events.detect_all 的返回值；若提供则启用盲派烈度修正
                  （不进 25% 融合权重，仅在三派融合后 ±烈度档；事件文本附入 points）
+        override_phase: 显式指定相位 id（v7.1）；优先级高于 confirmed_facts.phase_override
+        confirmed_facts: confirmed_facts.json 的内容（v7.2）；若提供则在打分前应用
+                 structural_corrections（已确认的 climate / strength / yongshen / geju / phase_override 纠错）。
     """
     weights = weights or DEFAULT_WEIGHTS
     lambdas = lambdas or DEFAULT_LAMBDA
+    bazi, sc_applied = apply_structural_corrections(bazi, confirmed_facts)
     if override_phase:
         bazi = apply_phase_override(bazi, override_phase)
     bazi = apply_geju_override(bazi)  # 格局为先：先识别格局，再用其覆盖用神
@@ -1263,6 +1340,7 @@ def score(
             "school_position",
             "mangpai disabled — pass --mangpai mangpai.json to enable"
         ),
+        "structural_corrections_applied": sc_applied,
     }
 
 
@@ -1409,6 +1487,10 @@ def main():
     ap.add_argument("--mangpai", default=None,
                     help="可选：mangpai.json 路径（mangpai_events.py 输出）；启用盲派烈度修正 + 事件附入 points")
     ap.add_argument("--strict", action="store_true", help="启用双盲自检")
+    ap.add_argument("--confirmed-facts", default=None,
+                    help="v7.2 · 可选：confirmed_facts.json 路径；若含 structural_corrections 则在打分前应用 "
+                         "（支持 climate / strength / yongshen / geju / phase_override 5 种 kind）。"
+                         "用 scripts/save_confirmed_facts.py 写入。")
     ap.add_argument("--override-phase", default=None,
                     help="v7 P1-7 相位反演 · 当 R0/R1 命中率 ≤ 2/6 时按反向假设重跑。"
                          "可选：day_master_dominant (默认) / "
@@ -1428,6 +1510,9 @@ def main():
     mangpai_data = None
     if args.mangpai:
         mangpai_data = json.loads(Path(args.mangpai).read_text(encoding="utf-8"))
+    confirmed = None
+    if args.confirmed_facts and Path(args.confirmed_facts).exists():
+        confirmed = json.loads(Path(args.confirmed_facts).read_text(encoding="utf-8"))
 
     result = score(
         bazi,
@@ -1438,6 +1523,7 @@ def main():
         dispute_threshold=args.dispute_threshold,
         mangpai=mangpai_data,
         override_phase=args.override_phase,
+        confirmed_facts=confirmed,
     )
 
     if args.strict:
@@ -1451,6 +1537,7 @@ def main():
             dispute_threshold=args.dispute_threshold,
             mangpai=mangpai_data,
             override_phase=args.override_phase,
+            confirmed_facts=confirmed,
         )
         a = json.dumps(result, ensure_ascii=False, sort_keys=True)
         b = json.dumps(result2, ensure_ascii=False, sort_keys=True)
@@ -1461,11 +1548,13 @@ def main():
 
     Path(args.out).write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")
     mp_count = sum(len(p["mangpai_events"]) for p in result["points"]) if mangpai_data else 0
+    sc_count = len(result.get("structural_corrections_applied", []))
     print(f"[score_curves] wrote {args.out}: ages {args.age_start}-{age_end}, "
           f"{len(result['points'])} years, "
           f"{len(result['turning_points_future'])} future turning points, "
           f"{len(result['disputes'])} disputed (year×dim) entries, "
-          f"mangpai={'on' if mangpai_data else 'off'} ({mp_count} events embedded)")
+          f"mangpai={'on' if mangpai_data else 'off'} ({mp_count} events embedded), "
+          f"confirmed_facts={'on' if confirmed else 'off'} ({sc_count} structural corrections applied)")
 
 
 if __name__ == "__main__":

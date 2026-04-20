@@ -393,12 +393,14 @@ bazi-life-curves/
 ├── INSTALL.md                     # 安装指南
 ├── README.md                      # 本文件
 ├── requirements.txt
-├── scripts/                       # 9 个核心脚本
-│   ├── _bazi_core.py              # 干支 / 五行 / 十神 / 互动检测底层
-│   ├── solve_bazi.py              # 八字解析（含 --orientation v7）
-│   ├── score_curves.py            # 4 维曲线打分（三派融合 + emotion 独立通道）
+├── scripts/                       # 11 个核心脚本（v7.2）
+│   ├── _bazi_core.py              # 干支 / 五行 / 十神 / 互动检测底层 + P1-P5 phase detect
+│   ├── solve_bazi.py              # 八字解析（v7 --orientation · v7.2 --longitude 真太阳时）
+│   ├── score_curves.py            # 4 维曲线打分（v7.2 --confirmed-facts 闭环）
 │   ├── mangpai_events.py          # 盲派应事 + 反向规则 + 护身减压
-│   ├── handshake.py               # R0+R1+R2 三阶段校验候选
+│   ├── handshake.py               # R0+R1+R2 三阶段校验（v7.1 --dump-phase-candidates · v7.2 --phase-id 二轮校验）
+│   ├── phase_inversion_loop.py    # v7.2 / v8 Auto-Loop · 相位反演 4 步编排（dump→pick→score→handshake）
+│   ├── save_confirmed_facts.py    # v7.2 · 用户校验反馈固化（含 phase_override）
 │   ├── render_chart.py            # 静态 PNG（matplotlib）
 │   ├── render_artifact.py         # 交互 HTML（Recharts + marked.js）
 │   ├── he_pan.py                  # 合盘 4 层评分
@@ -432,12 +434,12 @@ bazi-life-curves/
 诚实摆出来：
 
 - **数据集偏小**：当前 `calibration/dataset.yaml` 只 5 人 / 15 事件，统计意义有限。希望社区贡献匿名八字 + 真实事件
-- **从格 / 化气格 / 神煞**：尚未实现，遇到会按普通格局走（已有 `geju.label` 标记）
-- **真太阳时校正**：未实现（`--longitude` 是 deferred）
-- **三派权重 25/40/30** 是经验值，需更大数据集做网格搜索
-- **R0 反询问的 R0 命中率**：当前依赖用户诚实回答，没有交叉验证
+- **从格 / 化气格 / 神煞**：基础"从格"已通过 v7.1 P5 (三气成象 detect) + 假从/真从 detect 覆盖；**化气格 / 神煞**仍未实现，遇到会按普通格局走（已有 `geju.label` 标记）
+- **真太阳时校正**：✅ v7.2 已实现 · `solve_bazi.py --longitude <度>` 支持东经/西经，按 120° 中心 ±4 分/度自动校正出生时间
+- **三派权重 25/40/30** 是经验值，需更大数据集做网格搜索（v9 deferred）
+- **R0 反询问的 R0 命中率**：当前依赖用户诚实回答；v7.2 phase 反演二轮校验已经间接缓解（反演后用户要重新答 6 题二轮校验，难骗）
 
-详见 `SKILL.md` 末尾的 deferred 列表。
+详见 `references/phase_inversion_protocol.md §9` 的版本时间表。
 
 ---
 
