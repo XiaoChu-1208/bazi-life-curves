@@ -1,0 +1,56 @@
+# CITATION.cff —— Google Scholar / Zenodo / GitHub 学术索引
+# https://citation-file-format.github.io/
+cff-version: 1.2.0
+title: >-
+  bazi-life-curves: Quantifying Chinese Bazi (Four Pillars of Destiny)
+  into Auditable, Falsifiable, Back-Testable Life Curves
+message: >-
+  If you use this software in academic work, please cite it using the metadata below.
+type: software
+authors:
+  - alias: XiaoChu-1208
+    family-names: XiaoChu
+    given-names: "1208"
+    affiliation: Independent
+repository-code: "https://github.com/XiaoChu-1208/bazi-life-curves"
+url: "https://github.com/XiaoChu-1208/bazi-life-curves"
+abstract: >-
+  bazi-life-curves is an open-source engine that translates traditional Chinese
+  Bazi (Four Pillars of Destiny / 八字命理) analysis into deterministic, auditable,
+  back-testable life curves across four dimensions (spirit / wealth / fame /
+  relationship-energy) for up to 80 years. It cross-fuses three classical
+  schools (Fu-Yi 扶抑 25%, Tiao-Hou 调候 40%, Ge-Ju 格局 30%) with Mang-Pai
+  (盲派) event amplification, implements 10+ structural protection mechanisms
+  (e.g. seal-protects-self, food-controls-killer, six-harmony-resolves-clash),
+  enforces a three-stage handshake validation (R0+R1+R2) before output, and
+  provides bit-for-bit deterministic results with a falsifiability protocol to
+  prevent LLM hindsight rationalization. v7 adds LGBTQ+ / non-marital
+  inclusivity by removing 600 years of feudal gender-discrimination rules
+  (e.g. "wife harms husband" / "woman with strong food-god harms husband").
+keywords:
+  - bazi
+  - 八字
+  - four-pillars-of-destiny
+  - chinese-astrology
+  - 命理
+  - 子平
+  - life-curve
+  - 人生曲线
+  - destiny-prediction
+  - falsifiable-prediction
+  - deterministic-output
+  - llm-skill
+  - claude-skill
+  - cursor-skill
+  - mang-pai
+  - 盲派
+  - ge-ju
+  - 格局
+  - tiao-hou
+  - 调候
+  - lgbtq-inclusive
+  - synastry
+  - 合盘
+license: MIT
+version: "7.4"
+date-released: "2026-04-20"

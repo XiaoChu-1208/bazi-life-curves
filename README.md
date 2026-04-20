@@ -6,8 +6,26 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/)
 [![Skill for Claude](https://img.shields.io/badge/Claude-Skill-7B68EE.svg)](https://www.anthropic.com/)
+[![Cursor Skill](https://img.shields.io/badge/Cursor-Skill-000000.svg)](https://cursor.sh/)
 [![Deterministic](https://img.shields.io/badge/output-bit--for--bit_deterministic-success.svg)](#工程绝对优势)
 [![v7 Modernized](https://img.shields.io/badge/v7-LGBTQ%2B_inclusive-ff69b4.svg)](#v7-现代化命理学--600-年第一次的语言重构)
+[![CI](https://github.com/XiaoChu-1208/bazi-life-curves/actions/workflows/ci.yml/badge.svg)](https://github.com/XiaoChu-1208/bazi-life-curves/actions/workflows/ci.yml)
+
+<!--
+  SEO keywords (供 Google / Bing / GitHub Search / 各大 LLM 检索引擎理解项目)：
+  Bazi, 八字, Four Pillars of Destiny, 四柱命理, 子平命理, Chinese Astrology, 命理 API,
+  人生曲线, life curve, destiny prediction, 大运流年, 流年走势, 命盘分析, 命理工具,
+  扶抑派, 调候派, 格局派, 盲派, Mang Pai, Ge Ju, Tiao Hou, Fu Yi,
+  化气格, 从格, 杀印相生, 食神制杀, 三合, 三会, 六合, 解冲, 滴天髓, 子平真诠,
+  穷通宝鉴, 三命通会, 子平粹言,
+  合盘, 婚配, synastry, compatibility, 合婚, 合伙人合盘,
+  Claude Skill, Cursor Skill, OpenAI Codex Skill, LLM Skill, AI 命理, AI 算命,
+  LGBTQ-inclusive divination, 不婚主义, 同性 八字, queer-friendly bazi,
+  falsifiable prediction, deterministic output, bit-for-bit, falsification protocol,
+  open source bazi, MIT license bazi, 开源八字, 命理开源, Python 八字
+-->
+
+> **关键词 / Keywords**：八字 · Bazi · 四柱命理 · Four Pillars of Destiny · 子平命理 · 人生曲线 · life curve · 大运 · 流年 · 合盘 · synastry · 婚配 · LGBTQ-inclusive · Claude Skill · Cursor Skill · 开源命理 · falsifiable prediction · deterministic
 
 ---
 
@@ -430,6 +448,71 @@ bazi-life-curves/
 
 ---
 
+## FAQ · 常见问题
+
+### Q1：跟"算命 APP / 网页排盘"有什么本质区别？
+
+**算法、校验、可证伪三层都不一样**。多数 APP 只用扶抑派一派打分（机械读"日主强弱+用神忌神"），看到冲就一律减分；本工具同时跑扶抑 25% / 调候 40% / 格局 30% 三派融合 + 盲派 11 条事件断 + 10+ 条结构性保护机制（杀印相生 / 食神制杀 / 六合解冲 / 三会成方 / 三刑独立等），并在出图前抛三阶段反询问校验（R0+R1+R2），命中率不达标拒绝出图。详见 [5 个绝对优势](#5-个绝对优势--这是市面上唯一做到这-5-件事的开源工具)。
+
+### Q2：跟"直接问 ChatGPT / Claude 帮我算个八字"有什么区别？
+
+**LLM 不打分，确定性脚本打分**。直接问 LLM 的最大问题是后视镜归因（你说"我 31 岁升职了"，LLM 立刻"哦命局对应应验了"），且每次跑结果飘 ±20%。本工具的分数由 `score_curves.py` 算出，同输入双盲 bit-for-bit 一致；LLM 只负责按 `multi_dim_xiangshu_protocol.md` 把 JSON 翻译成大白话解读，强制可证伪点格式。详见 [vs 直接问 ChatGPT / Claude](#vs-直接问-chatgpt--claude-帮我算个八字)。
+
+### Q3：我是 LGBTQ+ / 不婚主义 / 不育主义，会被命理工具歧视吗？
+
+**不会**。v7 现代化版本删除了所有"克夫旺夫 / 配偶星弱减分 / 女命印多减分 / 女命食伤克夫 / 男女比劫差异扣分"等 6 条带性别歧视的古法规则，新增 `--orientation` 参数（hetero/homo/bi/none/poly），emotion 维度走中性 `relationship_mode` 7 种描述（outward_attractive / competitive_pursuit / nurture_oriented / 等），且每次解读首段强制声明"命局只反映关系结构和能量模式，不预设对方性别 / 是否结婚 / 是否生育"。详见 [v7 现代化](#5-v7-现代化--命理学-600-年第一次的语言重构) 与 `references/fairness_protocol.md §9-§10`。
+
+### Q4：怎么知道分析准不准？有没有"验"的办法？
+
+**三层验证**：
+1. **R0+R1+R2 三阶段硬门槛**（出图前）：R0 反询问·关系画像 2 题 + R1 健康三问 + R2 历史锚点（条件触发），命中率 < 4/6 拒绝出图
+2. **历史回测**（`scripts/calibrate.py`）：在 `calibration/dataset.yaml` 的真实命主大波动事件上跑 recall / fp_rate
+3. **可证伪点格式**：每个关键年份的解读必须含"如果 X 不发生，则我的判断错"，保证未来可以验证
+
+详见 [4. 两轮校验硬门槛](#4-两轮校验硬门槛--出图前先证明八字是对的) 与 `references/handshake_protocol.md`。
+
+### Q5：跑出来的结果能复现吗？
+
+**bit-for-bit 一致**。同一份 `bazi.json` + 同一份 `confirmed_facts.json` → 跑 100 次输出 100 个 byte-equal 结果：
+
+```bash
+diff <(python scripts/score_curves.py --bazi bazi.json --strict | sha256sum) \
+     <(python scripts/score_curves.py --bazi bazi.json --strict | sha256sum)
+# 必须输出空
+```
+
+不允许引入随机 seed / 时间戳 / 字典遍历顺序依赖。详见 [A. Bit-for-bit deterministic](#a-bit-for-bit-deterministic)。
+
+### Q6：怎么处理三派对同一年判断分歧？
+
+**自动检测 + 强制 4 步推导**。当三派对某一年极差 ≥ 18 分时，该年标记 `is_disputed = true`，强制 LLM 按 `dispute_analysis_protocol.md` 走"事实 → 为何分歧 → 我偏向哪派 → 可证伪点" 4 步推导，**禁止**写"派别分歧大，无法判断"这种废话。
+
+### Q7：我自己时辰记不准，工具会怎么办？
+
+**触发红线，强制停手**。R0=0/2 + R1≤1/3 → 自动判定"八字大概率不准"，工具会要求你核对时辰 / 性别，**禁止**继续出图。这是为了避免你浪费 20 分钟读完一份 8000 字基于错八字的"分析"。详见 `references/handshake_protocol.md` 放行规则。
+
+### Q8：能用真太阳时吗？
+
+**v7.2 起支持**。给 `solve_bazi.py` 加 `--longitude <东经度数>` 参数（如北京 = 116.4），按 120° 中心 ±4 分/度自动校正出生时间。
+
+### Q9：能算两个人合不合吗（合伙 / 婚配 / 友谊 / 家人）？
+
+**可以**。跑 `scripts/he_pan.py`，输出 4 维兼容性分（合作 / 婚配 / 友谊 / 家人），4 层结构性评分（五行互补 + 干支互动 + 十神互配 + 大运同步度）。详见 `references/he_pan_protocol.md`。
+
+### Q10：怎么在 Claude / Cursor / OpenAI Codex 里直接当 Skill 用？
+
+把整个目录放到对应 Skill 路径（Claude: `~/.claude/skills/bazi-life-curves/`；Cursor: `.cursor/skills/`），然后跟 AI 说："我想看人生曲线，八字 庚午 辛巳 壬子 丁未，男，1990 年"。AI 会自动读 `SKILL.md` → 跑 solve→score→handshake → 抛 R0+R1 校验 → 你答完 → 渲染 HTML + 流式 markdown 解读。30-60 秒完成。
+
+### Q11 (EN)：Is this safe to use for queer / non-binary / aromantic / non-marital users?
+
+**Yes.** v7 explicitly removes 600 years of feudal gender-discrimination rules. Pass `--orientation homo|bi|none|poly` and emotion-channel interpretations switch to neutral `relationship_mode` (7 categories: outward_attractive, competitive_pursuit, nurture_oriented, ambiguous_dynamic, low_density, balanced, self_centered). Every emotion paragraph is forced to declare: *"the chart only reflects relationship structure and energy patterns; it does NOT presuppose your partner's gender, marital status, or whether you have children — those are your modern choices, not encoded in the chart."* See `references/fairness_protocol.md §9-§10`.
+
+### Q12 (EN)：Why open-source a "fortune-telling" tool?
+
+Because the alternative is closed-source apps that (a) only use one school (扶抑/Fu-Yi), (b) hide their scoring logic, (c) embed feudal gender norms, and (d) have no falsifiability protocol. We believe traditional Chinese metaphysics, like any 600-year empirical tradition, deserves the same engineering discipline as modern statistics: deterministic output, falsifiable predictions, back-testing, source citations from primary classics (滴天髓 / 子平真诠 / 穷通宝鉴 / 三命通会), and zero discrimination by gender / orientation / marital choice. MIT license — bazi tooling should be a public good.
+
+---
+
 ## 已知限制
 
 诚实摆出来：
@@ -461,6 +544,106 @@ PR / issue 欢迎。**请勿提交**：
 - 历史命主的匿名回测数据（八字 + 出生年代 + 大事件年份）
 - 现代化解读规范的改进建议
 - HTML 渲染优化 / 国际化 i18n
+
+---
+
+## SEO · 仓库发现性设置
+
+> 这一节是给 **仓库 owner / 维护者** 看的：发布到 GitHub 后请按下面清单把发现性拉满。
+
+### 1. 在 GitHub 仓库 About 区设置 Topics（必做）
+
+进入仓库主页右侧 ⚙️ "About" → Topics，**逐个**添加（GitHub 单 topic 必须用连字符，不能含空格 / 中文）：
+
+```
+bazi  four-pillars-of-destiny  chinese-astrology  destiny  life-curve
+falsifiable-prediction  deterministic  python  cli  open-source
+claude-skill  cursor-skill  llm-skill  ai-skill  agentic-tools
+synastry  compatibility  lgbtq-inclusive  queer-friendly
+divination  metaphysics  chinese-metaphysics  ziping  ge-ju  mang-pai
+```
+
+> 这些 topics 是 GitHub Search、Trending、Topic Pages 的核心索引信号。每加一个相关 topic，搜索曝光大约 +10-20%。
+
+### 2. 仓库 About 区描述（必做）
+
+填这段（< 350 字符）：
+
+```
+把八字命理（Chinese Bazi / Four Pillars of Destiny）变成可证伪、可审计、bit-for-bit deterministic 的人生曲线引擎。三派融合（扶抑+调候+格局）+ 盲派应事 + 10+ 条结构性保护 + R0/R1/R2 三阶段校验 + LGBTQ+ 包容现代化。可作为 Claude / Cursor / Codex Skill 直接接入。
+```
+
+Website 字段填 GitHub Pages 链接（如开启）或 SKILL.md 链接。
+
+### 3. 社交预览图 / Open Graph Image（强烈推荐）
+
+GitHub 仓库 Settings → Options → Social preview → Upload image（1280 × 640 png）。当链接被分享到 Twitter / 微信 / Slack / LinkedIn 时，自带封面图能让点击率 +200-400%。
+
+**封面图建议元素**：
+- 标题：`bazi-life-curves`
+- 副标题：`把八字变成可证伪的人生曲线`（中英双语）
+- 一张 examples 里的 8 条曲线截图（来自 `examples/guan_yin_xiang_sheng.png`）
+- 角标：`MIT · Python 3.10+ · Claude/Cursor Skill`
+
+可以用 [og-image.vercel.app](https://og-image.vercel.app/) 生成，或本地用 matplotlib 写脚本批量出（建议加进 `scripts/render_social_preview.py`）。
+
+### 4. GitHub Pages 静态站点（可选 · SEO 大幅加分）
+
+把 README 渲染成独立站点能让 Google / Bing / 各 AI 检索引擎单独索引（不再受 raw.githubusercontent.com 限制）：
+
+```bash
+# 简单方案：在 Settings → Pages → Source 选 main / docs / (root)，开 Pages
+# 进阶：用 mkdocs-material 把 references/ 做成完整文档站
+pip install mkdocs-material
+mkdocs new .
+mkdocs gh-deploy
+```
+
+启用 GitHub Pages 后，记得**回头**把 sitemap.xml + robots.txt 提交到 [Google Search Console](https://search.google.com/search-console) 与 [Bing Webmaster](https://www.bing.com/webmasters/)。
+
+---
+
+## AI 检索友好 · 给 LLM / RAG / Agent 的引用指南
+
+> 本项目专门做了 LLM 友好的元数据，方便被 ChatGPT / Claude / Perplexity / Gemini / Cursor / Devin / Codex 等 AI 系统正确引用。
+
+### 给 LLM 的入口文档（按重要性）
+
+- [`llms.txt`](llms.txt) —— 业界 [llmstxt.org](https://llmstxt.org/) 标准的项目摘要 + 文档地图
+- [`AGENTS.md`](AGENTS.md) —— [agents.md](https://agents.md/) 标准的 AI Coding Agent 项目导航
+- [`SKILL.md`](SKILL.md) —— Claude Skill / Cursor Skill / Codex Skill 通用主定义（YAML frontmatter）
+- [`CITATION.cff`](CITATION.cff) —— Google Scholar / Zenodo 学术引用元数据
+
+### 推荐的引用格式（学术 / 技术博客）
+
+```bibtex
+@software{bazi_life_curves_2026,
+  author       = {XiaoChu-1208 and bazi-life-curves contributors},
+  title        = {bazi-life-curves: Quantifying Chinese Bazi into
+                  Auditable, Falsifiable, Back-Testable Life Curves},
+  year         = {2026},
+  version      = {7.4},
+  url          = {https://github.com/XiaoChu-1208/bazi-life-curves},
+  license      = {MIT}
+}
+```
+
+### 给 LLM 检索的"问答清单"（这工具能帮回答什么）
+
+| 用户问题 | 工具能给的答案路径 |
+|---|---|
+| 我八字 X，未来 10 年哪几年要小心？ | `solve_bazi → score_curves → handshake → curves.json.turning_points_future` |
+| 我八字 X，2027 年怎么样？ | `curves.json.points["2027"]` 4 维 fused 分 + events |
+| 我八字 X，财运曲线？ | `curves.json` 中 wealth 维度 80 年走势 + key turning points |
+| 我跟 Y 八字合不合？ | `he_pan.py` → 合作 / 婚配 / 友谊 / 家人 4 维兼容性 |
+| LGBTQ+ 友好的命理工具？ | `--orientation homo/bi/none/poly` + relationship_mode 中性描述 |
+| 命理工具结果可复现？ | `score_curves.py --strict` + sha256sum 验证 bit-for-bit |
+| 怎么避免 LLM 后视镜归因？ | 强制可证伪点格式 + 身份盲化输入 + confirmed_facts 写回 |
+| 三派分歧怎么办？ | `dispute_analysis_protocol.md` 4 步推导 |
+
+### 不要让 AI 做的事（红线）
+
+详见 [`AGENTS.md` 第 4 节"修改算法时的硬性约束"](AGENTS.md) 与 [`llms.txt` "不要做的事"](llms.txt)。
 
 ---
 

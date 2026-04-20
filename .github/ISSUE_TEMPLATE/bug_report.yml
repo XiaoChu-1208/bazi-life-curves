@@ -1,0 +1,71 @@
+name: Bug 报告
+description: 命理判错 / 脚本崩溃 / HTML 渲染异常 / CLI 参数失效
+title: "[bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        感谢你提交 bug 报告！请尽量提供可复现信息。
+        **隐私提示**：不要在这里粘贴你自己的真实八字 + 真实事件。请用 `examples/` 下的虚构示例改造一个能复现问题的最小 case。
+
+  - type: input
+    id: version
+    attributes:
+      label: 版本
+      placeholder: "v7.4.0 / commit hash"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: scope
+    attributes:
+      label: 出问题的模块
+      options:
+        - solve_bazi.py（八字解析）
+        - score_curves.py（4 维打分）
+        - mangpai_events.py（盲派事件）
+        - handshake.py（R0/R1/R2/R3 校验）
+        - phase_inversion_loop.py（Auto-Loop）
+        - he_pan.py（合盘）
+        - render_chart.py / render_artifact.py（渲染）
+        - calibrate.py（回测）
+        - 学理 / 协议文档
+        - 其他
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: 复现步骤
+      description: 完整的命令行 + 输入文件内容（脱敏）
+      placeholder: |
+        1. python scripts/solve_bazi.py --pillars "庚午 辛巳 壬子 丁未" --gender M --birth-year 1990 --orientation hetero --out output/test.bazi.json
+        2. python scripts/score_curves.py --bazi output/test.bazi.json --out output/test.curves.json
+        3. 看 output/test.curves.json 的 points["2030"].scores.wealth.fused，期望 X，实际 Y
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: 期望行为
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: 实际行为 + 错误日志
+    validations:
+      required: true
+
+  - type: textarea
+    id: env
+    attributes:
+      label: 运行环境
+      placeholder: |
+        OS: macOS 14.5 / Ubuntu 22.04 / Windows 11
+        Python: 3.11.5
+        lunar-python: 1.4.4

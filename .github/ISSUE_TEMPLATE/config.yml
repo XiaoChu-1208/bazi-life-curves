@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 用户使用问题（不是 bug）
+    url: https://github.com/XiaoChu-1208/bazi-life-curves/discussions
+    about: 怎么用 / 怎么解读 / 算出来准不准 → 请去 Discussions
+  - name: 学理 / 命理讨论
+    url: https://github.com/XiaoChu-1208/bazi-life-curves/discussions/categories/methodology
+    about: 关于三派融合 / 盲派 / 格局 / 化气格的学理讨论
+  - name: 安全漏洞
+    url: https://github.com/XiaoChu-1208/bazi-life-curves/security/advisories/new
+    about: 代码执行 / 隐私泄漏类问题请走 Private Vulnerability Reporting

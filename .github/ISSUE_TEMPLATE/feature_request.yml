@@ -1,0 +1,64 @@
+name: 新算法 / 新功能建议
+description: 新加结构性保护机制 / 盲派事件 / phase override / 现代化改进
+title: "[feat] "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        欢迎贡献新机制！本项目对学理出处和工程一致性有较高要求，请配合下面的字段。
+
+  - type: dropdown
+    id: kind
+    attributes:
+      label: 类型
+      options:
+        - 新结构性保护机制（如杀印相生 / 食神制杀类）
+        - 新盲派事件 / 反向规则 / 护身减压
+        - 新 phase override（特殊格局：化气格 / 从格 / 一行得气 / 两神成象 等）
+        - 现代化解读改进（fairness_protocol §10）
+        - HTML 渲染 / 移动端 / 国际化
+        - 新 CLI 参数 / 新输出字段
+        - 其他
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: 具体建议
+      placeholder: 请描述你想加的机制 / 功能
+    validations:
+      required: true
+
+  - type: textarea
+    id: source
+    attributes:
+      label: 古籍出处 / 师承（强制）
+      description: 任何新机制必须有出处。如果是工程改进可填"无（工程）"
+      placeholder: |
+        《滴天髓阐微》"杀印相生，威权万里"
+        或《子平真诠·论用神》卷 X
+        或现代盲派：段建业《盲派命理》第 X 章
+    validations:
+      required: true
+
+  - type: textarea
+    id: examples
+    attributes:
+      label: 命例验证
+      description: 请提供至少 1 个能体现该机制的命例（用 examples/ 下虚构命例改造，不要用真人八字）
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: 检查
+      options:
+        - label: 我已读 references/ 下对应协议文档
+          required: true
+        - label: 我没有提交真人八字 / confirmed_facts.json
+          required: true
+        - label: 我同意以 MIT License 贡献此功能
+          required: true

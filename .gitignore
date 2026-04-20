@@ -1,46 +1,65 @@
-# OS
-.DS_Store
-Thumbs.db
-*.swp
-*~
+# bazi-life-curves · .gitignore
 
-# Python
+# ───── Python ─────
 __pycache__/
 *.py[cod]
 *$py.class
+*.so
+.Python
+build/
+dist/
 *.egg-info/
+.eggs/
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
-venv/
+.coverage
+htmlcov/
+
+# ───── 虚拟环境 ─────
 .venv/
+venv/
 env/
-.env
+ENV/
 
-# 跑出的中间产物 / 隐私数据（含八字推算结果，不应推到公网）
+# ───── 用户运行产物（含真实八字 / 隐私）─────
+# output/ 默认本地跑产物（含 confirmed_facts.json 用户隐私）
 output/
-/tmp/
-*.bazi.json
-*.curves.json
-*.handshake.json
-*.mangpai.json
-*.analysis.json
-*.html
-*.png
-# 但保留 examples/ 下的演示产物
-!examples/*.bazi.json
-!examples/*.curves.json
-!examples/*.handshake.json
-!examples/*.mangpai.json
-!examples/*.analysis.json
-!examples/*.html
-!examples/*.png
+!output/.gitkeep
 
-# 个人校准副本（永远不进 git）
-personal/
-calibration/personal/
-~/.bazi-curves-memory/
-
-# Confirmed facts（个人反馈记忆，含八字 hash → 不推）
-confirmed_facts.json
+# 任何带 confirmed 的 JSON（跨目录）
 **/confirmed_facts.json
+**/confirmed_*.json
+
+# 任何带 personal / private 前缀的命例
+**/personal_*.json
+**/private_*.json
+**/me_*.json
+**/my_*.json
+
+# 临时 HTML / PNG / SVG 渲染产物（保留 examples/ 下的）
+/*.html
+/*.png
+/*.svg
+
+# ───── IDE / 系统 ─────
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# ───── Cursor / Claude / AI agents ─────
+.cursor/
+.claude/
+.aider*
+
+# ───── Logs ─────
+*.log
+logs/
+
+# ───── 校准过程产物 ─────
+calibration/runs/
+calibration/_cache/

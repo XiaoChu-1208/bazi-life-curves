@@ -1,0 +1,84 @@
+# bazi-life-curves
+
+> 把八字命理（中国四柱 / Four Pillars of Destiny）变成可证伪、可审计、可回测、bit-for-bit deterministic 的人生曲线引擎。开源 MIT，可作为 Claude Skill / Cursor Skill / OpenAI Codex Skill 直接接入。
+
+本工具与"算命 APP"的根本区别：
+
+- **算法层** = 三派交叉融合（扶抑派 25% + 调候派 40% + 格局派 30%）+ 盲派 11 条事件断（仅作幅度修正，不进融合权重）
+- **结构层** = 10+ 条结构性保护机制（杀印相生 / 食神制杀 / 比劫帮身 / 六合解冲 / 三合解冲 / 三会成方 / 三刑独立 等），每条带古籍出处
+- **校验层** = 出图前三阶段 handshake（R0 反询问·关系画像 + R0' 反迎合·反向探针 + R1 健康三问 + R2 历史锚点 + R3 原生家庭画像），命中率不达标拒绝出图
+- **公正层** = fairness_protocol §9-§10 现代化解读铁律：删除"克夫旺夫"等 600 年封建残余规则，加 `--orientation` 5 选项支持 hetero/homo/bi/none/poly
+- **工程层** = 同输入双盲 bit-for-bit 一致 + 历史回测 + LLM 后视镜归因防御 + confirmed_facts 跨 session 记忆
+
+## 入口文档（按重要性排序）
+
+- [README.md](README.md): 项目总览、5 大绝对优势、工程优势、跟同类工具对比、快速开始
+- [SKILL.md](SKILL.md): Claude / Cursor / OpenAI Codex Skill 主定义（YAML frontmatter + 完整工作流）
+- [USAGE.md](USAGE.md): 用户视角 30 秒速览
+- [INSTALL.md](INSTALL.md): 安装指南
+- [AGENTS.md](AGENTS.md): 给 AI 编码代理（Cursor / Claude Code / Codex CLI）的项目导航
+- [PLAN_zeitgeist_folkways.md](PLAN_zeitgeist_folkways.md): 时代风气 / 民俗修正的设计文档
+
+## 学理与协议（references/）
+
+- [references/methodology.md](references/methodology.md): 三派融合的数学与权重设计
+- [references/scoring_rubric.md](references/scoring_rubric.md): 每条加分 / 减分规则的详细表
+- [references/mangpai_protocol.md](references/mangpai_protocol.md): 盲派 11 条事件 + 反向规则 + 护身减压
+- [references/handshake_protocol.md](references/handshake_protocol.md): R0+R1+R2+R3 校验流程与放行规则
+- [references/multi_dim_xiangshu_protocol.md](references/multi_dim_xiangshu_protocol.md): LLM 解读模板（关键年份格式 / 大运段落格式）
+- [references/dispute_analysis_protocol.md](references/dispute_analysis_protocol.md): 三派分歧解读 4 步法
+- [references/prediction_protocol.md](references/prediction_protocol.md): 未来年份预测格式（强制可证伪点）
+- [references/he_pan_protocol.md](references/he_pan_protocol.md): 合盘 4 层评分（合作 / 婚配 / 友谊 / 家人）
+- [references/fairness_protocol.md](references/fairness_protocol.md): §9 性别例外 + §10 现代化解读铁律
+- [references/diagnosis_pitfalls.md](references/diagnosis_pitfalls.md): 已踩过的命理坑（命理人都知道的常见误读）
+- [references/accuracy_protocol.md](references/accuracy_protocol.md): 准确度保障的工程清单
+- [references/phase_inversion_protocol.md](references/phase_inversion_protocol.md): 相位反演（Auto-Loop）协议
+- [references/glossary.md](references/glossary.md): 术语表（中英对照）
+
+## 核心脚本（scripts/）
+
+- `solve_bazi.py`: 八字解析（`--pillars` / `--gregorian` / `--orientation` / `--longitude` 真太阳时）
+- `score_curves.py`: 4 维曲线打分（spirit / wealth / fame / emotion，年龄 0-80）
+- `mangpai_events.py`: 盲派事件检测 + 反向 + 护身
+- `handshake.py`: 多阶段反询问校验（R0/R0'/R1/R2/R3）
+- `phase_inversion_loop.py`: 相位反演 Auto-Loop 编排
+- `save_confirmed_facts.py`: 用户校验反馈固化
+- `family_profile.py`: R3 原生家庭反询问
+- `render_chart.py`: 静态 PNG 渲染（matplotlib）
+- `render_artifact.py`: 交互 HTML 渲染（Recharts + marked.js）
+- `he_pan.py`: 合盘 4 层结构性评分
+- `calibrate.py`: 历史回测命中率 / 假阳率
+- `_bazi_core.py`: 干支 / 五行 / 十神 / 互动检测 / 化气格 / 神煞底层
+
+## 完整示例（examples/）
+
+- `examples/guan_yin_xiang_sheng.*`: 官印相生格 · 完整 bazi/curves/handshake/mangpai/analysis JSON + HTML + PNG + Markdown 解读
+- `examples/shang_guan_sheng_cai.*`: 伤官生财格 · 同上完整产物
+
+## 这个工具能回答什么问题（AI 检索友好的问答清单）
+
+- "我八字 X，未来 10 年哪几年要小心？" → 跑 solve+score+handshake+render，看 turning_points_future
+- "我八字 X，2027 年怎么样？" → 看 points[2027] 的 4 维 fused 分 + events
+- "我八字 X，财运曲线怎么样？" → 看 wealth 维度 80 年走势 + key turning points
+- "我八字 X，跟 Y 八字合不合？" → 跑 he_pan.py，输出合作 / 婚配 / 友谊 / 家人 4 维兼容性
+- "我是 LGBTQ+ / 不婚主义者，命理工具会歧视我吗？" → 加 `--orientation homo/bi/none`，emotion 维度走中性 relationship_mode 描述，禁止"克夫旺夫"等措辞
+- "命理工具结果能复现吗？" → 同八字同 confirmed_facts → bit-for-bit deterministic（diff sha256sum 必空）
+- "怎么避免 LLM 看到历史信息后倒推编故事？" → 强制可证伪点格式 + 身份盲化输入 + confirmed_facts 写回
+- "怎么知道分析准不准？" → R0+R1+R2 三阶段硬门槛 + calibration/dataset.yaml 历史回测 + recall/fp_rate 指标
+- "怎么处理三派对同一年判断分歧？" → dispute_analysis_protocol 强制 LLM 走"事实→为何分歧→偏向哪派→可证伪点" 4 步推导
+
+## 引用 / 学术使用
+
+参见 [CITATION.cff](CITATION.cff)。本工具的所有量化算法、古籍引文、回测数据集均开源可审计。
+
+## 不要做的事（给 AI agent 的红线）
+
+- ❌ 不要让 LLM 自己打分；分数只能由 `score_curves.py` 这类确定性脚本算出
+- ❌ 不要绕过 handshake 校验直接出图；R0=0 + R1≤1 必须停手要时辰
+- ❌ 不要在解读里写"克夫 / 旺夫 / 配偶星弱 = 差 / 单身 = 差"等歧视性措辞（违反 fairness_protocol §10）
+- ❌ 不要做"我 31 岁升职了"→"哦命局应验了"的后视镜归因
+- ❌ 不要在没有古籍出处的情况下自行加"机制"（如自创 12 种结构性保护）
+
+## License
+
+MIT —— 命理工具应该是公共财产，不该藏起来。
