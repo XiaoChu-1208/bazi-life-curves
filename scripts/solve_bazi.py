@@ -182,6 +182,7 @@ def solve(
         "pillar_info": pillar_info,
         "day_master": pillars[2].gan,
         "day_master_wuxing": GAN_WUXING[pillars[2].gan],
+        "day_master_root_strength": strength.get("root_strength"),
         "strength": strength,
         "yongshen": yong,
         "wuxing_distribution": wuxing_distribution,

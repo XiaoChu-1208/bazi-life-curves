@@ -189,6 +189,100 @@ def calc_zhi_shishen(day_gan: str, zhi: str) -> str:
     return calc_shishen(day_gan, main_gan)
 
 
+# --- 通根度（v9 新增 · 修 1996/12/08 假从误判） ---
+#
+# 设计动机（lessons learned 2026-04 后第二轮回顾）：
+# 旧 day_master_strength 把"印根"和"比劫根"合并到 sheng/same 加权得分里，
+# 导致 floating_dms 判定无法区分"完全无根"vs"有印无比劫"——后者其实是杀印
+# 相生格的典型基础，强行按从格走会全盘错。
+#
+# v9 把通根度独立出来，作为一个公开的、细粒度的 day_master 子结构：
+#   bijie_root = 同五行藏干贡献（比肩/劫财根）
+#   yin_root   = 生我五行藏干贡献（正印/偏印根）
+# 三档藏干权重：本气 1.0 / 中气 0.5 / 余气 0.2
+#
+# 五档 label 阈值经 12 case 校准（diagnosis_pitfalls.md §13、§14）：
+#   < 0.30  → 无根    （真从格的硬门槛）
+#   < 0.70  → 微根    （假从格 / 仍按弱身扶身）
+#   < 1.50  → 弱根    （格局派优先 / 慎用从格）
+#   < 2.50  → 中根    （扶抑派标准）
+#   >= 2.50 → 强根    （日主夯实 / 抑为主）
+ROOT_TIER_WEIGHT = {0: 1.0, 1: 0.5, 2: 0.2}  # 本气 / 中气 / 余气
+
+
+def compute_dayuan_root_strength(stem: str, branches: List[str]) -> Dict:
+    """Compute Day Master grounding via three-tier weighted scan over branches.
+
+    Args:
+        stem: 日主天干（如 "己"）
+        branches: 4 个地支字符（年/月/日/时）
+
+    Returns:
+        {
+            "stem": str, "stem_wx": str,
+            "bijie_root": float, "yin_root": float, "total_root": float,
+            "label": "无根"|"微根"|"弱根"|"中根"|"强根",
+            "details": List[Dict],
+        }
+
+    See references/methodology.md §通根度 for theory.
+    """
+    if stem not in GAN_WUXING:
+        raise ValueError(f"unknown stem: {stem}")
+
+    d_wx = GAN_WUXING[stem]
+    bijie = 0.0
+    yin = 0.0
+    details: List[Dict] = []
+
+    for br in branches:
+        if br not in ZHI_HIDDEN_GAN:
+            continue
+        hidden = ZHI_HIDDEN_GAN[br]
+        for tier_idx, hg in enumerate(hidden):
+            tier_w = ROOT_TIER_WEIGHT.get(tier_idx, 0.0)
+            if tier_w == 0.0:
+                continue
+            hg_wx = GAN_WUXING[hg]
+            kind = None
+            if hg_wx == d_wx:
+                bijie += tier_w
+                kind = "比劫"
+            elif WUXING_SHENG.get(hg_wx) == d_wx:
+                yin += tier_w
+                kind = "印"
+            if kind:
+                details.append({
+                    "branch": br,
+                    "hidden": hg,
+                    "tier": ["本", "中", "余"][tier_idx],
+                    "weight": tier_w,
+                    "kind": kind,
+                })
+
+    total = bijie + yin
+    if total < 0.30:
+        label = "无根"
+    elif total < 0.70:
+        label = "微根"
+    elif total < 1.50:
+        label = "弱根"
+    elif total < 2.50:
+        label = "中根"
+    else:
+        label = "强根"
+
+    return {
+        "stem": stem,
+        "stem_wx": d_wx,
+        "bijie_root": round(bijie, 3),
+        "yin_root": round(yin, 3),
+        "total_root": round(total, 3),
+        "label": label,
+        "details": details,
+    }
+
+
 # --- 日主强弱 ---
 
 def day_master_strength(pillars: List[Pillar]) -> Dict[str, float]:
@@ -226,13 +320,15 @@ def day_master_strength(pillars: List[Pillar]) -> Dict[str, float]:
             continue
         _count(GAN_WUXING[p.gan], 1.0)
 
-    # 4 地支主气（月支权重 × 3，其他 × 2）
+    # 4 地支藏干（月支位置加成 × 1.5；藏干内部本/中/余 = 1.0/0.5/0.2）
     for i, p in enumerate(pillars):
-        weight = 3.0 if i == 1 else 2.0
+        pos_weight = 1.5 if i == 1 else 1.0
         hidden = ZHI_HIDDEN_GAN[p.zhi]
-        _count(GAN_WUXING[hidden[0]], weight)
-        for sub in hidden[1:]:
-            _count(GAN_WUXING[sub], weight * 0.3)
+        for tier_idx, sub in enumerate(hidden):
+            tier_w = ROOT_TIER_WEIGHT.get(tier_idx, 0.0) * 2.0  # 维持旧 *2 总盘量级
+            if tier_w == 0.0:
+                continue
+            _count(GAN_WUXING[sub], pos_weight * tier_w)
 
     # 月令是否当令（最关键）
     month_zhi = pillars[1].zhi
@@ -253,6 +349,10 @@ def day_master_strength(pillars: List[Pillar]) -> Dict[str, float]:
     else:
         label = "中和"
 
+    # v9: 通根度独立子结构
+    branches = [p.zhi for p in pillars]
+    root_strength = compute_dayuan_root_strength(day_gan, branches)
+
     return {
         "score": round(score, 2),
         "label": label,
@@ -262,6 +362,7 @@ def day_master_strength(pillars: List[Pillar]) -> Dict[str, float]:
         "xie": round(xie, 2),
         "ke": round(ke, 2),
         "kewo": round(kewo, 2),
+        "root_strength": root_strength,
     }
 
 

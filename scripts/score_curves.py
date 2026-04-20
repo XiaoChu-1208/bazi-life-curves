@@ -1058,6 +1058,33 @@ def apply_phase_override(bazi: dict, phase_id: str) -> dict:
     bazi.setdefault("yongshen", {})
     bazi.setdefault("strength", {})
 
+    # v9 root_strength 否决守卫：从格 / 化气格类 phase 必须满足无根/微根门槛
+    # 修 1996/12/08 case 假从误判（详见 references/diagnosis_pitfalls.md §13-14）
+    _rs = (bazi.get("strength") or {}).get("root_strength") or {}
+    if _rs:
+        rs_total = _rs.get("total_root", 0.0)
+        rs_yin = _rs.get("yin_root", 0.0)
+        rs_label = _rs.get("label", "")
+        warns = []
+        if pid.startswith("floating_dms_to_cong_") or pid == "true_following":
+            if rs_total >= 0.30:
+                warns.append(
+                    f"day_master.root_strength={rs_label}(total={rs_total:.2f}); "
+                    f"真从格门槛要求 total<0.30。建议改判为 pseudo_following 或杀印相生格。"
+                )
+            if rs_yin >= 0.50:
+                warns.append(
+                    f"yin_root={rs_yin:.2f}>=0.50（有印根）；从格典型不容许印护身。"
+                    f"参考 references/diagnosis_pitfalls.md §14。"
+                )
+        if pid.startswith("huaqi_to_") and rs_total >= 1.50:
+            warns.append(
+                f"化气格要求日主无根(total<1.5); 当前 total={rs_total:.2f}({rs_label})；"
+                f"建议改判为复合相位 + 化神调候。"
+            )
+        if warns:
+            bazi["phase"]["_root_strength_warnings"] = warns
+
     # ① 从势类：日主从弱反推为"按强读" + 用神锁定为"从神"方向
     if pid.startswith("floating_dms_to_cong_") or pid == "true_following":
         bazi["strength"]["_phase_orig_label"] = bazi["strength"].get("label")
