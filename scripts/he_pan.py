@@ -718,6 +718,36 @@ def main():
         print("ERROR: --names 数量与 --bazi 不一致", file=sys.stderr)
         sys.exit(2)
 
+    # v9 PR-2: 入口守卫 — 任何 bazi.is_provisional=True 或后验 < 0.60 拒合盘
+    import os as _os
+    _strict = _os.environ.get("BAZI_HEPAN_BYPASS_V8_GATE") != "1"
+    if _strict:
+        gate_errors: list = []
+        for path, b, n in zip(args.bazi, bazis, names):
+            phase = b.get("phase") or {}
+            if phase.get("is_provisional"):
+                gate_errors.append(
+                    f"  · {n} ({path}): phase.is_provisional=True, "
+                    f"必须先跑 phase_posterior.py 完成 v8 disambiguation."
+                )
+            conf = phase.get("confidence", 1.0)
+            if conf < 0.60:
+                gate_errors.append(
+                    f"  · {n} ({path}): phase.confidence={conf:.2f} < 0.60, "
+                    f"个体相位置信度不足,合盘会放大不确定。"
+                )
+        if gate_errors:
+            print("\n[he_pan v9 GATE] 拒绝合盘 — 任一参与者 v8 phase 未确认或低置信:",
+                  file=sys.stderr)
+            for e in gate_errors:
+                print(e, file=sys.stderr)
+            print("\n建议:", file=sys.stderr)
+            print("  1. 各自先跑 handshake.py 与 phase_posterior.py 完成 v8 二轮校验;",
+                  file=sys.stderr)
+            print("  2. 或在确认低置信可接受的前提下设 BAZI_HEPAN_BYPASS_V8_GATE=1 强行过.",
+                  file=sys.stderr)
+            sys.exit(3)
+
     if args.focus_years:
         focus = sorted(set(args.focus_years))
     else:

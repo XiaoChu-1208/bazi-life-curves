@@ -40,6 +40,7 @@ ALLOWLIST_FILES = {
     "save_confirmed_facts.py",  # 写 last_updated 时间戳
     "handshake.py",             # 用 dt.date.today() 标记当前年份
     "he_pan.py",                # 报告生成时间
+    "he_pan_orchestrator.py",   # v9 PR-2 多人 v8 编排器,串脚本不进打分
     "mcp_server.py",            # MCP 服务,非打分路径
     "phase_inversion_loop.py",  # 编排器,只串脚本不进打分
 }

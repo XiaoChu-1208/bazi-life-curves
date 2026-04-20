@@ -5,6 +5,7 @@
 """
 from __future__ import annotations
 
+import os
 import sys
 from pathlib import Path
 
@@ -19,6 +20,10 @@ TESTS = ROOT / "tests"
 FIXTURES = TESTS / "_fixtures"
 
 sys.path.insert(0, str(SCRIPTS))
+
+# v9 PR-2: tests 自动允许 pillars 模式 8 岁默认起运,以保持 calibration / e2e 测试稳定
+# 真实生产用户走 CLI 时拿不到这个环境变量,会强制要求显式 --qiyun-age
+os.environ.setdefault("BAZI_ALLOW_PILLARS_DEFAULT_QIYUN", "1")
 
 
 @pytest.fixture(scope="session")

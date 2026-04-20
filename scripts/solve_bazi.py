@@ -73,12 +73,31 @@ def solve(
     true_solar_info: dict | None = None
     cross_check_info: dict | None = None
     if pillars_str:
+        # v9 PR-2: pillars 模式弃用警告
+        # qiyun_age 无法精算（需公历日期），dayun/liunian 起算误差可达 ±2 岁
+        import warnings as _warnings
+        _warnings.warn(
+            "--pillars 模式自 v9 起进入弃用流程：起运岁(qiyun_age)无法精算，"
+            "若不显式指定 --qiyun-age 将默认 8 岁，dayun/liunian 起算可能偏离 ±2 岁。"
+            "强烈建议改用 --gregorian + --longitude 以启用 lunar-python 精算。"
+            "详见 USAGE.md §为什么推荐公历输入。",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         pillars = parse_pillars(pillars_str)
         if birth_year is None:
             raise ValueError("--birth-year required when using --pillars")
         by = birth_year
+        if qiyun_age is None:
+            # v9: pillars 模式默认 qiyun_age 改为强制要求显式指定
+            import os as _os
+            if _os.environ.get("BAZI_ALLOW_PILLARS_DEFAULT_QIYUN") != "1":
+                raise ValueError(
+                    "v9: --pillars 模式必须显式 --qiyun-age（旧默认 8 岁已弃用）。"
+                    "若必须沿用旧行为，请设环境变量 BAZI_ALLOW_PILLARS_DEFAULT_QIYUN=1，"
+                    "但仅推荐用于 legacy 测试和 calibration 回归。"
+                )
         if longitude is not None:
-            # pillars 模式下 longitude 仅用于 metadata；不会重算柱位
             true_solar_info = {
                 "longitude": longitude,
                 "warning": "pillars 模式不会用 longitude 重算柱位（柱位已固定）。"
@@ -117,8 +136,9 @@ def solve(
         raise ValueError("Must provide --pillars or --gregorian")
 
     if qiyun_age is None:
+        # v9: legacy fallback（仅在 BAZI_ALLOW_PILLARS_DEFAULT_QIYUN=1 时走到这里）
         qiyun_age = 8
-        qiyun_source = "默认值 8（pillars 模式无法精算，强烈建议在校验环节人工确认起运岁）"
+        qiyun_source = "legacy_default_8（v9 弃用 · 仅 BAZI_ALLOW_PILLARS_DEFAULT_QIYUN=1 时启用）"
 
     strength = day_master_strength(pillars)
     yong = select_yongshen(pillars, strength)
