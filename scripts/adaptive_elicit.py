@@ -580,6 +580,19 @@ def _format_question_md(q: Question, idx: int) -> str:
 
 
 def cmd_dump_question_set(args: argparse.Namespace) -> int:
+    # v9 守门 · stderr 警告：dump-question-set 不是默认 R1 路径，
+    # 默认应该走 `adaptive_elicit.py next` 一题一轮。Agent 不要以为"一次性 14 题
+    # 体验更顺"就默认走这里——那等于把 v9 自适应贝叶斯 EIG 流式问答物理消除。
+    if not getattr(args, "ack_batch", False):
+        print(
+            "[adaptive_elicit] ⚠ WARNING: dump-question-set 不是 v9 默认 R1 路径。\n"
+            "  默认请用 `adaptive_elicit.py next ...`（一题一轮 · EIG 选题 · 5-8 题早停）。\n"
+            "  仅当用户**主动**要求 batch 一次答完时才用本子命令。\n"
+            "  详见 AGENTS.md §二「关键不可跳步（v9）」 + handshake_protocol.md §0。\n"
+            "  传 --ack-batch 表示已确认是用户主动选 batch，本警告即可消失。\n",
+            file=sys.stderr,
+        )
+
     bazi_path = Path(args.bazi)
     bazi = json.loads(bazi_path.read_text(encoding="utf-8"))
     curves = None
@@ -786,12 +799,18 @@ def main() -> int:
     p_next.add_argument("--current-year", type=int, default=None)
 
     # dump-question-set
-    p_dump = sub.add_parser("dump-question-set", help="导出 batch 题集 markdown")
+    p_dump = sub.add_parser("dump-question-set", help="导出 batch 题集 markdown（非默认 R1 路径）")
     p_dump.add_argument("--bazi", required=True)
     p_dump.add_argument("--curves", required=False)
     p_dump.add_argument("--tier", choices=["core14", "full28"], required=True)
     p_dump.add_argument("--out", required=False, help="markdown 输出路径；不给则打印到 stdout")
     p_dump.add_argument("--current-year", type=int, default=None)
+    p_dump.add_argument(
+        "--ack-batch",
+        action="store_true",
+        help="确认这是用户主动选 batch（非默认）。不传会在 stderr 打 v9 警告，"
+             "提醒 agent 默认应该走 `next` 子命令一题一轮。",
+    )
 
     # submit-batch
     p_sub = sub.add_parser("submit-batch", help="一次性提交全部答案 → finalize")

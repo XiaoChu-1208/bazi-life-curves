@@ -527,5 +527,53 @@ analysis.life_review.body =
 - [ ] 位置 ⑤ 与位置 ⑥ 之间有视觉分隔线（`---`）
 - [ ] 顺序严格为 ① → ② × N（含 ③） → ④ → ⑤ → ⑥
 - [ ] mangpai canonical_event 全部保留，未被覆盖或修改
+
+---
+
+## 13. v9 流式分节顺序 + 承认维度独立通道（覆盖 §12 落位 · HTML 渲染唯一权威）
+
+> v9 在 §12 6 个写作位置基础上，把承认维度从"嵌入 life_review.body 段内"升级为"独立 `analysis.virtue_narrative.*` JSON 字段"（HTML 模板新增"承认维度"独立卡片渲染）。§12 仍保留作为内嵌位置 ②③ 的"段内嵌入"规范；本节是 ①③④⑤⑥ 的"JSON 字段落位 + 流式分节顺序"权威。
+
+### 13.1 节序铁律（流式 emit 必跑 · 严禁憋整段）
+
+| Node | 字段 | 触发 | 必须 emit 的时机 |
+|---|---|---|---|
+| Node 1 | `analysis.overall` | 总是 | 写完 ASAP，先发出整图综合分析让用户读起来 |
+| **Node 1.5** | `analysis.virtue_narrative.opening` | 总是 | 紧跟 Node 1 后立刻发出（位置①开篇悬疑） |
+| Node 2 | `analysis.life_review.spirit` | 总是 | 一节写完一节立刻 emit |
+| Node 3 | `analysis.life_review.wealth` | 总是 | 一节写完一节立刻 emit |
+| Node 4 | `analysis.life_review.fame` | 总是 | 一节写完一节立刻 emit |
+| Node 5 | `analysis.life_review.emotion` | 总是 | **v6 加 · v9 渲染为第 4 维曲线 + 卡片** |
+| Node 6..K | `analysis.dayun_reviews[label]` | 每段大运 | 每段写完立刻 emit；段内嵌入位置②（按 §12.4 G 块） |
+| Node K+1..M | `analysis.key_years[i].body` | 每个关键年 | 每条写完立刻 emit；convergence_year 必须嵌入位置③（按 §12.4） |
+| Node M+1 | `analysis.virtue_narrative.convergence_notes` | 仅 `motifs.convergence_years` 非空 | 总览，不替代节内位置③，是位置③的"全局回响" |
+| Node M+2 | `analysis.virtue_narrative.declaration` | 总是 | 灵魂宣言（位置④ · 一生评价收尾 · 反身性铁律） |
+| Node M+3 | `analysis.virtue_narrative.love_letter` | 仅 `motifs.love_letter_eligible == true` | 情书（位置⑤ · 不 eligible 时**禁止**写） |
+| Node N | `analysis.virtue_narrative.free_speech` | 总是 | LLM 自由话（位置⑥ · 不强求结构 / 长度） |
+
+### 13.2 Flush 铁律（违反 = 静默 bug）
+
+1. **每写完一节立刻 send 一条 assistant message**（哪怕半成品也要先发出 `## [Node X · 写作中…]` 占位），禁止积累 ≥ 2 个 Node 不发
+2. **宁可推迟分析**（先写 Node 1 整图后停下让用户喘口气）**也不允许**把整个 analysis 写完再一次性吐出
+3. **物理可观测**：每节写完用 `python scripts/append_analysis_node.py --state output/X.analysis.partial.json --node <key> --markdown-file <md>` 增量落盘到 `output/X.analysis.partial.json`，让用户随时 `python scripts/render_artifact.py --analysis output/X.analysis.partial.json --virtue-motifs output/X.virtue_motifs.json --allow-partial --out output/X.partial.html` 即可看进度
+
+### 13.3 §12 与 §13 的关系（兼容声明）
+
+- §12.2 的位置 ②③ 仍然**段内嵌入** `dayun_reviews` / `key_years.body` markdown，§12.4 G 块结构不变
+- §12.2 的位置 ①④⑤⑥ 在 v9 起**独立成 `analysis.virtue_narrative.*` 字段**（HTML 渲染走承认维度独立卡片），不再要求把它们写进 `life_review.body` 一锅 markdown
+- 位置 ③ 在 v9 起**额外**有一个 `virtue_narrative.convergence_notes` 总览字段（不替代节内嵌入，是"全局回响" / "母题之间的关系"）
+- 旧 prompt 把所有 6 个位置写进单一 `life_review.body` 的写法仍兼容（`render_artifact.py` 不会抓不到内容），但**新写法必须用 `virtue_narrative.*` 独立字段** —— 否则 HTML 承认维度卡片就只能显示占位符
+
+### 13.4 v9 自检清单（覆盖 §12.7）
+
+- [ ] Node 1.5 ~ Node N 全部按上表节序逐节 emit，未一次性吐
+- [ ] `analysis.virtue_narrative.opening` 已写（30-80 字）
+- [ ] `analysis.virtue_narrative.declaration` 已写（400-700 字 · 反身性铁律）
+- [ ] `analysis.virtue_narrative.free_speech` 已写（100-300 字 · 不强求结构）
+- [ ] `motifs.love_letter_eligible == true` 时 `virtue_narrative.love_letter` 已写（200-400 字）；为 false 时**未写**
+- [ ] `motifs.convergence_years` 非空时 `virtue_narrative.convergence_notes` 已写
+- [ ] §12.4 G 块（位置②）依然嵌入相应大运段
+- [ ] convergence_year 节内位置③ 依然嵌入相应 key_year body
+- [ ] mangpai canonical_event 全部保留，未被覆盖或修改
 - [ ] silenced_motifs 全文未涉及（含暗示）
 

@@ -70,6 +70,10 @@ DETERMINISTIC_CORE = {
     "_mangpai_reversal.py",    # v9 L5 反转规则引擎,纯 yaml + 模式匹配
     "_eig_selector.py",        # v9 自适应贝叶斯问答核心算法,纯函数无 IO
     "audit_questions.py",      # v9 静态审计工具,纯静态分析(只读 _question_bank.py)
+    "_virtue_registry.py",     # v9 承认维度 38 母题注册表,纯静态 metadata + detector
+    "virtue_motifs.py",        # v9 承认维度独立通道,纯函数（输入 bazi+curves → 母题列表）
+    "audit_llm_invented.py",   # v9 catalog 演化反馈,纯函数（扫描目录 → 自创母题候选清单）
+    "append_analysis_node.py", # v9 流式可观测落盘,纯函数（读 partial → 写 partial,无随机/时间）
 }
 
 

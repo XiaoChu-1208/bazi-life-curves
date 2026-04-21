@@ -24,6 +24,8 @@ description: >-
     · 典型边界 case：某些盘 6 个 detector 满分但旧默认输出仍是 day_master_dominant，详见 `references/diagnosis_pitfalls.md` §14。
   **v5 流式输出 + 输出格式可选**：校验通过后先问用户「要纯 markdown 流式（A · 默认 · 最快）还是 markdown 流式 + HTML 交互图（B · 多等 5-15 秒）」；
   无论选 A / B，所有文字分析都按节流式输出（写完一节立刻发出，不批量憋整段），HTML 渲染（如选）放最后一步。
+  **v9 流式铁律**：每写完一节立刻 send 一条 assistant message（哪怕半成品也要先发出 `## [Node X · 写作中…]` 占位），禁止积累 ≥ 2 个 Node 不发；宁可推迟分析（先写 Node 1 整图后停下）也不允许把整个 analysis 写完再一次性吐。
+  **v9 承认维度（德性暗线）独立通道**：`virtue_motifs.py` 升为主 pipeline 必跑，产出 `virtue_motifs.json` 作为 LLM 写位置 ①③④⑤⑥ 的唯一数据源；HTML 模板新增"承认维度"独立卡片（不画曲线，按 6 个写作位置展示），缺 `--virtue-motifs` 入参时卡片会显式显示"未启用"。
   Claude 宿主下 HTML 是含 marked.js + Recharts + details 折叠的交互式 Artifact，
   整图综合分析、一生四维度评价（精神 / 财富 / 名声 / 感情）、大运评价（每 10 年一段，含感情看点）、关键年份评价（peak/dip/shift），
   先在对话流式发完文字，再可选打包成 HTML，用户可自由展开收起。
@@ -118,7 +120,9 @@ Step 1  解析八字（含起运岁精算 / 用户指定）—— 单盘 1 份 /
             「要 HTML 交互图，还是只要 markdown 文字分析？」
             · 单盘默认问；合盘默认 markdown（HTML 仅可选）
             · 用户选 markdown → 跳过最后的 render_artifact.py，节省 5–15 秒等待
-  → 单盘分支：Step 3a **流式输出**五类 markdown（整图 + 一生四维 + 大运 + 关键年份）→ Step 3b 渲染 HTML（仅当用户选 HTML）
+  → Step 2.8 v9 必跑：跑 `virtue_motifs.py` 产出 `virtue_motifs.json`（承认维度独立通道的唯一数据源 ·
+            LLM 6 个写作位置 + HTML 承认卡片都靠它；不跑 → 承认维度物理消失）
+  → 单盘分支：Step 3a **流式输出**六类 markdown（整图 + 一生四维 + 大运 + 关键年份 + 承认维度位置 ①③④⑤⑥）→ Step 3b 渲染 HTML（仅当用户选 HTML）
   → 合盘分支：Step 3' 跑 he_pan.py → **流式输出**按层解读 + 加 / 减分 + 大运同步建议
 Step 4  保存本次反馈到 confirmed_facts.json（含 schema migration 到 v8；下次跑同一八字直接复用）
 ```
@@ -127,10 +131,13 @@ Step 4  保存本次反馈到 confirmed_facts.json（含 schema migration 到 v8
 
 **Step 2.7 是体验门槛**：用户不需要 HTML 时绝对不强行渲染（让用户白等几十秒）。
 
-**Step 3 是流式输出（v5 新规则）**：
+**Step 3 是流式输出（v5 新规则 + v9 强约束）**：
 - LLM 每写完**一节**立刻发出（用户能边读边等下一节），**禁止**憋住整段最后一次性吐
+- **v9 红线**：每个 Node 写完必须立刻 send 一条 assistant message（哪怕半成品也要先发出 `## [Node X · 写作中…]` 占位），禁止积累 ≥ 2 个 Node 不发
+- **v9 物理可观测**：每写完一节用 `python scripts/append_analysis_node.py --state output/X.analysis.partial.json --node <key> --markdown-file <md>` 增量落盘；用户随时 `python scripts/render_artifact.py --analysis output/X.analysis.partial.json --virtue-motifs output/X.virtue_motifs.json --allow-partial --out output/X.partial.html` 即可看进度
 - HTML 渲染（如选）放最后一步，此时用户已经读完所有文字分析了，不再有"等图"的体感
 - 即使要 HTML，也必须**先把 markdown 流式发完**，HTML 是"锦上添花"而不是"等结果"
+- **宁可推迟分析**（先写 Node 1 整图后停下让用户喘口气）**也不允许**把整个 analysis 写完再一次性吐出
 
 ### 0. 加载历次校验记忆 → `output/confirmed_facts.json`（v3 P5 新增）
 
@@ -600,24 +607,40 @@ HTML 渲染单盘要 5–15 秒、合盘也要 3–5 秒，用户没要的时候
 
 **v7.5 重要变更**：`dayun_review.body` 和 `key_years.body` 不再是"单年六维取象"格式，全部按 §3a-pre 的"区间叙事 + 节点镶嵌"重写。
 
-**流式分节顺序（v6 强制 · 共 N 节，比 v5 多一节"一生·感情"）**：
+**流式分节顺序（v9 强制 · 共 N 节，v9 在 v6 基础上加 1 节承认维度·开篇 + 3 节承认维度·收尾）**：
 
 ```
 [Node 1] 整图综合分析（overall · 必含 4 条曲线的整体形状 + 关系）
          ↓ 立刻发出
+[Node 1.5] 承认维度 · 位置① 开篇悬疑提示（virtue_narrative.opening）
+           ↓ 紧接 Node 1 立刻发出 · 1-2 句不下定论的话起笔德性母题
 [Node 2] 一生四维度评价 · 精神（life_review.spirit）
          ↓ 立刻发出
 [Node 3] 一生四维度评价 · 财富（life_review.wealth）
          ↓ 立刻发出
 [Node 4] 一生四维度评价 · 名声（life_review.fame）
          ↓ 立刻发出
-[Node 5] 一生四维度评价 · **感情**（life_review.emotion · v6 新增 · 必须援引 R0 命中情况）
+[Node 5] 一生四维度评价 · **感情/关系**（life_review.emotion · v6 新增 · 必须援引 R0 / D2 命中情况）
          ↓ 立刻发出
-[Node 6..K] 大运评价 · 每段 1 节（按时间从早到晚，dayun_segments 逐段，**每段必带"感情看点"行**）
+[Node 6..K] 大运评价 · 每段 1 节（按时间从早到晚，dayun_segments 逐段，**每段必带"感情看点"行 + 嵌入位置②德性累积发酵**）
             ↓ 每写完一段立刻发出
-[Node K+1..N] 关键年份评价 · 每条 1 节（按 year 升序，含三派分歧说明 + emotion 偏离 ≥ 12 的必须带【感情·v6】行）
+[Node K+1..M] 关键年份评价 · 每条 1 节（按 year 升序，含三派分歧说明 + emotion 偏离 ≥ 12 的必须带【感情·v6】行；**convergence_year 命中时必须嵌入位置③德性汇聚显形**）
               ↓ 每写完一条立刻发出
+[Node M+1] 承认维度 · 位置③ 母题汇聚总览（virtue_narrative.convergence_notes · 仅 motifs.convergence_years 非空时）
+           ↓ 立刻发出
+[Node M+2] 承认维度 · 位置④ 灵魂宣言（virtue_narrative.declaration · 一生评价收尾 · 反身性铁律：禁用「应该 / 必须」，只用「是」）
+           ↓ 立刻发出
+[Node M+3] 承认维度 · 位置⑤ 情书（virtue_narrative.love_letter · 仅 motifs.love_letter_eligible=true 时）
+           ↓ 条件性立刻发出
+[Node N] 承认维度 · 位置⑥ LLM 自由话（virtue_narrative.free_speech · 不强求结构、不强求长度）
+         ↓ 立刻发出
 ```
+
+**v9 流式铁律**：
+- 每写完一节必须立刻 send 一条 assistant message，禁止积累 ≥ 2 节再一起发
+- 节内嵌套位置②③（大运 / 关键年）也必须随节立刻发出
+- `virtue_motifs.json` **必须**在 Node 1.5 之前已存在；不存在 → 跳过整个承认维度通道（HTML 卡片显示"未启用"）
+- 每节写完用 `python scripts/append_analysis_node.py --state output/X.analysis.partial.json --node <key> --markdown-file <md>` 增量落盘，让用户能用 `--allow-partial` 实时看进度
 
 每节用 markdown 标题（`## 整图综合分析` / `## 一生 · 感情` / `## 大运评价 · 辛丑（25–34 岁）` / `## 关键年份 · 2031 (35 岁 辛亥)` 等），方便用户视觉扫描和折叠。
 
@@ -641,6 +664,14 @@ HTML 渲染单盘要 5–15 秒、合盘也要 3–5 秒，用户没要的时候
     "wealth":  "Markdown：财富的一生走势 + 钱从哪来 / 高峰区段 / 防漏点",
     "fame":    "Markdown：名声的一生走势 + 被看见的方式 / 警惕陷阱",
     "emotion": "Markdown（v6）：感情走势 + 援引 R0 命中 + 偏好类型 + 对方态度在大运/流年的展开 + 与事业的同步/对冲"
+  },
+
+  "virtue_narrative": {                                 // 承认维度独立通道（v9 · 不画曲线 · 6 个写作位置 · 见 references/virtue_recurrence_protocol.md）
+    "opening":           "Markdown · 位置① 开篇悬疑提示（life_review 起笔即写 · 1-2 句不下定论）",
+    "convergence_notes": "Markdown · 位置③ 母题汇聚总览（仅 motifs.convergence_years 非空时）",
+    "declaration":       "Markdown · 位置④ 灵魂宣言（一生评价收尾 · 反身性铁律：禁「应该/必须」，只用「是」）",
+    "love_letter":       "Markdown · 位置⑤ 情书（仅 motifs.love_letter_eligible=true 时写）",
+    "free_speech":       "Markdown · 位置⑥ LLM 自由话（不强求结构、不强求长度）"
   },
 
   "dayun_review": {                                     // 大运评价（按 dayun_segments.label 索引）
@@ -691,6 +722,7 @@ if Step 2.7 == B AND 当前宿主 ∈ {Claude Desktop, Claude Web, claude.ai}:
     python scripts/render_artifact.py \
       --curves curves.json \
       --analysis analysis.json \         # 把 3a 各节 markdown 注入 details 折叠区
+      --virtue-motifs virtue_motifs.json \  # v9 必带 · 否则承认维度卡片显示"未启用"
       --out chart.html \
       --strict-llm
     # 把 chart.html 内容用 artifact 块返回（type="text/html"）
@@ -772,8 +804,10 @@ python3 scripts/save_confirmed_facts.py --bazi output/bazi.json --add-structural
 - **预测性**：未来年份 / focus_years 必须给出 (方向, 置信度) 二元组；低置信度年份图上标灰
 - **争议解读（强制）**：每个 disputed 年份都必须并入 key_years 并按 dispute_analysis_protocol Step A–D 解读
 - **合盘解读（强制）**：4 层评分必须按 he_pan_protocol §5 解读（按层 → 加 / 减分 → 大运同步 → confidence），禁止甩 grade、禁止给"配/不配"结论
-- **流式输出（强制 · v5）**：Step 3a / 合盘解读必须按节流式发出（每写完一节立刻发，禁止憋整段）；Step 2.7 必须先问用户要 markdown-only 还是要 HTML，禁止默认渲染 HTML 让用户白等
-- **v8 校验回路（强制 · 替代旧 R0/R1/R2/R3 + 命中率 + phase_inversion）**：Step 2.5 必须按 v8 协议跑 —— ① `handshake.py` 生成 5 维度 ~28 题 + `askquestion_payload`；② Agent 调宿主 **AskQuestion 结构化点选** UI 一次抛全部题（**禁止**用自然语言转述题面让用户口头答"对/不对/部分"，CLI 宿主 fallback 到 `cli_fallback_prompt`）；③ `phase_posterior.py` 算贝叶斯后验 P(phase | answers)；④ 后验阈值落地：≥ 0.80 high adopt / 0.60-0.80 mid adopt / 0.40-0.60 触发追问轮（top-2 候选间最 discriminative 2-3 题，最多 1 轮）/ < 0.40 reject 不出图。`bazi.phase_decision.is_provisional=true` 时 `render_artifact.py` 必须拒绝渲染。详见 `references/phase_decision_protocol.md` + `references/handshake_protocol.md` + `references/discriminative_question_bank.md` 和 `references/diagnosis_pitfalls.md` §14（典型边界 case 详解）。
+- **流式输出（强制 · v5 + v9 升级）**：Step 3a / 合盘解读必须按节流式发出（每写完一节立刻 send 一条 assistant message，**禁止积累 ≥ 2 个 Node 不发**）；Step 2.7 必须先问用户要 markdown-only 还是要 HTML，禁止默认渲染 HTML 让用户白等；**v9 物理可观测**：每节写完用 `scripts/append_analysis_node.py` 增量落盘，`render_artifact.py --allow-partial` 实时看进度
+- **承认维度独立通道（强制 · v9）**：Step 2.8 必须跑 `virtue_motifs.py` 产出 `virtue_motifs.json`（这是 LLM 写位置 ①③④⑤⑥ 的唯一数据源 + HTML 承认卡片的唯一数据源）；不跑 → 承认维度物理消失，违反 [`references/virtue_recurrence_protocol.md`](references/virtue_recurrence_protocol.md) ★★★★★★ 铁律。`render_artifact.py` **必须**带 `--virtue-motifs <path>`，否则前端 "承认维度" 卡片显示 "未启用" 灰色提示框。位置④ 灵魂宣言、位置⑥ 自由话遵循反身性铁律：禁用"应该 / 必须"等规劝词，只用"是"做承认陈述
+- **v9 R1 默认路径 + batch 护栏（强制）**：Step 2.5 默认必须走 `adaptive_elicit.py next`（CLI）或 MCP `adaptive_elicit(action="next")` —— **一题一轮 EIG 选题 · 5-8 题早停**；不要再默认走 `handshake.py` / MCP `handshake()`（已 deprecated_v9，调用时 stderr 会打 v9 警告，仅 R2 confirmation + he_pan 兜底可用，需传 `--ack-batch`/`ack_legacy_r1=true` 显式承认）。**`dump-question-set --tier core14` 一次抛 14 题不是默认 R1 路径**：仅当用户主动要求 batch 时才用，需传 `--ack-batch` / `ack_batch=true`，否则 stderr 会持续打警告。
+- **v8 校验回路（兼容 · 已被 v9 R1 替代）**：旧路径 —— ① `handshake.py` 生成 5 维度 ~28 题 + `askquestion_payload`；② Agent 调宿主 **AskQuestion 结构化点选** UI 一次抛全部题（**禁止**用自然语言转述题面让用户口头答"对/不对/部分"，CLI 宿主 fallback 到 `cli_fallback_prompt`）；③ `phase_posterior.py` 算贝叶斯后验 P(phase | answers)；④ 后验阈值落地：≥ 0.80 high adopt / 0.60-0.80 mid adopt / 0.40-0.60 触发追问轮（top-2 候选间最 discriminative 2-3 题，最多 1 轮）/ < 0.40 reject 不出图。`bazi.phase_decision.is_provisional=true` 时 `render_artifact.py` 必须拒绝渲染。详见 `references/phase_decision_protocol.md` + `references/handshake_protocol.md` + `references/discriminative_question_bank.md` 和 `references/diagnosis_pitfalls.md` §14（典型边界 case 详解）。
 - **现代化解读铁律（强制 · v7）**：emotion 维度的解读**必须**遵守 fairness_protocol.md §10：
   - **命局可推**：关系结构 / 能量模式 / 偏好的互动模式 / 关系密度
   - **命局不可推**：对方生理性别 / 是否结婚 / 几段关系 / 是否生育 / 关系是否被祝福

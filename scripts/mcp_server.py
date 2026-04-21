@@ -320,7 +320,13 @@ def tool_mangpai_events(args: Dict[str, Any]) -> Dict[str, Any]:
 @register(
     name="handshake",
     description=(
-        "R0/R0'/R1/R2/R3 反询问校验（业内唯一·出图前硬门槛·命中率不达标拒绝出图）。\n"
+        "⚠ v9 deprecated for R1：R1 默认必须走 `adaptive_elicit.py next` 一题一轮（EIG 选题 · 5-8 题早停）。\n"
+        "本 tool 仅保留两类合法用途：\n"
+        "  1. R2 confirmation（--round 2 · 在 R1 决策 phase 与 runner-up 之间挑高 pairwise 题）\n"
+        "  2. he_pan_orchestrator 多人合盘的 R1 兜底（v8 兼容路径，单盘新流程不要走这里）\n"
+        "默认不要把它当 R1 入口用。详见 AGENTS.md §二「关键不可跳步（v9）」。\n"
+        "\n"
+        "[deprecated R1 docs] R0/R0'/R1/R2/R3 反询问校验。\n"
         "R0  ·  关系画像（2 题 · 取向校准）\n"
         "R0' ·  反迎合·反向探针（v7.4·防 sycophantic 偏置）\n"
         "R1  ·  健康三问（命局体感校准）\n"
@@ -364,6 +370,12 @@ def tool_mangpai_events(args: Dict[str, Any]) -> Dict[str, Any]:
                 "description": "v7.5 · 启用时代-民俗志层 · 生成 folkways_anchor_seeds（≤2 颗）",
             },
             "out_path": {"type": "string"},
+            "ack_legacy_r1": {
+                "type": "boolean",
+                "default": False,
+                "description": "确认本调用是合法非默认场景：R2 confirmation 或 he_pan 兜底。"
+                               "未传 → stderr 打 v9 警告（提醒 agent 默认走 adaptive_elicit）。",
+            },
         },
         "required": ["bazi"],
     },
@@ -371,6 +383,12 @@ def tool_mangpai_events(args: Dict[str, Any]) -> Dict[str, Any]:
 def tool_handshake(args: Dict[str, Any]) -> Dict[str, Any]:
     import datetime as dt
     import handshake as hs
+    if not args.get("ack_legacy_r1") and not args.get("dump_phase_candidates") and not args.get("phase_id"):
+        sys.stderr.write(
+            "[mcp_server] ⚠ WARNING: handshake() v9 默认不再做 R1。\n"
+            "  R1 默认请走 `adaptive_elicit.py next` 一题一轮（EIG 选题 · 5-8 题早停）。\n"
+            "  仅 R2 confirmation / he_pan 兜底可继续用本 tool；传 ack_legacy_r1=true 关警告。\n"
+        )
     bazi = _load_or_dict(args["bazi"], "bazi")
 
     if args.get("dump_phase_candidates"):
@@ -442,6 +460,172 @@ def tool_evaluate_handshake(args: Dict[str, Any]) -> Dict[str, Any]:
     import handshake as hs
     h = _load_or_dict(args["handshake_output"], "handshake_output")
     return _ok(hs.evaluate_responses(h, args["user_responses"]))
+
+
+# ─────────────────────────────────────────────────────────────────────
+# Tool A5b: adaptive_elicit  (v9 默认 R1 路径)
+# ─────────────────────────────────────────────────────────────────────
+
+@register(
+    name="adaptive_elicit",
+    description=(
+        "v9 默认 R1：自适应贝叶斯 EIG 一题一轮 · 5-8 题早停（替代 v8 的 14/26 题一次性 batch）。\n"
+        "用法（典型 3-step loop）：\n"
+        "  1) action='next' + state（首次无 --answer）→ 拿 askquestion_payload，AskQuestion 抛单题\n"
+        "  2) action='next' + state + answer='qid:opt' → 拿下一题 / 或 status='STOP' finalize\n"
+        "  3) finalize 后 bazi.json 已写回，包含 phase_decision\n"
+        "\n"
+        "可选 batch 通道（仅当用户主动要求一次性答完时用）：\n"
+        "  - action='dump_question_set' + tier='core14'|'full28'  → 导出 markdown 题集\n"
+        "  - action='submit_batch' + answers={qid:opt}            → 一次性 finalize\n"
+        "\n"
+        "注意：默认请走 action='next'。dump_question_set 默认会发 stderr 警告（除非 ack_batch=true）。\n"
+        "详见 references/multi_dim_xiangshu_protocol.md §13 + AGENTS.md §二「关键不可跳步（v9）」。"
+    ),
+    input_schema={
+        "type": "object",
+        "properties": {
+            "action": {
+                "type": "string",
+                "enum": ["next", "dump_question_set", "submit_batch"],
+                "default": "next",
+            },
+            "bazi": {"oneOf": [{"type": "object"}, {"type": "string"}]},
+            "curves": {"oneOf": [{"type": "object"}, {"type": "string"}, {"type": "null"}]},
+            "current_year": {"type": "integer"},
+            # next-only
+            "state": {
+                "oneOf": [{"type": "object"}, {"type": "string"}, {"type": "null"}],
+                "description": "上一轮 state（首次为 null）。",
+            },
+            "state_out_path": {
+                "type": "string",
+                "description": "把更新后的 state 写到此路径（推荐 output/.elicit.state.json）。",
+            },
+            "answer": {
+                "type": "string",
+                "description": "上一题答案 'qid:opt'，首题不传。",
+            },
+            "out": {
+                "type": "string",
+                "description": "finalize 时写回的 bazi.json 路径。",
+            },
+            # batch-only
+            "tier": {"type": "string", "enum": ["core14", "full28"]},
+            "ack_batch": {
+                "type": "boolean",
+                "default": False,
+                "description": "确认是用户主动选 batch（非默认）。不传会 stderr 警告。",
+            },
+            "answers": {
+                "oneOf": [{"type": "object"}, {"type": "string"}],
+                "description": "submit_batch 用：{qid:opt} dict 或文件路径。",
+            },
+        },
+        "required": ["bazi"],
+    },
+)
+def tool_adaptive_elicit(args: Dict[str, Any]) -> Dict[str, Any]:
+    import datetime as dt
+    import io
+    import contextlib
+    import argparse as _ap
+    import adaptive_elicit as ae
+
+    action = args.get("action", "next")
+    bazi_in = args["bazi"]
+    bazi = _load_or_dict(bazi_in, "bazi")
+    cy = args.get("current_year") or dt.date.today().year
+
+    # 把 dict bazi 落临时文件，让 cmd_* 复用 CLI 路径（避免重复实现）
+    tmp_files: List[Path] = []
+    def _ensure_path(obj_or_path: Any, suffix: str) -> str:
+        if isinstance(obj_or_path, str):
+            return obj_or_path
+        import tempfile
+        f = tempfile.NamedTemporaryFile(mode="w", suffix=suffix, delete=False, encoding="utf-8")
+        json.dump(obj_or_path, f, ensure_ascii=False)
+        f.close()
+        p = Path(f.name)
+        tmp_files.append(p)
+        return str(p)
+
+    bazi_path = _ensure_path(bazi, ".bazi.json")
+    curves_path = None
+    if args.get("curves") is not None:
+        curves_obj = _load_or_dict(args["curves"], "curves")
+        curves_path = _ensure_path(curves_obj, ".curves.json")
+
+    try:
+        # capture stdout printed by cmd_*
+        buf = io.StringIO()
+        if action == "next":
+            ns = _ap.Namespace(
+                bazi=bazi_path,
+                curves=curves_path,
+                state=args.get("state_out_path") or _ensure_path(args.get("state") or {}, ".state.json"),
+                answer=args.get("answer"),
+                out=args.get("out") or bazi_path,
+                current_year=cy,
+            )
+            with contextlib.redirect_stdout(buf):
+                rc = ae.cmd_next(ns)
+            raw = buf.getvalue().strip()
+            try:
+                payload = json.loads(raw) if raw else {"status": "DONE"}
+            except json.JSONDecodeError:
+                payload = {"status": "DONE", "stdout": raw}
+            payload["_rc"] = rc
+            return _ok(payload) if rc == 0 else _err(f"adaptive_elicit next rc={rc}: {raw}")
+
+        if action == "dump_question_set":
+            tier = args.get("tier")
+            if tier not in ("core14", "full28"):
+                return _err("dump_question_set requires tier='core14' or 'full28'")
+            ns = _ap.Namespace(
+                bazi=bazi_path,
+                curves=curves_path,
+                tier=tier,
+                out=args.get("out"),
+                current_year=cy,
+                ack_batch=bool(args.get("ack_batch")),
+            )
+            with contextlib.redirect_stdout(buf):
+                rc = ae.cmd_dump_question_set(ns)
+            md = buf.getvalue()
+            return _ok({"markdown": md, "out": args.get("out"), "_rc": rc}) if rc == 0 \
+                else _err(f"dump_question_set rc={rc}")
+
+        if action == "submit_batch":
+            answers_in = args.get("answers")
+            if answers_in is None:
+                return _err("submit_batch requires 'answers'")
+            answers_path = _ensure_path(answers_in, ".answers.json") if not isinstance(answers_in, str) \
+                else answers_in
+            ns = _ap.Namespace(
+                bazi=bazi_path,
+                curves=curves_path,
+                answers=answers_path,
+                out=args.get("out") or bazi_path,
+                current_year=cy,
+            )
+            with contextlib.redirect_stdout(buf):
+                rc = ae.cmd_submit_batch(ns)
+            raw = buf.getvalue().strip()
+            try:
+                payload = json.loads(raw) if raw else {"status": "DONE"}
+            except json.JSONDecodeError:
+                payload = {"status": "DONE", "stdout": raw}
+            payload["_rc"] = rc
+            return _ok(payload) if rc == 0 else _err(f"submit_batch rc={rc}: {raw}")
+
+        return _err(f"unknown action: {action}")
+    finally:
+        for p in tmp_files:
+            try:
+                p.unlink()
+            except Exception:
+                pass
 
 
 # ─────────────────────────────────────────────────────────────────────

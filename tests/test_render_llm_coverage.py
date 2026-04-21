@@ -76,6 +76,12 @@ def _full_analysis() -> dict:
             "spirit": "精神舒畅度一生总评。",
             "wealth": "财富一生总评。",
             "fame": "名声一生总评。",
+            "emotion": "感情/关系一生总评。",
+        },
+        "virtue_narrative": {
+            "opening": "开篇悬疑提示（位置①）。",
+            "declaration": "灵魂宣言（位置④）。",
+            "free_speech": "LLM 自由话（位置⑥）。",
         },
         "key_years": [
             {"year": 2007, "age": 18, "ganzhi": "丁亥", "kind": "shift",
@@ -114,6 +120,38 @@ def test_render_injects_all_template_referenced_fields():
     assert "戊辰大运 6 块完整 markdown" in html, "dayun_reviews 未注入"
 
 
+def test_render_injects_emotion_dimension_and_virtue_narrative():
+    """v9 · render() 必须把 life_review.emotion + virtue_narrative.* + virtue_motifs 都注入。"""
+    curves = _minimal_curves()
+    analysis = _full_analysis()
+    analysis["life_review"]["emotion"] = "感情/关系一生总评_TOKEN_E"
+    analysis["virtue_narrative"]["opening"] = "OPEN_TOKEN_V1"
+    analysis["virtue_narrative"]["declaration"] = "DECL_TOKEN_V4"
+    analysis["virtue_narrative"]["love_letter"] = "LOVE_TOKEN_V5"
+    analysis["virtue_narrative"]["free_speech"] = "FREE_TOKEN_V6"
+    motifs = {
+        "love_letter_eligible": True,
+        "convergence_years": [2007],
+        "triggered_motifs": [
+            {"id": "M01_test", "label": "测试母题", "gravity": "medium",
+             "activations": [{"year": 2007}]},
+        ],
+    }
+    html = render(curves, analysis, zeitgeist=None, virtue_motifs=motifs)
+    assert "感情/关系一生总评_TOKEN_E" in html
+    assert "OPEN_TOKEN_V1" in html
+    assert "DECL_TOKEN_V4" in html
+    assert "LOVE_TOKEN_V5" in html
+    assert "FREE_TOKEN_V6" in html
+    assert "M01_test" in html, "virtue_motifs.triggered_motifs 未注入"
+
+
+def test_render_partial_flag_sets_window_global():
+    curves = _minimal_curves()
+    html = render(curves, _full_analysis(), zeitgeist=None, allow_partial=True)
+    assert "__BAZI_PARTIAL__ = true" in html
+
+
 def test_render_legacy_dayun_review_singular_also_works():
     """旧版 analysis.dayun_review (单数, {label: {headline, body}}) 也要被注入。"""
     curves = _minimal_curves()
@@ -132,8 +170,12 @@ def test_audit_full_analysis_zero_missing():
     curves = _minimal_curves()
     zeitgeist = _zeitgeist_with_two_eras()
     analysis = _full_analysis()
+    # v9 · 必须注入 virtue_motifs（哪怕空）才不触发"未启用"警告；
+    # love_letter_eligible=False → love_letter 不必填；
+    # convergence_years=[] → convergence_notes 不必填。
+    virtue_motifs = {"love_letter_eligible": False, "convergence_years": []}
 
-    report = audit_llm_coverage(curves, analysis, zeitgeist)
+    report = audit_llm_coverage(curves, analysis, zeitgeist, virtue_motifs)
     assert report["missing"] == [], f"应零缺失, 实际: {report['missing']}"
     assert report["coverage_pct"] == 100.0
     assert report["warnings"] == []
@@ -151,9 +193,51 @@ def test_audit_empty_analysis_reports_basic_misses():
     assert "analysis.life_review.spirit" in report["missing"]
     assert "analysis.life_review.wealth" in report["missing"]
     assert "analysis.life_review.fame" in report["missing"]
+    assert "analysis.life_review.emotion" in report["missing"], \
+        "v9 · 第 4 维 emotion 必须列入必填"
+    assert "analysis.virtue_narrative.opening" in report["missing"]
+    assert "analysis.virtue_narrative.declaration" in report["missing"]
+    assert "analysis.virtue_narrative.free_speech" in report["missing"]
     assert "analysis.key_years[>=1]" in report["missing"]
     assert report["coverage_pct"] < 50.0
     assert len(report["warnings"]) >= 1
+
+
+def test_audit_warns_when_virtue_motifs_missing():
+    """v9 · 不传 virtue_motifs 时必须给出独立 warning（即使其他都齐）。"""
+    curves = _minimal_curves()
+    zeitgeist = _zeitgeist_with_two_eras()
+    analysis = _full_analysis()
+    report = audit_llm_coverage(curves, analysis, zeitgeist, virtue_motifs=None)
+    assert any("virtue_motifs" in w for w in report["warnings"]), \
+        f"应包含 virtue_motifs 未启用 warning, 实际: {report['warnings']}"
+
+
+def test_audit_love_letter_required_only_when_eligible():
+    """v9 · love_letter 仅在 motifs.love_letter_eligible=true 时才必填。"""
+    curves = _minimal_curves()
+    analysis = _full_analysis()
+    # love_letter 没写
+    eligible = {"love_letter_eligible": True, "convergence_years": []}
+    not_eligible = {"love_letter_eligible": False, "convergence_years": []}
+
+    r_yes = audit_llm_coverage(curves, analysis, zeitgeist=None, virtue_motifs=eligible)
+    r_no = audit_llm_coverage(curves, analysis, zeitgeist=None, virtue_motifs=not_eligible)
+    assert "analysis.virtue_narrative.love_letter" in r_yes["missing"]
+    assert "analysis.virtue_narrative.love_letter" not in r_no["missing"]
+
+
+def test_audit_convergence_notes_required_when_motifs_converge():
+    """v9 · convergence_notes 仅在 motifs.convergence_years 非空时才必填。"""
+    curves = _minimal_curves()
+    analysis = _full_analysis()
+    motifs_with_conv = {"love_letter_eligible": False, "convergence_years": [2007, 2015]}
+    motifs_without = {"love_letter_eligible": False, "convergence_years": []}
+
+    r_with = audit_llm_coverage(curves, analysis, zeitgeist=None, virtue_motifs=motifs_with_conv)
+    r_without = audit_llm_coverage(curves, analysis, zeitgeist=None, virtue_motifs=motifs_without)
+    assert "analysis.virtue_narrative.convergence_notes" in r_with["missing"]
+    assert "analysis.virtue_narrative.convergence_notes" not in r_without["missing"]
 
 
 # ---------------------------------------------------------------------------

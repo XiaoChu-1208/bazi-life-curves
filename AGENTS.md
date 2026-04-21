@@ -25,8 +25,9 @@ score_curves.py                # 4 维曲线打分（spirit/wealth/fame/emotion 
     ↓ output/curves.json
 mangpai_events.py              # 盲派事件检测 + 反向规则 + 护身减压（可选 · score_curves 已内置基础调用）
     ↓ output/curves.json (events 字段)
-virtue_motifs.py               # 第三条独立叙事通道：38 条人性母题检测（read-only of bazi/curves）
-    ↓ output/virtue_motifs.json (life_review 6 个写作位置的输入数据)
+virtue_motifs.py               # 【v9 必跑】第三条独立叙事通道：38 条人性母题检测（read-only of bazi/curves）
+    ↓ output/virtue_motifs.json (life_review 6 个写作位置 + HTML 承认维度卡片的输入数据)
+    ↓ ⚠ 不跑 → render_artifact 的「承认维度」卡片显示"未启用"，LLM 6 个写作位置全空
 adaptive_elicit.py next        # v9 · 自适应贝叶斯单题流式问答（默认 R1 路径）
     ↓ 循环 ASK → AskQuestion 单题 → answer → ASK ...
     ↓ 触发 S1/S2/S3/S4 早停（通常 5-8 题，最多 12 题；prior top1 ≥ 0.85 直接 0 题 fast-path）
@@ -50,8 +51,10 @@ phase_posterior.py --round 2   # v8.1 · 合并 R1+R2 算最终后验 + confirma
     ↓ output/bazi.json         # bazi.phase / phase_decision / phase_confirmation
 [save_confirmed_facts.py --round r2 --r1-* --r2-* 写回 confirmed_facts.json（按 round 分桶）]
     ↓ output/confirmed_facts.json
-render_artifact.py             # 交互 HTML（Recharts + marked.js）·
-                               #   confirmation=weakly_confirmed 时解读自动加 caveat
+render_artifact.py --virtue-motifs output/X.virtue_motifs.json
+                               # 交互 HTML（Recharts + marked.js）· 4 维曲线 + 承认维度独立卡片 ·
+                               #   confirmation=weakly_confirmed 时解读自动加 caveat ·
+                               #   不传 --virtue-motifs 时承认卡片只能写空话
     ↓ output/chart.html
 
 [deprecated] phase_inversion_loop.py  # v7 老路径，保留可运行但不再是主流程
@@ -59,7 +62,8 @@ render_artifact.py             # 交互 HTML（Recharts + marked.js）·
 
 **关键不可跳步（v9）**：
 
-- **R1 默认路径必须走 `adaptive_elicit.py next`**，不要再用 `handshake.py` 默认入口（已 deprecated_v9）
+- **`virtue_motifs.py` 是必跑步骤**，不再是可选。它产出的 `virtue_motifs.json` 是 `analysis.virtue_narrative`（承认维度独立通道）+ `life_review` 6 个位置的唯一数据源；不跑 → HTML 承认维度卡片显示"未启用"、LLM 6 个写作位置全空，等于把"承认人性"这条铁律物理删除
+- **R1 默认路径必须走 `adaptive_elicit.py next`**（CLI）或 MCP `adaptive_elicit(action="next")`，不要再用 `handshake.py` / MCP `handshake()` 默认入口（已 deprecated_v9，调用时 stderr 会打 v9 警告，仅 R2 confirmation 与 he_pan 兜底可用，需传 `--ack-batch` / `ack_legacy_r1=true` 关警告）；**禁止默认走 `dump-question-set --tier core14`**（一次抛 14 题），仅当用户**主动**要求 batch 时才允许，并需传 `--ack-batch` / `ack_batch=true`（否则 stderr 会打 v9 警告）
 - 不能跳过 R1 elicit + 必要时的 R2 confirmation 直接渲染 HTML —— `bazi.phase_decision.is_provisional=true` 时 render_artifact 必须拒绝
 - **Agent 必须用宿主结构化 `AskQuestion` 抛 `askquestion_payload`，禁止用自然语言转述题面让用户口头回答**（违反 = 破坏 phase 决策的 likelihood 计算前提）
 - **第一次抛单题前必须给用户 [batch_elicitation_prompt.md](references/batch_elicitation_prompt.md) §1 开场白**（介绍 batch 通道）
@@ -69,6 +73,17 @@ render_artifact.py             # 交互 HTML（Recharts + marked.js）·
 - 不能让 LLM 自己改 `curves.json` 的数值 —— 那是 `score_curves.py` 的职责
 - 不能在 `solve_bazi.py` 之外推导八字 —— 起运岁、真太阳时、orientation 全部依赖该脚本
 - 后验 < 0.40 → **拒绝出图**，提示用户复核时辰 / 性别（详见 [phase_decision_protocol.md](references/phase_decision_protocol.md) §5）
+
+### 流式 emit 红线（v9 新增 · 不可跳）
+
+写 `analysis` 阶段必须**按 Node 流式 emit**，禁止把整段 analysis 写完再一次性吐：
+
+- **每写完一节立刻 send 一条 assistant message**（哪怕半成品也要先发出 `## [Node X · 写作中…]` 占位），禁止积累 ≥2 个 Node 不发
+- 节序固定：`Node 1 整图综合分析 → Node 2 spirit → Node 3 wealth → Node 4 fame → Node 5 emotion → Node 6 承认维度·opening（位置①） → Node 7..K 大运评价（每段一节） → ... → Node N-2 承认维度·declaration（位置④） → Node N-1 承认维度·love_letter（位置⑤·条件性） → Node N 承认维度·free_speech（位置⑥）`
+- 节内嵌套：每段大运评价节内**必须**嵌入德性母题位置②；convergence_year 命中的关键年节内**必须**嵌入位置③
+- **宁可推迟分析**（先写 Node 1 整图后停下让用户喘口气）**也不允许**把整个 analysis 写完再一次性吐出
+- 流式可观测：用 `scripts/append_analysis_node.py --node <key> --markdown <md>` 增量落盘到 `output/X.analysis.partial.json`；用户随时 `python scripts/render_artifact.py --analysis output/X.analysis.partial.json --allow-partial` 即可看进度
+- 详见 [`references/multi_dim_xiangshu_protocol.md`](references/multi_dim_xiangshu_protocol.md) §流式分节顺序 + [`references/virtue_recurrence_protocol.md`](references/virtue_recurrence_protocol.md) 6 个写作位置
 
 ---
 
@@ -186,11 +201,23 @@ python scripts/adaptive_elicit.py next --bazi output/test1.bazi.json --curves ou
 python scripts/adaptive_elicit.py dump-question-set --bazi output/test1.bazi.json --curves output/test1.curves.json --tier core14 --out output/test1.questions.md
 # [...用户填答 → 写到 output/test1.answers.json...]
 # python scripts/adaptive_elicit.py submit-batch --bazi output/test1.bazi.json --answers output/test1.answers.json
-python scripts/render_artifact.py --curves output/test1.curves.json --out output/test1.html
-
-# 第三条独立叙事通道（life_review 6 个写作位置的输入数据 · 可选但推荐）
+# v9 必跑：第三条独立叙事通道（承认维度独立通道 · life_review 6 写作位置 + HTML 承认卡片的唯一数据源）
 python scripts/virtue_motifs.py --bazi output/test1.bazi.json --curves output/test1.curves.json --out output/test1.virtue_motifs.json
-# 必须在 LLM 写 life_review 之前生成（即 multi_dim_xiangshu_protocol.md §12 的输入约定）
+# 必须在 LLM 写 life_review / virtue_narrative 之前生成（multi_dim_xiangshu_protocol.md §12 + virtue_recurrence_protocol.md）
+
+# 渲染（必须 --virtue-motifs，否则 HTML 承认卡片只能写空话）
+python scripts/render_artifact.py \
+  --curves output/test1.curves.json \
+  --analysis output/test1.analysis.json \
+  --virtue-motifs output/test1.virtue_motifs.json \
+  --out output/test1.html
+
+# 流式部分渲染（agent 边写 analysis 边刷 HTML 看进度时用）
+python scripts/render_artifact.py \
+  --curves output/test1.curves.json \
+  --analysis output/test1.analysis.partial.json \
+  --virtue-motifs output/test1.virtue_motifs.json \
+  --allow-partial --out output/test1.partial.html
 ```
 
 ### 5.2 历史回测
@@ -239,7 +266,9 @@ python scripts/calibrate.py
 4. R1 finalize 后 `bazi.json` 直接写入 `phase` + `phase_decision`，不需要单独跑 `phase_posterior.py --round 1`
 5. **R2**（仅在 R1 confidence < high 或想再次确认时）：跑 `handshake.py --round 2`（EIG 选 confirmation 题）→ AskQuestion 抛 → `phase_posterior.py --round 2`
 6. 看 `phase_confirmation.action`：`render` / `render_with_caveat` 直接出图；`escalate` 时**必须**报告决策反转或不确定，建议核对时辰 / 性别
-7. 用 `render_artifact.py` 出 HTML，或按 `multi_dim_xiangshu_protocol.md` 流式输出 markdown 解读
+7. **必须**先跑 `virtue_motifs.py` 产出 `virtue_motifs.json`（承认维度独立通道的唯一数据源）
+8. 按 [`references/multi_dim_xiangshu_protocol.md`](references/multi_dim_xiangshu_protocol.md) **流式**输出 markdown 解读：每写完一节立刻发出，禁止憋整段；同时用 `scripts/append_analysis_node.py` 增量落盘到 `output/X.analysis.partial.json`，让用户用 `render_artifact.py --allow-partial` 随时看进度
+9. 全部节写完后用 `python scripts/render_artifact.py --curves ... --analysis ... --virtue-motifs ... --out ... [--strict-llm]` 出最终 HTML（**必须**带 `--virtue-motifs`，否则承认维度卡片只显示"未启用"）
 
 ### 当用户问"我 X 年怎么样"
 

@@ -127,6 +127,79 @@
   .life-cell.fame   { background: #fdf8f4; }
   .life-cell.fame   .lc-dot { background: #D88E5C; }
   .life-cell.fame   .lc-head { color: #9c5d2e; }
+  .life-cell.emotion { background: #fbf6f8; }
+  .life-cell.emotion .lc-dot { background: #C77FA0; }
+  .life-cell.emotion .lc-head { color: #8a4a68; }
+
+  /* --- 承认维度（德性暗线 / virtue narrative · v9 新增 · 不画曲线，独立成块） --- */
+  .virtue-card {
+    background: #fbf7f1; border: 1px solid #e8dcc4; border-radius: 12px;
+    padding: 16px 20px; margin-top: 20px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+  }
+  .virtue-card > h2 {
+    font-size: 15px; font-weight: 600; color: #6b5a3a;
+    margin: 0 0 4px; display: flex; align-items: center; gap: 8px;
+  }
+  .virtue-card > h2::before {
+    content: ""; display: inline-block; width: 10px; height: 10px;
+    border-radius: 50%; background: #a89070;
+  }
+  .virtue-card .sub { color: #8a7a55; font-size: 12px; margin-bottom: 12px; }
+  .virtue-card .virtue-section {
+    border-top: 1px dashed #e2d6b8; padding: 10px 0;
+  }
+  .virtue-card .virtue-section:first-of-type { border-top: none; padding-top: 6px; }
+  .virtue-card .virtue-section > summary {
+    font-size: 13px; font-weight: 600; color: #5a4a26;
+    cursor: pointer; padding: 4px 0;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .virtue-card .virtue-section > summary .vs-pos {
+    display: inline-block; font-size: 10px; padding: 1px 6px; border-radius: 3px;
+    background: #d4c896; color: #3a2c10; font-weight: 500;
+  }
+  .virtue-card .virtue-section > summary .vs-hint {
+    color: #a89070; font-size: 11px; font-weight: normal; margin-left: auto;
+  }
+  .virtue-card .virtue-section .vs-body { padding: 6px 0 4px 4px; }
+  .virtue-card .motif-table {
+    margin: 6px 0 0; padding-left: 0; list-style: none;
+    display: grid; grid-template-columns: 1fr; gap: 4px;
+  }
+  .virtue-card .motif-row {
+    display: flex; align-items: baseline; gap: 8px;
+    font-size: 12px; color: #5a4a26;
+    padding: 3px 8px; background: rgba(212, 200, 150, 0.15); border-radius: 4px;
+  }
+  .virtue-card .motif-row .motif-id {
+    font-family: ui-monospace, monospace; color: #8a6f3a; font-size: 11px;
+    min-width: 60px;
+  }
+  .virtue-card .motif-row .motif-grav {
+    font-size: 10px; padding: 1px 5px; border-radius: 3px;
+    background: #a89070; color: #fff; min-width: 36px; text-align: center;
+  }
+  .virtue-card .motif-row .motif-grav.gentle { background: #c9b878; }
+  .virtue-card .motif-row .motif-grav.medium { background: #a89070; }
+  .virtue-card .motif-row .motif-grav.heavy  { background: #8b5a3c; }
+  .virtue-card .convergence-years {
+    margin: 6px 0 0; font-size: 12px; color: #5a4a26;
+  }
+  .virtue-card .convergence-years .y-tag {
+    display: inline-block; padding: 2px 8px; margin: 2px 4px 2px 0;
+    background: #a89070; color: #fff; border-radius: 3px;
+    font-family: ui-monospace, monospace; font-size: 11px;
+  }
+  .virtue-card .virtue-disabled {
+    padding: 10px 12px; background: #f6efde; border-radius: 6px;
+    color: #8a7a55; font-size: 12px; line-height: 1.6;
+    border-left: 3px solid #d4c896;
+  }
+  .virtue-card .virtue-disabled code {
+    background: rgba(0,0,0,0.05); padding: 1px 5px; border-radius: 3px;
+    font-size: 11px; color: #5a4a26;
+  }
 
   /* --- markdown --- */
   .markdown { font-size: 13px; line-height: 1.7; color: #333; }
@@ -217,6 +290,9 @@ window.__BAZI_TITLE__ = {{ title|tojson }};
 window.__BAZI_ANALYSIS__ = {{ analysis_json|safe }};
 window.__BAZI_ZEITGEIST__ = {{ zeitgeist_json|safe }};
 window.__BAZI_HAS_ZEITGEIST__ = {{ "true" if has_zeitgeist else "false" }};
+window.__BAZI_VIRTUE_MOTIFS__ = {{ virtue_motifs_json|safe }};
+window.__BAZI_HAS_VIRTUE_MOTIFS__ = {{ "true" if has_virtue_motifs else "false" }};
+window.__BAZI_PARTIAL__ = {{ "true" if allow_partial else "false" }};
 </script>
 {% raw %}
 <script type="text/babel" data-presets="env,react">
@@ -225,11 +301,15 @@ const TITLE = window.__BAZI_TITLE__;
 const ANALYSIS = window.__BAZI_ANALYSIS__ || {};
 const ZEITGEIST = window.__BAZI_ZEITGEIST__ || {};
 const HAS_ZEITGEIST = !!window.__BAZI_HAS_ZEITGEIST__;
-const DIM_LABEL = { spirit: "精神", wealth: "财富", fame: "名声" };
+const VIRTUE_MOTIFS = window.__BAZI_VIRTUE_MOTIFS__ || null;
+const HAS_VIRTUE_MOTIFS = !!window.__BAZI_HAS_VIRTUE_MOTIFS__;
+const IS_PARTIAL = !!window.__BAZI_PARTIAL__;
+const DIM_LABEL = { spirit: "精神", wealth: "财富", fame: "名声", emotion: "感情/关系" };
 
-const COLOR_SPIRIT = "#8B7BC7";
-const COLOR_WEALTH = "#4A9D7F";
-const COLOR_FAME   = "#D88E5C";
+const COLOR_SPIRIT  = "#8B7BC7";
+const COLOR_WEALTH  = "#4A9D7F";
+const COLOR_FAME    = "#D88E5C";
+const COLOR_EMOTION = "#C77FA0";
 
 const DAYUN_BAND_COLORS = ["#F5F2EA", "#EDF2F4", "#F0E7E7", "#E7F0EE", "#F3EFE8", "#EFEDE6"];
 
@@ -262,24 +342,31 @@ function buildSeries(curves) {
   // 主线：每年一个点
   const main = curves.points.map(p => ({
     age: p.age, year: p.year, dayun: p.dayun,
-    spirit: p.spirit_yearly,
-    wealth: p.wealth_yearly,
-    fame:   p.fame_yearly,
+    spirit:  p.spirit_yearly,
+    wealth:  p.wealth_yearly,
+    fame:    p.fame_yearly,
+    emotion: p.emotion_yearly,
   }));
   // 5 年段趋势
-  const spiritTrend = buildSegmentTrend(curves.points.map(p => ({age: p.age, value: p.spirit_yearly})));
-  const wealthTrend = buildSegmentTrend(curves.points.map(p => ({age: p.age, value: p.wealth_yearly})));
-  const fameTrend   = buildSegmentTrend(curves.points.map(p => ({age: p.age, value: p.fame_yearly})));
+  const spiritTrend  = buildSegmentTrend(curves.points.map(p => ({age: p.age, value: p.spirit_yearly})));
+  const wealthTrend  = buildSegmentTrend(curves.points.map(p => ({age: p.age, value: p.wealth_yearly})));
+  const fameTrend    = buildSegmentTrend(curves.points.map(p => ({age: p.age, value: p.fame_yearly})));
+  const emotionTrend = buildSegmentTrend(
+    curves.points
+      .filter(p => p.emotion_yearly != null)
+      .map(p => ({age: p.age, value: p.emotion_yearly}))
+  );
   // 合并到主数据集（用 age 对齐，趋势数据点用单独字段）
   const trendByAge = {};
-  spiritTrend.forEach(p => { trendByAge[p.age] = trendByAge[p.age] || {}; trendByAge[p.age].spirit_t = p.value; });
-  wealthTrend.forEach(p => { trendByAge[p.age] = trendByAge[p.age] || {}; trendByAge[p.age].wealth_t = p.value; });
-  fameTrend.forEach(p   => { trendByAge[p.age] = trendByAge[p.age] || {}; trendByAge[p.age].fame_t   = p.value; });
+  spiritTrend.forEach(p  => { trendByAge[p.age] = trendByAge[p.age] || {}; trendByAge[p.age].spirit_t  = p.value; });
+  wealthTrend.forEach(p  => { trendByAge[p.age] = trendByAge[p.age] || {}; trendByAge[p.age].wealth_t  = p.value; });
+  fameTrend.forEach(p    => { trendByAge[p.age] = trendByAge[p.age] || {}; trendByAge[p.age].fame_t    = p.value; });
+  emotionTrend.forEach(p => { trendByAge[p.age] = trendByAge[p.age] || {}; trendByAge[p.age].emotion_t = p.value; });
 
   // 把趋势点（可能是非整数年龄）作为单独序列返回，避免 Recharts 数值轴对不齐
   return {
     main,
-    trend: { spirit: spiritTrend, wealth: wealthTrend, fame: fameTrend },
+    trend: { spirit: spiritTrend, wealth: wealthTrend, fame: fameTrend, emotion: emotionTrend },
   };
 }
 
@@ -314,14 +401,14 @@ function App() {
   const segments = CURVES.dayun_segments || [];
 
   // 把 5 年段趋势数据 inline 到 data（用 null 填空）
-  const trendByAge = { spirit: {}, wealth: {}, fame: {} };
-  ["spirit", "wealth", "fame"].forEach(k => {
+  const trendByAge = { spirit: {}, wealth: {}, fame: {}, emotion: {} };
+  ["spirit", "wealth", "fame", "emotion"].forEach(k => {
     series.trend[k].forEach(p => { trendByAge[k][p.age] = p.value; });
   });
   // 给 data 补 _t 字段（在主点上不一定有匹配，所以另用一个稀疏轴）
   // 处理半整数年龄：扩展 data 包含趋势中点
   const allAges = new Set(ages);
-  ["spirit", "wealth", "fame"].forEach(k =>
+  ["spirit", "wealth", "fame", "emotion"].forEach(k =>
     series.trend[k].forEach(p => allAges.add(p.age))
   );
   const sortedAges = Array.from(allAges).sort((a, b) => a - b);
@@ -332,9 +419,10 @@ function App() {
     const base = yearMap[a] || { age: a, year: null };
     return {
       ...base,
-      spirit_t: trendByAge.spirit[a] != null ? trendByAge.spirit[a] : null,
-      wealth_t: trendByAge.wealth[a] != null ? trendByAge.wealth[a] : null,
-      fame_t:   trendByAge.fame[a]   != null ? trendByAge.fame[a]   : null,
+      spirit_t:  trendByAge.spirit[a]  != null ? trendByAge.spirit[a]  : null,
+      wealth_t:  trendByAge.wealth[a]  != null ? trendByAge.wealth[a]  : null,
+      fame_t:    trendByAge.fame[a]    != null ? trendByAge.fame[a]    : null,
+      emotion_t: trendByAge.emotion[a] != null ? trendByAge.emotion[a] : null,
     };
   });
 
@@ -362,8 +450,9 @@ function App() {
           {payload.filter(e => e.value != null).map(e => (
             <div key={e.dataKey} style={{display: "flex", justifyContent: "space-between", gap: 12}}>
               <span style={{color: e.color}}>{
-                {spirit:"精神", wealth:"财富", fame:"名声",
-                 spirit_t:"精神·5年趋势", wealth_t:"财富·5年趋势", fame_t:"名声·5年趋势"}[e.dataKey] || e.dataKey
+                {spirit:"精神", wealth:"财富", fame:"名声", emotion:"感情/关系",
+                 spirit_t:"精神·5年趋势", wealth_t:"财富·5年趋势", fame_t:"名声·5年趋势",
+                 emotion_t:"感情·5年趋势"}[e.dataKey] || e.dataKey
               }</span>
               <b>{e.value.toFixed(1)}</b>
             </div>
@@ -394,6 +483,11 @@ function App() {
           <span style={{color: COLOR_FAME}}>名声</span>
           <span style={{textAlign:"right"}}><b>{p.fame_yearly?.toFixed(1)}</b></span>
           <span style={{color: "#888", fontSize: 11}}>趋势 {(trendByAge.fame[age] ?? "—") !== "—" ? trendByAge.fame[age].toFixed(1) : "—"}</span>
+          {p.emotion_yearly != null && (<>
+            <span style={{color: COLOR_EMOTION}}>感情</span>
+            <span style={{textAlign:"right"}}><b>{p.emotion_yearly?.toFixed(1)}</b></span>
+            <span style={{color: "#888", fontSize: 11}}>趋势 {(trendByAge.emotion[age] ?? "—") !== "—" ? trendByAge.emotion[age].toFixed(1) : "—"}</span>
+          </>)}
         </div>
         {interactions.length > 0 && (
           <div style={{marginTop: 4, color: "#7a6a3e", fontSize: 11}}>
@@ -444,7 +538,8 @@ function App() {
   // v7.5 新增：dayun_reviews（按 dayun_label → markdown，整体替代 dayun_review.body 的扩展版）
   const dayunReviews = ANALYSIS.dayun_reviews || {};
   const keyYears = ANALYSIS.key_years || [];   // [{year, age, ganzhi, dayun, kind: 'peak'|'dip'|'shift', headline, body}]
-  const lifeReview = ANALYSIS.life_review || {}; // {spirit, wealth, fame}
+  const lifeReview = ANALYSIS.life_review || {}; // {spirit, wealth, fame, emotion}
+  const virtueNarrative = ANALYSIS.virtue_narrative || {}; // {opening, declaration, love_letter, free_speech, convergence_notes}
 
   // v7.5 时代-民俗志：era_windows_used（来自 _zeitgeist_loader）+ era_narratives（LLM 写）
   const eraWindows = (ZEITGEIST.era_windows_used || []);
@@ -470,6 +565,8 @@ function App() {
           <span className="legend-item"><span className="legend-line dashed" style={{borderTopColor: COLOR_WEALTH}}></span>财富 · 5 年趋势</span>
           <span className="legend-item"><span className="legend-line" style={{borderTopColor: COLOR_FAME}}></span>名声 · 当年</span>
           <span className="legend-item"><span className="legend-line dashed" style={{borderTopColor: COLOR_FAME}}></span>名声 · 5 年趋势</span>
+          <span className="legend-item"><span className="legend-line" style={{borderTopColor: COLOR_EMOTION}}></span>感情/关系 · 当年</span>
+          <span className="legend-item"><span className="legend-line dashed" style={{borderTopColor: COLOR_EMOTION}}></span>感情/关系 · 5 年趋势</span>
         </div>
 
         <ResponsiveContainer width="100%" height={520}>
@@ -524,6 +621,10 @@ function App() {
                   strokeWidth={1.5} strokeDasharray="5 4" strokeOpacity={0.55}
                   dot={{ r: 2.5, fill: COLOR_FAME, strokeOpacity: 0 }}
                   connectNulls={true} isAnimationActive={false} />
+            <Line type="monotone" dataKey="emotion_t" stroke={COLOR_EMOTION}
+                  strokeWidth={1.5} strokeDasharray="5 4" strokeOpacity={0.55}
+                  dot={{ r: 2.5, fill: COLOR_EMOTION, strokeOpacity: 0 }}
+                  connectNulls={true} isAnimationActive={false} />
 
             {/* === 当年值（粗实线 + 圆点，主角） === */}
             <Line type="monotone" dataKey="spirit" stroke={COLOR_SPIRIT}
@@ -537,6 +638,10 @@ function App() {
             <Line type="monotone" dataKey="fame"   stroke={COLOR_FAME}
                   strokeWidth={2.6}
                   dot={{ r: 2.8, fill: COLOR_FAME, stroke: "#fff", strokeWidth: 1 }}
+                  connectNulls={true} isAnimationActive={false} />
+            <Line type="monotone" dataKey="emotion" stroke={COLOR_EMOTION}
+                  strokeWidth={2.6}
+                  dot={{ r: 2.8, fill: COLOR_EMOTION, stroke: "#fff", strokeWidth: 1 }}
                   connectNulls={true} isAnimationActive={false} />
           </ComposedChart>
         </ResponsiveContainer>
@@ -616,15 +721,16 @@ function App() {
         )}
       </details>
 
-      {/* === 一生三维度评价 === */}
+      {/* === 一生四维度评价 === */}
       <div className="card">
-        <h2>一生总评（三维度）</h2>
-        <div className="sub">三条曲线的整体走势 / 长板短板 / 各维度的人生策略建议</div>
+        <h2>一生总评（四维度）</h2>
+        <div className="sub">四条曲线的整体走势 / 长板短板 / 各维度的人生策略建议</div>
         <div className="life-grid">
           {[
-            { key: "spirit", name: "精神舒畅度" },
-            { key: "wealth", name: "财富" },
-            { key: "fame",   name: "名声" },
+            { key: "spirit",  name: "精神舒畅度" },
+            { key: "wealth",  name: "财富" },
+            { key: "fame",    name: "名声" },
+            { key: "emotion", name: "感情/关系" },
           ].map(d => (
             <div key={d.key} className={"life-cell "+d.key}>
               <div className="lc-head"><span className="lc-dot"></span>{d.name}</div>
@@ -633,12 +739,202 @@ function App() {
               ) : (
                 <div className="placeholder">
                   （此处由 LLM 写入一生 {d.name} 的整体评价。
-                  key = "{d.key}"）
+                  key = "{d.key}"
+                  {IS_PARTIAL ? " · ⌛ 流式写作中" : ""}）
                 </div>
               )}
             </div>
           ))}
         </div>
+      </div>
+
+      {/* === 承认维度（德性暗线 / virtue narrative · v9 新增 · 不画曲线，独立成块） === */}
+      <div className="virtue-card">
+        <h2>承认维度 · 德性暗线（virtue narrative）</h2>
+        <div className="sub">
+          这条独立叙事通道不进 25% 融合权重、不画曲线，只承认人性。
+          按 <code style={{fontSize:11}}>references/virtue_recurrence_protocol.md</code> 的 6 个写作位置由 LLM 流式累积写入。
+        </div>
+
+        {!HAS_VIRTUE_MOTIFS && (
+          <div className="virtue-disabled">
+            ⚠ <b>承认维度未启用</b>：本次渲染未传入 <code>--virtue-motifs</code>（或 <code>output/*.virtue_motifs.json</code> 不存在）。
+            请先跑 <code>python scripts/virtue_motifs.py --bazi output/X.bazi.json --curves output/X.curves.json --out output/X.virtue_motifs.json</code>，
+            再用 <code>--virtue-motifs output/X.virtue_motifs.json</code> 重渲染。
+            脚本侧的 38 条母题骨架是 LLM 写位置 ①③④⑤⑥ 的依据，缺了它德性暗线就只有空话。
+          </div>
+        )}
+
+        {HAS_VIRTUE_MOTIFS && (() => {
+          const triggered = (VIRTUE_MOTIFS && VIRTUE_MOTIFS.triggered_motifs) || [];
+          const convergence = (VIRTUE_MOTIFS && VIRTUE_MOTIFS.convergence_years) || [];
+          const blessing = !!(VIRTUE_MOTIFS && VIRTUE_MOTIFS.blessing_path);
+          const loveOK = !!(VIRTUE_MOTIFS && VIRTUE_MOTIFS.love_letter_eligible);
+          const hint = (VIRTUE_MOTIFS && VIRTUE_MOTIFS.convergence_hint) || "";
+          return (
+            <>
+              <details className="virtue-section" open>
+                <summary>
+                  <span className="vs-pos">位置①</span>
+                  <span>开篇悬疑提示（life_review 起笔即出现）</span>
+                  <span className="vs-hint">analysis.virtue_narrative.opening</span>
+                </summary>
+                <div className="vs-body">
+                  {virtueNarrative.opening && virtueNarrative.opening.trim() ? (
+                    <Markdown source={virtueNarrative.opening} />
+                  ) : (
+                    <div className="placeholder">
+                      （此处由 LLM 在 Node 2 之前/之时写入位置① · 用 1-2 句不下定论的悬疑话起笔，
+                      引出贯穿一生的德性母题。{IS_PARTIAL ? "⌛ 流式写作中" : ""}）
+                    </div>
+                  )}
+                </div>
+              </details>
+
+              <details className="virtue-section" open>
+                <summary>
+                  <span className="vs-pos">骨架</span>
+                  <span>母题清单 + 汇聚年表（脚本侧）</span>
+                  <span className="vs-hint">virtue_motifs.json</span>
+                </summary>
+                <div className="vs-body">
+                  <div style={{fontSize:12, color:"#5a4a26", marginBottom:6}}>
+                    {blessing && <span style={{
+                      display:"inline-block", padding:"2px 8px", marginRight:6,
+                      background:"#e8f3e8", color:"#3d7a47", borderRadius:3, fontSize:11
+                    }}>命好路径（blessing_path）</span>}
+                    {loveOK && <span style={{
+                      display:"inline-block", padding:"2px 8px", marginRight:6,
+                      background:"#fbeaef", color:"#a8497a", borderRadius:3, fontSize:11
+                    }}>情书条件成立（位置⑤可写）</span>}
+                    {hint && <span style={{color:"#8a7a55", fontSize:11}}>{hint}</span>}
+                  </div>
+                  {triggered.length === 0 ? (
+                    <div className="placeholder">（无母题触发 · 命主可能是清淡命，或 detector 暂未覆盖）</div>
+                  ) : (
+                    <ul className="motif-table">
+                      {triggered.map((m, i) => (
+                        <li key={i} className="motif-row">
+                          <span className="motif-id">{m.id || "?"}</span>
+                          <span className={"motif-grav "+(m.gravity || "gentle")}>{m.gravity || "?"}</span>
+                          <span style={{flex:1}}>{m.label || m.headline || ""}</span>
+                          {m.activations && m.activations.length > 0 && (
+                            <span style={{color:"#8a7a55", fontSize:11}}>
+                              ×{m.activations.length}
+                            </span>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  {convergence.length > 0 && (
+                    <div className="convergence-years">
+                      <b style={{color:"#5a4a26", fontSize:12}}>母题汇聚年（≥3 母题同年）：</b>
+                      <div style={{marginTop:4}}>
+                        {convergence.map((y, i) => (
+                          <span key={i} className="y-tag">{typeof y === "object" ? y.year : y}</span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </details>
+
+              <details className="virtue-section" open>
+                <summary>
+                  <span className="vs-pos">位置③</span>
+                  <span>汇聚显形 · 母题之间的回响总览</span>
+                  <span className="vs-hint">analysis.virtue_narrative.convergence_notes</span>
+                </summary>
+                <div className="vs-body">
+                  {virtueNarrative.convergence_notes && virtueNarrative.convergence_notes.trim() ? (
+                    <Markdown source={virtueNarrative.convergence_notes} />
+                  ) : (
+                    <div className="placeholder">
+                      （此处由 LLM 在 convergence_years 命中的关键年内嵌之外，
+                      额外写一段「母题之间的回响」总览。{IS_PARTIAL ? "⌛ 流式写作中" : ""}）
+                    </div>
+                  )}
+                </div>
+              </details>
+
+              <details className="virtue-section" open>
+                <summary>
+                  <span className="vs-pos">位置④</span>
+                  <span>灵魂宣言（一生评价收尾）</span>
+                  <span className="vs-hint">analysis.virtue_narrative.declaration</span>
+                </summary>
+                <div className="vs-body">
+                  {virtueNarrative.declaration && virtueNarrative.declaration.trim() ? (
+                    <Markdown source={virtueNarrative.declaration} />
+                  ) : (
+                    <div className="placeholder">
+                      （此处由 LLM 在四维一生评价全部写完后，
+                      给出一段「不替命主下定论、只为命主承认人性」的灵魂宣言。
+                      遵循反身性铁律：禁用「应该 / 必须」，只用「是」。
+                      {IS_PARTIAL ? " ⌛ 流式写作中" : ""}）
+                    </div>
+                  )}
+                </div>
+              </details>
+
+              {loveOK && (
+                <details className="virtue-section" open>
+                  <summary>
+                    <span className="vs-pos">位置⑤</span>
+                    <span>情书（仅 love_letter_eligible 才写）</span>
+                    <span className="vs-hint">analysis.virtue_narrative.love_letter</span>
+                  </summary>
+                  <div className="vs-body">
+                    {virtueNarrative.love_letter && virtueNarrative.love_letter.trim() ? (
+                      <Markdown source={virtueNarrative.love_letter} />
+                    ) : (
+                      <div className="placeholder">
+                        （此处由 LLM 写一封给命主的情书。
+                        条件已成立（love_letter_eligible=true）。
+                        {IS_PARTIAL ? "⌛ 流式写作中" : ""}）
+                      </div>
+                    )}
+                  </div>
+                </details>
+              )}
+
+              <details className="virtue-section" open>
+                <summary>
+                  <span className="vs-pos">位置⑥</span>
+                  <span>LLM 自由话（解读师写完之后想说的话）</span>
+                  <span className="vs-hint">analysis.virtue_narrative.free_speech</span>
+                </summary>
+                <div className="vs-body">
+                  {virtueNarrative.free_speech && virtueNarrative.free_speech.trim() ? (
+                    <Markdown source={virtueNarrative.free_speech} />
+                  ) : (
+                    <div className="placeholder">
+                      （此处由 LLM 在所有结构化输出之后，写一段不强求结构、不强求长度的自由话。
+                      可以是疑问、可以是停顿、可以是把话还给命主。
+                      {IS_PARTIAL ? "⌛ 流式写作中" : ""}）
+                    </div>
+                  )}
+                </div>
+              </details>
+            </>
+          );
+        })()}
+
+        {HAS_VIRTUE_MOTIFS === false && Object.keys(virtueNarrative).length > 0 && (
+          <div className="virtue-section">
+            <div className="vs-body">
+              <div style={{fontSize:12, color:"#8a7a55", marginBottom:6}}>
+                ⚠ 注意：当前未注入 virtue_motifs.json，但 analysis.virtue_narrative 已有内容，
+                显示如下（缺少母题骨架对照可能导致写作脱靶）：
+              </div>
+              {virtueNarrative.opening && <Markdown source={virtueNarrative.opening} />}
+              {virtueNarrative.declaration && <Markdown source={virtueNarrative.declaration} />}
+              {virtueNarrative.love_letter && <Markdown source={virtueNarrative.love_letter} />}
+              {virtueNarrative.free_speech && <Markdown source={virtueNarrative.free_speech} />}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* === v7.5 时代-民俗志解读层（仅在传入 zeitgeist 时显示） === */}
