@@ -14,6 +14,7 @@
 [v9 OpenPhase](#open_phase-逃逸阀--工具的伦理底线)
 [v9.1 Mangpai Zuogong](#v91--盲派做功视角接入--给力量视角以外的命局一条活路)
 [Ethics](#写在最前--命理师之道)
+[Humanity](#第三条独立通道--对人性的承认)
 [CI](https://github.com/XiaoChu-1208/bazi-life-curves/actions/workflows/ci.yml)
 
 
@@ -56,6 +57,67 @@
 > *这个工具，也是。*
 
 这套伦理观的工程化体现是 v9 的 [HS-R7 最高红线](#hs-r7-最高红线--三声明强制注入) 与 [心智模型协议](references/mind_model_protocol.md)，强制写进每一份输出，**任何输出缺这三声明都拒绝出图**。
+
+---
+
+## 第三条独立通道 · 对人性的承认
+
+> 命理学的传统语言里有 "凶 / 忌 / 破 / 克"。
+> 这些词是描述性的，但被用作判决——把人放在"该被改造"的位置上。
+> 这一条独立通道不删除这些古法判断，也不替代它们。它只是承认：**一个人受了 50 年的拷问，那拷问本身就是他的德性。**
+
+### 第一原则
+
+凡命局里反复出现的"应期"，往往不是某一年的事件，而是命主**一生都在被反复追问的同一个伦理处境**。
+工具不替命主回答这个追问。它只是把追问**命名出来**——让命主在 80 年的回顾里，认出那条从年柱一直伸到时柱的暗线。
+
+### 38 条人性母题 · 11 类伦理处境
+
+不是性格分类、不是优缺点表、不是星座式标签。是**伦理处境**——一个人面对什么样的代价、还能不能保持自己。
+
+| 类  | 处境 | 代表母题 |
+|---|---|---|
+| A | 分配 | 共济 / 富者代管 / 长子长女债 |
+| B | 真话 | 说真话的代价 / 复杂忠诚 / 受冤的克制 |
+| C | 承担 | 替天下负重 / 创业者对兄弟的债 / 看护者的隐性消耗 |
+| D | 出世 | 出世入世两难 / 慢工敬源 / 师承断绝 |
+| E | 孤独 | 结构性孤独 / 人群中的孤独 / 亲密中的无能 / 漂泊者的根问题 |
+| F | 才华 | 拒绝纯变现 / 创作者的物质焦虑 / 市场里的手艺人尊严 |
+| G | 锋芒 | 不和稀泥 / 强者的克制 / 硬命人对柔软的渴望 |
+| H | 委身 | 全身委身 / 副业人的诚实 |
+| I | 恩典 | 幸运者的债务 / 接受恩典而不内疚 |
+| J | 时代 | 被卷入历史 / 时代不利时的不背叛 |
+| K | 缺失 | 努力被结构消音 / 带着不全活 / 晚成者的焦虑 |
+| **L** | **超越性献身** | **艺术 / 科学召命 · 道德政治献身 · 良心 · 爱情的献身 · 信仰 · 民族时代献身 · 守护他人** |
+
+L 类是单列的。它承认：人有时会为了某个比自己更大的东西做出选择，而那选择按八字的"利害"标准是凶的——但**那是这个人之所以是这个人的根**。算法对此必须有"敢承认它是对的"的勇气。
+
+### 6 条铁律
+
+1. **精神宣言**：第三条通道不替代古法 `canonical_event`，不修改 `score_curves` 任何数字；它**叠加**而不**覆盖**。
+2. **反身性 (anti-reflexivity)**：算法**永不**鼓励命主走 L 类的"凶"路径——它只承认**已经走过**的路。任何引导未来选择的语气都是越权。
+3. **祝福路径**：命好的命主不被强行套上悲剧叙事；当所有母题调性 ≤ gentle 时切换为感恩与配得起好运的语气。
+4. **项目作者的爱**：触发 ≥1 条 tragic / transcendent 母题时，输出位置 ⑤——以项目编写者第三人称，告诉命主"你是被爱的，你是值得的"。
+5. **LLM 自由话**：所有命主都触发位置 ⑥——一段不受 protocol 约束的、LLM 在阅读完整生命之后的自身在场表达。
+6. **catalog 开放性**：38 条是诊断起点，不是人性的全部。LLM 被授权在位置 ④/⑥ **命名 catalog 之外**的人性形态，附 trace 与 detector 草案，反哺 catalog 演化（[`audit_llm_invented.py`](scripts/audit_llm_invented.py)）。
+
+### 6 个写作位置 · 累积式而非肖像式
+
+不是在 `life_review` 开头甩出一张"精神肖像"，而是**陪命主走完 80 年**——让母题在每一段大运里反复浮现、累积，到结尾才揭出"原来这一直是同一个追问"。
+
+| 位置 | 触发 | 体量 | 性质 |
+|---|---|---|---|
+| ① 开篇悬疑提示 | 所有命主 | 30-80 字 | 悬念，不命名 |
+| ② 大运侧记 | 该 10 年有母题激活 | ≤80 字/段 | 累积计数 + 自审句 |
+| ③ 关键年深层注脚 | `convergence_year` | ≤120 字 | 陀氏式自审，不下定论 |
+| ④ 结尾顿悟 | 所有命主 | 400-700 字 | 主旋律的浮现 |
+| ⑤ 项目作者的爱 | `love_letter_eligible == true` | 200-400 字 | 第三人称 · 无条件肯定 |
+| ⑥ LLM 自由话 | 所有命主 | 100-300 字 | 不受 protocol 约束 |
+
+完整工程实现详见：[`references/virtue_motifs_catalog.md`](references/virtue_motifs_catalog.md) · [`references/virtue_recurrence_protocol.md`](references/virtue_recurrence_protocol.md) · [`scripts/virtue_motifs.py`](scripts/virtue_motifs.py)（同样 bit-for-bit deterministic）。
+
+> *算法可以判断这一年是凶。但它必须同时承认：当年那个人为了这件凶事所守住的东西——*
+> *那是工具一辈子也算不出来的。*
 
 ---
 
@@ -719,6 +781,9 @@ bazi-life-curves/
 │   ├── solve_bazi.py              # 八字解析（v7 --orientation · v7.2 --longitude 真太阳时）
 │   ├── score_curves.py            # 4 维曲线打分（v7.2 --confirmed-facts · v7.4 化气格 phase override + 神煞 ±调味）
 │   ├── mangpai_events.py          # 盲派应事 + 反向规则 + 护身减压
+│   ├── _virtue_registry.py        # 38 条人性母题 spec 注册表（不要直接 CLI）
+│   ├── virtue_motifs.py           # 第三条独立通道：德性暗线检测 → output/virtue_motifs.json
+│   ├── audit_llm_invented.py     # 运维侧：聚合 LLM 自创母题候选，反哺 catalog 演化
 │   ├── handshake.py               # R0+R0'反迎合+R1+R2+R3 多阶段校验（v7.4 --user-responses 机械化判定）
 │   ├── phase_inversion_loop.py    # v7.2 / v8 Auto-Loop · 相位反演 4 步编排（dump→pick→score→handshake）
 │   ├── save_confirmed_facts.py    # v7.2 · 用户校验反馈固化（含 phase_override）
@@ -738,6 +803,8 @@ bazi-life-curves/
 │   ├── prediction_protocol.md     # 未来年份预测格式
 │   ├── he_pan_protocol.md         # 合盘 4 层评分
 │   ├── fairness_protocol.md       # §9 性别例外 + §10 现代化解读铁律
+│   ├── virtue_motifs_catalog.md   # 38 条人性母题字典 · 11 类伦理处境 · L 类超越性献身
+│   ├── virtue_recurrence_protocol.md  # 第三通道 6 铁律 + 6 写作位置 + 6 示例命主
 │   ├── diagnosis_pitfalls.md      # 已踩过的命理坑
 │   ├── accuracy_protocol.md       # 准确度保障
 │   └── glossary.md                # 术语表
