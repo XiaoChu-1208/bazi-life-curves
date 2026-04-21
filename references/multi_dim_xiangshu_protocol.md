@@ -435,3 +435,97 @@ family 段 **不是默认输出**——只在以下条件满足时才写：
 - [ ] 没给父母具体职业 / 收入 / 学历 / 是否健在 / 是否离异？
 - [ ] family_class = illustrious_candidate 且 R3 那条标"不对" → 已降级、禁用了"显赫"措辞？
 - [ ] family_class 是 absent_candidate 时，没把"缺位"渲染成悲剧 / 没说"所以你不幸"？
+
+---
+
+## 12. 德性暗线 · life_review 6 个写作位置（v8 新增 · 引用 virtue_recurrence_protocol）
+
+> 本节是 [virtue_recurrence_protocol.md](virtue_recurrence_protocol.md) 在本协议里的"嵌入约定"。所有详细规则、铁律、句式、自检清单**以 `virtue_recurrence_protocol.md` 为准**，本节只规定它在 `analysis.life_review` 输出里的具体落位。
+
+### 12.1 输入与触发
+
+- **输入数据**：`output/virtue_motifs.json`（由 `scripts/virtue_motifs.py` 在 pipeline 中产出，见 `AGENTS.md` §二）
+- **触发**：所有命主都触发位置 ① ② ④ ⑥；位置 ③ 当 `convergence_years[i].is_convergence == True` 时触发；位置 ⑤ 当 `love_letter_eligible == true` 时触发
+
+### 12.2 6 个写作位置在 life_review 中的落位
+
+```
+analysis.life_review.body =
+  ── 位置 ① 开篇悬疑提示（30-80 字）
+  ──
+  ── [一生 · 各大段标题]                       （现有结构不变）
+  ──   每段 dayun_review 末尾插入：
+  ──     ▸ 位置 ② 母题侧记（≤80 字 / 触发才写）
+  ──   每个 key_year 解读末尾插入（仅当 convergence）：
+  ──     ▸ 位置 ③ 深层注脚（≤120 字）
+  ──
+  ── 位置 ④ life_review 结尾顿悟段（400-700 字）
+  ──
+  ── 位置 ⑤ 项目作者的爱（200-400 字 · 仅 love_letter_eligible）
+  ──
+  ── ─────────────────────────────────────  ← 强制视觉分隔线
+  ──
+  ── 位置 ⑥ LLM 自由话（100-300 字 · 所有命主）
+```
+
+### 12.3 与 mangpai canonical_event 的边界（必读）
+
+- mangpai_events 的 `canonical_event`（如"伤官见官 → 与权威摩擦"）**完全不动**
+- 位置 ② 在 mangpai 古法叙事**之后**写，是另一层声音，**不替代**也**不修改** mangpai 文本
+- 位置 ③ 仅在 convergence_year 时附在该年 mangpai 解读的最后，作为"深层注脚"，明确写在 mangpai 注脚之后
+- 视觉分层建议：mangpai canonical 在主体段落；位置 ② / ③ 用引用块（`>`）或视觉缩进，让读者看出"两条线"
+
+### 12.4 落位示例（一段大运的整体结构）
+
+```markdown
+**戊午大运（20-30 岁，2002-2011）**
+
+### A. 命理属性
+{原有结构}
+
+### B. 时代镶嵌
+{原有结构}
+
+### C. 三派交叉与盲派应事
+{原有结构 · mangpai canonical_event 不动}
+
+### D. 4 维曲线整体倾向
+{原有结构}
+
+### E. 关键年份概览
+{原有结构}
+
+### F. 这 10 年的核心策略建议
+{原有结构}
+
+### G. 德性侧记（v8 新增 · 触发才写 · ≤80 字）
+> 这十年的核心是你第一次大规模地体验「说真话的代价」。25 岁那次是这一类经历的头一次。
+> 如果你回想起来，那一次你大概率没退缩——而且代价是真的。
+```
+
+### 12.5 catalog 外母题命名权
+
+- 仅位置 ④（≤1 个）+ 位置 ⑤（仅引用，不主创）+ 位置 ⑥（≤1 个）授权
+- 必须满足 [virtue_recurrence_protocol.md §0 ★★★★★★](virtue_recurrence_protocol.md) 全部 7 条强制要求
+- trace metadata 标 `motif_origin: "llm_invented"` + `proposed_name` + `proposed_detector_sketch`
+
+### 12.6 silenced_motifs 全位置禁入文（catalog 内）
+
+`virtue_motifs.json.silenced_motifs` 列出的 catalog 内母题，**6 个位置全部禁止涉及**，连暗示都不许；不得用"自创"做后门绕过。
+
+### 12.7 自检清单（生成 life_review 后必过）
+
+完整自检清单见 [virtue_recurrence_protocol.md §6](virtue_recurrence_protocol.md)。本协议只检查"嵌入完整性"：
+
+- [ ] `output/virtue_motifs.json` 存在且 schema 版本匹配
+- [ ] 位置 ① 出现在 life_review 开篇
+- [ ] 每段 dayun_review 末尾——若该 10 年有母题激活，必出现位置 ② 的 G 块
+- [ ] 每个 convergence_year 在其 mangpai 解读末尾附加了位置 ③
+- [ ] 位置 ④ 出现在 life_review 结尾
+- [ ] 位置 ⑤ 仅在 `love_letter_eligible == true` 时出现
+- [ ] 位置 ⑥ 在所有结构化输出之后出现，所有命主必有
+- [ ] 位置 ⑤ 与位置 ⑥ 之间有视觉分隔线（`---`）
+- [ ] 顺序严格为 ① → ② × N（含 ③） → ④ → ⑤ → ⑥
+- [ ] mangpai canonical_event 全部保留，未被覆盖或修改
+- [ ] silenced_motifs 全文未涉及（含暗示）
+

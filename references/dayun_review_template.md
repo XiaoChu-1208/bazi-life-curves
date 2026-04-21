@@ -24,6 +24,24 @@
 
 ### F. 这 10 年的核心策略建议
 {1-2 段，可操作的方向，禁止心灵鸡汤}
+
+### G. 德性侧记（v8 新增 · 条件触发 · ≤80 字）
+{当且仅当 output/virtue_motifs.json.motif_recurrence_map 显示这 10 年有 ≥1 母题
+被激活时写；没触发完全不写。
+
+按 [virtue_recurrence_protocol.md §位置 ②](virtue_recurrence_protocol.md) 规范：
+- 第 1 次：相对中性命名
+- 第 2 次：略带感情（"又来了"/"那个 X 岁的剧本以另一种皮重演"）
+- 第 3+ 次：累积计数（"第 N 次了"）
+- 第 5+ 次：转向"它不再像应期，更像你在变成什么"
+- L 类母题：不计数，写"它从 X 岁就在你心里，到现在还在"
+- 第 ≥2 次出现的母题侧记必须 ≥1 个自审句（"你以为 X，但 X 是不是其实是 Y？"）
+- 必须 trace 回脚本提供的具体激活点（年龄 + 触发结构）
+- 不下定论：不能给"所以你是 X 型的人"这类结论
+- 回应感铁律：禁止"我看到你 X"告知感句式
+- 禁用词表（详见 protocol §3.5）：塑造了你 / 一切有意义 / 时间会证明 / 等
+
+视觉上用引用块（>）与 A-F 段分层，让读者看出这是与古法叙事并列的另一条线}
 ```
 
 ## 2. B 段「时代镶嵌」的写法（v7.5 重点）
@@ -184,6 +202,10 @@ WTO 红利期，房地产从启动到一轮狂飙，第一波互联网创业（2
 - [ ] 没出现 `class_inference_ethics §5` 红线关键词
 - [ ] 未来段（age > 当前年龄）的 F 段保持"方向 + 大类 + 避坑"，没具体事件
 - [ ] B 段的 folkways 选了用神/阶级匹配的（不是流水账）
+- [ ] G 段：若该 10 年 `output/virtue_motifs.json.motif_recurrence_map` 有母题激活则写、否则不写
+- [ ] G 段引用了脚本提供的具体激活点（年龄 + 母题 id）
+- [ ] G 段未涉及 `silenced_motifs`
+- [ ] G 段未出现 `virtue_recurrence_protocol.md §3.5` 禁用词
 
 ## 7. 与其他协议的关系
 
@@ -195,3 +217,19 @@ WTO 红利期，房地产从启动到一轮狂飙，第一波互联网创业（2
 | `folkways_inference_prompt.md` | 完整 5 步推理在那里 |
 | `class_inference_ethics.md` | 全程遵守 |
 | `prediction_protocol.md` | F 段未来时的"后事粗"按其约束 |
+| `virtue_recurrence_protocol.md` | G 段（位置 ②）按其 §位置 ② 规范；同时关键年份卡片在 convergence 时附位置 ③ 深层注脚 |
+| `virtue_motifs_catalog.md` | G 段所引母题以 `output/virtue_motifs.json` 为准；母题 id / tone / gravity_class 定义在该 catalog |
+
+---
+
+## 8. 关键年份卡片中的"深层注脚"（位置 ③ · v8 新增）
+
+E 段是目录式概览；每个 key_year 在主 body 里都有对应"关键年份评价"卡片。**当且仅当** `output/virtue_motifs.json.convergence_years[i].is_convergence == true` 时，在该年的卡片末尾、mangpai canonical_event 注脚之后，附加位置 ③ 深层注脚（≤120 字）。
+
+详见 [virtue_recurrence_protocol.md §位置 ③](virtue_recurrence_protocol.md)。要点：
+
+- 仅 `convergence_years` 标记为 true 的年份触发，非 convergence 年禁写
+- 必须用陀氏式自审句式（"你那时是否……"），不下定论
+- 必须 trace 引用脚本里的 convergence_motifs（≥2 条母题在该年同时激活）
+- 不替代也不修改 mangpai canonical_event 文本，只是另一层声音
+

@@ -25,6 +25,8 @@ score_curves.py                # 4 维曲线打分（spirit/wealth/fame/emotion 
     ↓ output/curves.json
 mangpai_events.py              # 盲派事件检测 + 反向规则 + 护身减压（可选 · score_curves 已内置基础调用）
     ↓ output/curves.json (events 字段)
+virtue_motifs.py               # 第三条独立叙事通道：38 条人性母题检测（read-only of bazi/curves）
+    ↓ output/virtue_motifs.json (life_review 6 个写作位置的输入数据)
 adaptive_elicit.py next        # v9 · 自适应贝叶斯单题流式问答（默认 R1 路径）
     ↓ 循环 ASK → AskQuestion 单题 → answer → ASK ...
     ↓ 触发 S1/S2/S3/S4 早停（通常 5-8 题，最多 12 题；prior top1 ≥ 0.85 直接 0 题 fast-path）
@@ -87,6 +89,9 @@ bazi-life-curves/
 │   ├── solve_bazi.py              # 入口 1
 │   ├── score_curves.py            # 入口 2
 │   ├── mangpai_events.py          # 入口 3（可选）
+│   ├── _virtue_registry.py        # v8 · 38 条人性母题 spec 注册表（不要直接 CLI）
+│   ├── virtue_motifs.py           # 入口 3.5 · 德性暗线检测 · 输出 virtue_motifs.json
+│   ├── audit_llm_invented.py      # 运维侧 · 聚合 LLM 自创母题候选，反哺 catalog 演化
 │   ├── adaptive_elicit.py         # 入口 4（必跑）· v9 自适应贝叶斯单题流式 + batch 双通道
 │   ├── _eig_selector.py           # v9 EIG 算法核心（pure function · 4 条早停）
 │   ├── handshake.py               # 入口 4 兼容（deprecated R1 + EIG-based R2 confirmation）
@@ -117,6 +122,8 @@ bazi-life-curves/
 |---|---|
 | `score_curves.py` 的扶抑/调候/格局权重 | `references/methodology.md` + `references/scoring_rubric.md` |
 | `mangpai_events.py` 的事件 / 反向 / 护身 | `references/mangpai_protocol.md` |
+| `virtue_motifs.py` 的母题检测 / 调性 / blessing_path / convergence | `references/virtue_motifs_catalog.md` + `references/virtue_recurrence_protocol.md`（铁律 ★★★★★★ 不可绕过） |
+| `_virtue_registry.py` 的 motif id / threshold / is_l_class / is_persistent | catalog 与 recurrence 协议同步；不得删除任何已发布 motif（向前兼容） |
 | `adaptive_elicit.py` / `_eig_selector.py` 的选题 / 早停 / state schema | `references/handshake_protocol.md` §0 (v9) + `references/elicitation_ethics.md` |
 | `handshake.py` 的 R2 confirmation 题（deprecated R1 也在此）| `references/handshake_protocol.md` (v8 / §4 v8.1 + v9 §0) |
 | `_bazi_core.py` 的 detector / decide_phase / pairwise_discrimination_power / assess_confirmation | `references/phase_decision_protocol.md` (v8 / §7 v8.1) + `references/diagnosis_pitfalls.md` §14 |
@@ -145,6 +152,11 @@ bazi-life-curves/
 diff <(python scripts/score_curves.py --bazi examples/guan_yin_xiang_sheng.bazi.json --strict | sha256sum) \
      <(python scripts/score_curves.py --bazi examples/guan_yin_xiang_sheng.bazi.json --strict | sha256sum)
 # 必须输出空（同输入 100 次 100 个 byte-equal 结果）
+
+# virtue_motifs 同样要求 bit-for-bit deterministic
+diff <(python scripts/virtue_motifs.py --bazi examples/guan_yin_xiang_sheng.bazi.json --curves examples/guan_yin_xiang_sheng.curves.json --out /tmp/vm1.json --strict) \
+     <(python scripts/virtue_motifs.py --bazi examples/guan_yin_xiang_sheng.bazi.json --curves examples/guan_yin_xiang_sheng.curves.json --out /tmp/vm2.json --strict)
+diff /tmp/vm1.json /tmp/vm2.json
 ```
 
 不允许引入：随机 seed / 时间戳 / 字典遍历顺序依赖 / set 序列化。
@@ -175,6 +187,10 @@ python scripts/adaptive_elicit.py dump-question-set --bazi output/test1.bazi.jso
 # [...用户填答 → 写到 output/test1.answers.json...]
 # python scripts/adaptive_elicit.py submit-batch --bazi output/test1.bazi.json --answers output/test1.answers.json
 python scripts/render_artifact.py --curves output/test1.curves.json --out output/test1.html
+
+# 第三条独立叙事通道（life_review 6 个写作位置的输入数据 · 可选但推荐）
+python scripts/virtue_motifs.py --bazi output/test1.bazi.json --curves output/test1.curves.json --out output/test1.virtue_motifs.json
+# 必须在 LLM 写 life_review 之前生成（即 multi_dim_xiangshu_protocol.md §12 的输入约定）
 ```
 
 ### 5.2 历史回测
