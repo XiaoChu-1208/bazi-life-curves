@@ -43,6 +43,9 @@ ALLOWLIST_FILES = {
     "he_pan_orchestrator.py",   # v9 PR-2 多人 v8 编排器,串脚本不进打分
     "mcp_server.py",            # MCP 服务,非打分路径
     "phase_inversion_loop.py",  # 编排器,只串脚本不进打分
+    "adaptive_elicit.py",       # v9 自适应问答主入口:用 dt.date.today() 取当前年份;
+                                # 用 random.Random(bazi_fp) 做 batch 题集**确定性**洗牌
+                                # —— 不进打分产物（只生成用户题集 / state 文件），bit-for-bit 由 fingerprint 保证
 }
 
 # 进入"确定性产物"链的核心脚本 — 一定要严格守
@@ -65,6 +68,8 @@ DETERMINISTIC_CORE = {
     "multi_school_vote.py",    # v9 PR-6 加权投票,纯静态聚合
     "_phase_registry.py",      # v9 L1 phase 注册表,纯静态 metadata
     "_mangpai_reversal.py",    # v9 L5 反转规则引擎,纯 yaml + 模式匹配
+    "_eig_selector.py",        # v9 自适应贝叶斯问答核心算法,纯函数无 IO
+    "audit_questions.py",      # v9 静态审计工具,纯静态分析(只读 _question_bank.py)
 }
 
 

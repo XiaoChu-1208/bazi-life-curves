@@ -120,3 +120,48 @@ rules:
       单纯"凶险"的解读不准确。
     intensity_after: 重
     source: 盲派应期模型·做功格反吟变通
+
+  # ============================================================
+  # 七杀逢印 反转（杀印相生格 → 化煞为权）
+  # ============================================================
+
+  - event_key: qi_sha_feng_yin
+    default_polarity: negative
+    reverse_when:
+      - path: phase.reversal_overrides.qi_sha_feng_yin
+        op: ==
+        value: positive
+    reversed_meaning: |
+      印化七杀，凶转吉：杀印相生格中，七杀的压力被印星转化为权柄/身份，
+      关键节点借势上位（升迁、获权、被组织赋予正式职责）。
+    intensity_after: 中
+    source: 滴天髓·七杀（逢印化杀，反凶为吉）+ 子平真诠·杀印相生
+
+  - event_key: qi_sha_feng_yin
+    default_polarity: negative
+    reverse_when:
+      - path: phase.reversal_overrides.qi_sha_feng_yin
+        op: ==
+        value: neutral
+    reversed_meaning: |
+      食制杀格中印夺食，破格之嫌：七杀逢印不再化为权，反而干扰食神制衡。
+      按"无功亦无凶"理解，主结构暂时失衡而非具体祸事。
+    intensity_after: 轻
+    source: 滴天髓·七杀（食制者贵，最忌印夺）
+
+  # ============================================================
+  # 食神制杀 反转（食制杀格 → 主动制衡获利）
+  # ============================================================
+
+  - event_key: shi_shen_zhi_sha
+    default_polarity: negative
+    reverse_when:
+      - path: phase.reversal_overrides.shi_shen_zhi_sha
+        op: ==
+        value: positive
+    reversed_meaning: |
+      食神制杀格成事：以食神主动制衡七杀，关键节点通过专业能力 / 技艺 /
+      创造性输出压制压力源，结果是"硬顶顶下来"获取实利或地位。
+    intensity_after: 中
+    source: 子平真诠·七杀格·食神制杀
+

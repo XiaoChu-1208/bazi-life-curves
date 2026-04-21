@@ -1,10 +1,127 @@
-# 校验握手协议（Handshake Protocol · v8 / v8.1 两轮校验）
+# 校验握手协议（Handshake Protocol · v9 / v8.1 兼容）
 
+> **v9（本文件当前版本）**：把 R1 默认路径从 `handshake.py` 一次性 26 题切到
+> [scripts/adaptive_elicit.py](../scripts/adaptive_elicit.py) 的**自适应贝叶斯
+> 单题流式问答**（EIG 选题 + 4 条早停 + 双盲）。R2 confirmation 仍走 `handshake.py
+> --round 2`，但选题函数从 v8 的 pairwise L1 升级为 weighted EIG（限定 2-phase 后验）。
+> 双盲约束统一到 [elicitation_ethics.md](elicitation_ethics.md) §E1–§E6。
+>
+> v8 一次性题集路径（`handshake.py` 默认 R1）保留为 deprecated 兼容入口，
+> 输出 schema 标记 `deprecated_v9: true`，且 `askquestion_payload` 已剥离所有
+> 后验字段。新代码请用 `adaptive_elicit.py`。
+>
 > v8 把校验从「R0/R1/R2/R3 自然语言转述 + 命中率」整体替换为「discriminative question bank + AskQuestion 多选 + 贝叶斯后验」。
 >
-> **v8.1（本文件当前版本）**新增 **Round 2 confirmation 协议**：R1 用宽口径判别题选出 top phase 后，R2 在 top phase 与 runner-up 之间挑高判别力的 confirmation 题再问一次，对照 `confirmation_threshold` 决定是出图、加 caveat 出图，还是回退核对时辰 / 性别。
+> **v8.1** 新增 **Round 2 confirmation 协议**：R1 用宽口径判别题选出 top phase 后，R2 在 top phase 与 runner-up 之间挑高判别力的 confirmation 题再问一次，对照 `confirmation_threshold` 决定是出图、加 caveat 出图，还是回退核对时辰 / 性别。
 >
 > 旧版（v6/v7）对应文件已整段废弃。`scripts/handshake.py` 输出的 `handshake.json` schema 与旧版**不向后兼容**，旧 confirmed_facts.json 通过 `scripts/save_confirmed_facts.py` 的 schema migration 自动升级到 v8。
+
+---
+
+## §0 v9 自适应路径（默认 R1）
+
+### §0.1 三个 CLI 子命令
+
+```bash
+# 单题流式（默认路径）—— 首次调用初始化 state，循环至 finalize
+python scripts/adaptive_elicit.py next \
+    --bazi out/bazi.json --curves out/curves.json \
+    --state out/.elicit.state.json \
+    [--answer 'D4_Q2_sleep:B']
+
+# 一次性导出 batch 题集 markdown
+python scripts/adaptive_elicit.py dump-question-set \
+    --bazi out/bazi.json --curves out/curves.json \
+    --tier core14|full28 \
+    --out out/question_set.md
+
+# 一次性提交 batch 答案
+python scripts/adaptive_elicit.py submit-batch \
+    --bazi out/bazi.json --curves out/curves.json \
+    --answers out/batch_answers.json \
+    --out out/bazi.json
+```
+
+LLM 在第一次抛单题前必须按 [batch_elicitation_prompt.md](batch_elicitation_prompt.md) §1
+给用户固定开场白（介绍 batch 通道）。
+
+### §0.2 EIG 选题 + 4 条早停
+
+详见 [scripts/_eig_selector.py](../scripts/_eig_selector.py)：
+
+- **选题**：`weighted_eig(q, posterior)` = `weight * (H(post) - E[H(post|a)])`，
+  hard_evidence×2.0 / soft_self_report×0.7（仅排序权重；后验 update 用
+  hard×2.0 / soft×1.0 与 decide_phase 一致）
+- **早停 4 条**（`should_stop`）：
+  - **S1 强落地**：top1 ≥ 0.95 且 (top1 − top2) ≥ 0.05
+  - **S2 边际收益消失**：top1 ≥ 0.75 且 max EIG < 0.05
+  - **S3 硬封顶**：n_asked ≥ 12
+  - **S4 收敛**：最近 4 题 top1 摆动 < 0.03（且至少答 6 题）
+- **0 题 fast-path**：初始化时 prior top1 ≥ 0.85 直接 finalize（不写 state）
+
+### §0.3 state 文件 schema（双盲核心）
+
+`output/.elicit.state.json`（点开头隐藏）：
+
+```json
+{
+  "version": 9,
+  "agent_warning": "本文件包含 posterior / phase_candidates 等先验信息。禁止把本文件内容回灌给 LLM 或展示给用户（违反 elicitation_ethics.md E1/E2）。",
+  "bazi_fingerprint": "abc123...",
+  "current_year": 2026,
+  "answered": {"D4_Q2_sleep": "B", ...},
+  "posterior": {"day_master_dominant": 0.78, ...},
+  "asked_history": [
+    {"qid": "D4_Q2_sleep", "answered_opt": "B"},
+    {"qid": "D1_Q3_father_presence", "selected_eig": 0.245, "stop_check": "continue"}
+  ],
+  "top1_history": [0.40, 0.55, 0.62, 0.78, ...]
+}
+```
+
+### §0.4 ASK 单轮输出（status=ASK）
+
+`adaptive_elicit.py next` 在未触发停止时打印：
+
+```json
+{
+  "status": "ASK",
+  "n_answered": 3,
+  "askquestion_payload": {
+    "id": "D4_Q2_sleep",
+    "prompt": "...",
+    "options": [{"id": "A", "label": "..."}, ...],
+    "allow_multiple": false,
+    "neutral_instruction": "请按你最直觉的反应选；如不确定可挑最接近的一项。不要试图揣测题目背后想测什么。"
+  },
+  "cli_fallback_prompt": "...",
+  "batch_hint": "如果你想一次性快速搞定...",  // 仅 n_answered=0 时附带
+  "agent_instructions": "用宿主结构化 AskQuestion 抛 askquestion_payload 单题给用户..."
+}
+```
+
+`askquestion_payload` 严格只含 prompt + options + neutral_instruction，
+**不含**任何后验 / EIG / 候选信息（[elicitation_ethics.md](elicitation_ethics.md) §E1）。
+
+### §0.5 finalize 输出（status=DONE）
+
+```json
+{
+  "status": "DONE",
+  "decision": "day_master_dominant",
+  "phase_label": "日主主导",
+  "confidence": "high",
+  "decision_probability": 0.962,
+  "n_answered": 7,
+  "stop_reason": "S1 强落地（day_master_dominant top1=0.962 margin=0.911）",
+  "out_path": "output/bazi.json"
+}
+```
+
+写回 `bazi.json` 的 `phase` + `phase_decision` schema 与 v8 兼容；新增字段：
+- `phase_decision.elicitation_path`: `"adaptive_v9"` / `"batch_v9"`
+- `phase_decision.stop_reason`: 人类可读停止原因
+- `phase_decision.confidence_cap_applied`: batch 模式下若触发上限则填档位
 
 ---
 
@@ -240,21 +357,41 @@ R2 是默认推荐路径；若 R1 后验 ≥ 0.95 且无 runner-up 竞争（runn
 
 ## §7 与下游的接口契约（两轮校验闭环）
 
+### v9 默认链路（推荐）
+
 ```
 solve_bazi.py        → bazi.json（含临时 phase_decision，is_provisional=true）
 score_curves.py      → curves.json（按 bazi.phase.id 走 apply_phase_override）
-handshake.py R1      → handshake.r1.json（22 静态 + 4 动态题）
+adaptive_elicit.py next [循环 N 轮]
+   ├─ 0 题 fast-path: prior top1 ≥ 0.85 直接 finalize
+   ├─ 否则单题流式: ASK → AskQuestion → answer → ASK ...
+   └─ 触发 S1/S2/S3/S4 → finalize → bazi.json（写入 phase_decision，is_provisional=false）
+                              ↓
+                     [可选] adaptive_elicit.py + batch 子命令
+                     dump-question-set --tier core14|full28
+                       → 用户贴题集 markdown 一次答完
+                       → submit-batch → bazi.json（confidence cap=mid）
+                              ↓
+            [可选 R2] handshake.py --round 2 → handshake.r2.json（EIG 选 6 题）
+                       → AskQuestion → user_answers.r2.json
+                       → phase_posterior.py --round 2 → bazi.json（+ phase_confirmation）
+                              ↓
+                     confirmation_status:
+                       confirmed       → render_artifact.py
+                       weakly_confirmed → render_artifact.py（解读 caveat）
+                       uncertain       → escalate（核对时辰 / 性别）
+                       decision_changed → escalate（必须报告反转）
+```
+
+### v8 deprecated 兼容链路（仅 he_pan_orchestrator / mcp_server / 旧 examples）
+
+```
+solve_bazi.py        → bazi.json
+score_curves.py      → curves.json
+handshake.py R1 (默认)  → handshake.r1.json [deprecated_v9: true · askquestion_payload 已剥离后验]
 [Agent AskQuestion R1] → user_answers.r1.json
-phase_posterior.py R1 → bazi.json（写入 R1 phase_decision，is_provisional=false）
-handshake.py --round 2 → handshake.r2.json（基于 R1 决策的 6 道 confirmation 题）
-[Agent AskQuestion R2] → user_answers.r2.json
-phase_posterior.py --round 2 → bazi.json（写入 R2 phase_decision + phase_confirmation）
-            ↓
-     confirmation_status:
-       confirmed       → render_artifact.py
-       weakly_confirmed → render_artifact.py（解读 caveat）
-       uncertain       → escalate（核对时辰 / 性别）
-       decision_changed → escalate（必须报告反转）
+phase_posterior.py R1 → bazi.json
+... 后续与 v9 链路相同（R2 + render）
 ```
 
 - `scripts/save_confirmed_facts.py --round r2 --r1-handshake ... --r1-answers ... --r2-handshake ... --r2-answers ...` 在背后做同样的两轮事 + 写 `confirmed_facts.json`（按 round 分桶；保留人类可读 trace）

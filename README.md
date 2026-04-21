@@ -360,19 +360,18 @@ v7 现代化做了**结构保留 + 语言重构**：
 
 ### 当前覆盖度 · 诚实的方法论 vs 配置矩阵
 
-`tests/test_yangren_chong_cai.py::test_l1_zuogong_dimension_phases_registered` 强制 zuogong phase ≥ 5。当前注册了 11 个 zuogong phase，但配置层填充进度不一：
+`tests/test_yangren_chong_cai.py::test_l1_zuogong_dimension_phases_registered` 强制 zuogong phase ≥ 5 且 must_have ⊇ 8 个代表 phase。当前注册了 11 个 zuogong phase，**配置层与方法论层已对齐**：
 
 | 维度 | 已激活 phase | 配置完整度 |
 |---|---|---|
-| 刃做功族 | `yangren_chong_cai`（刃冲财）/ `yang_ren_jia_sha`（阳刃驾杀）/ `riren_ge`（日刃格） | trigger_branches + reversal + D6 likelihood 三件齐全 |
-| 伤官族 | `shang_guan_sheng_cai` / `shang_guan_sheng_cai_geju` / `shang_guan_pei_yin_geju` | reversal 已配，trigger / D6 部分（伤官生财含 D6） |
-| 杀印族 | `sha_yin_xiang_sheng_geju` / `qi_yin_xiang_sheng` | reversal 部分配置 |
-| 食制杀 | `shi_shen_zhi_sha_geju` | metadata 仅 |
-| 通明 / 白清 | `mu_huo_tong_ming` / `jin_bai_shui_qing` | metadata 仅 |
+| 刃做功族 | `yangren_chong_cai`（刃冲财）/ `yang_ren_jia_sha`（阳刃驾杀）/ `riren_ge`（日刃格） | ✅ trigger=子午卯酉 + reversal + D6 likelihood 三件齐全 |
+| 伤官族 | `shang_guan_sheng_cai` / `shang_guan_sheng_cai_geju` / `shang_guan_pei_yin_geju` | ✅ trigger=寅申巳亥（生财）/ 辰戌丑未（佩印）+ reversal + D6 likelihood 三件齐全 |
+| 杀印族 | `sha_yin_xiang_sheng_geju` / `qi_yin_xiang_sheng` | ✅ trigger=寅申巳亥 + reversal（含 qi_sha_feng_yin=positive）+ D6 likelihood 三件齐全 |
+| 食制杀 | `shi_shen_zhi_sha_geju` | ✅ trigger=寅申巳亥 + reversal（shi_shen_zhi_sha=positive）+ D6 likelihood 三件齐全 |
+| 通明 / 白清 | `mu_huo_tong_ming`（trigger=巳午）/ `jin_bai_shui_qing`（trigger=亥子） | ✅ trigger + D6 likelihood 齐全；reversal by-design 留空（无明确事件反转规则） |
 
 > **方法论是通用的** — L1/L2/L5/L6/L7 的骨架对所有 zuogong phase 都生效，无须改代码。
-> **配置仍在补全** — 后续 PR 会按"古籍出处 + e2e fixture"流程，把伤官族 / 杀印族的 `trigger_branches`、D6 likelihood、反转规则全部填齐。
-> 这是**有意识的方法论先行 + 配置渐进**策略，不是过拟合到单个 case。
+> **配置层已对齐方法论层** — 5 大族 11 个 zuogong phase 的三件套（trigger_branches / reversal_overrides / D6 likelihood）已按"古籍出处 + e2e fixture"流程补齐，每族均带 acceptance 测试拦截回归。
 
 ### 验收 · `tests/test_yangren_chong_cai.py` · 11 个 e2e
 

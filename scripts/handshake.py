@@ -1,18 +1,20 @@
 #!/usr/bin/env python3
-"""scripts/handshake.py · v8
+"""scripts/handshake.py · v9
 
-输出 phase-discriminative validation 题集（5 维度 ~25 题），供 Agent 用宿主结构化
-AskQuestion 抛点选 UI。不再做事后判定 / 命中率统计 —— 那是 phase_posterior.py 的事。
+v9 hard cutover：默认问答路径改成 [scripts/adaptive_elicit.py](adaptive_elicit.py)。
+本文件保留两个用途：
 
-输入：
-  --bazi out/bazi.json       solve_bazi.py 的输出
-  --curves out/curves.json   score_curves.py 的输出（用于 D3 流年题选年份）
-  --current-year YYYY        当前年份（默认 today.year）
-  --out out/handshake.json   输出路径
+  1) `--round 2` confirmation 题集（**主用途**）：基于 R1 决策的 phase 与
+     runner-up 之间，按 EIG（限定 2-phase 后验）挑判别力最强的题。
+  2) `--round 1` 兼容入口（**deprecated**）：仅给 he_pan_orchestrator / mcp_server /
+     旧 examples 兜底；输出 askquestion_payload 不带任何 phase / 后验字段。
+     新代码请直接调 `adaptive_elicit.py next ...`。
 
-输出 schema 详见 references/handshake_protocol.md §2。
+R1 输出对前端只暴露 prompt + options + neutral_instruction；
+phase_candidates / prior_distribution 仅留在顶层供 LLM 内部 reasoning
+（下游必须遵守 elicitation_ethics §E1：禁止把这些字段呈现给用户）。
 
-Hard cutover 自 v7：旧 R0/R1/R2/R3 + evaluate_responses + 命中率体系全部移除。
+详见 references/handshake_protocol.md v9 段 + plan 自适应贝叶斯问答 v9 §A4 / §A6。
 """
 from __future__ import annotations
 
@@ -32,19 +34,22 @@ from _bazi_core import (  # type: ignore
     detect_all_phase_candidates,
     _compute_prior_distribution,
     compute_question_likelihoods,
-    compute_confirmation_questions,
     decide_phase,
 )
-from _question_bank import D3_dynamic_event_question, FAIRNESS_BLACKLIST  # type: ignore
+from _eig_selector import weighted_eig  # type: ignore
+from _question_bank import (  # type: ignore
+    D3_dynamic_event_question,
+    FAIRNESS_BLACKLIST,
+    get_static_questions,
+)
 
 
 # ============================================================================
-# D3 动态流年题生成
+# D3 动态流年题生成（与 adaptive_elicit.py 同算法 · 抽 helper 复用）
 # ============================================================================
 
-# D3 dim → 用户语义维度
 _D3_CURVE_DIM = {
-    "career":   ("spirit", "fame"),  # 事业方向同时看 spirit 和 fame，取均值
+    "career":   ("spirit", "fame"),
     "money":    ("wealth",),
     "emotion":  ("emotion",),
     "overall":  ("spirit", "wealth", "fame"),
@@ -67,9 +72,6 @@ def _generate_d3_dynamic_questions(
 ) -> List[Dict]:
     """跨候选 phase 跑 score_curves，找已活过年份中 phase 间预测最分歧的 n 个，
     套 D3 4 档模板生成动态题。
-
-    严守 fairness §10：选项不出现"升职/结婚/离职/生育/确诊"等身份标签词
-    （由 _question_bank.D3_dynamic_event_question 内部 _check_blacklist 拦截）。
     """
     if len(candidate_phase_ids) < 2:
         return []
@@ -79,22 +81,17 @@ def _generate_d3_dynamic_questions(
         return []
     age_now = current_year - birth_year
     if age_now < min_age + 2:
-        return []  # 太年轻没有足够回忆
+        return []
 
-    # 局部 import 避免循环依赖
     try:
         from score_curves import score, apply_phase_override  # type: ignore
-    except Exception as e:  # pragma: no cover - 防御
+    except Exception as e:
         print(f"[handshake] D3 skipped (score_curves import failed): {e}", file=sys.stderr)
         return []
 
-    # 取前 3 个候选（控制 compute）
     cand_ids = list(candidate_phase_ids[:3])
     age_end = min(age_now - 1, 80)
 
-    # 每个 phase 算曲线 → {year: point dict}
-    # 注意：apply_phase_override / score 会就地改 nested dict（strength / yongshen），
-    # 必须 deepcopy；否则会污染 caller 的 bazi
     phase_year_points: Dict[str, Dict[int, Dict]] = {}
     for pid in cand_ids:
         b = copy.deepcopy(bazi)
@@ -113,11 +110,9 @@ def _generate_d3_dynamic_questions(
     if len(phase_year_points) < 2:
         return []
 
-    # 找各 phase 共同覆盖的年份
     common_years = set.intersection(*[set(d.keys()) for d in phase_year_points.values()])
     common_years = {y for y in common_years if (y - birth_year) >= min_age and y <= current_year - 1}
 
-    # 对每个 (year, dim) 算 phase 间预测分歧
     candidates: List[Tuple[float, int, str, Dict[str, float]]] = []
     for year in common_years:
         for dim_key, curve_dims in _D3_CURVE_DIM.items():
@@ -130,8 +125,6 @@ def _generate_d3_dynamic_questions(
                 candidates.append((divergence, year, dim_key, phase_vals))
 
     candidates.sort(key=lambda x: (-x[0], x[1], x[2]))
-
-    # 选 top-n，且每年只生成一题
     selected: List[Tuple[float, int, str, Dict[str, float]]] = []
     used_years = set()
     for d, year, dim_key, vals in candidates:
@@ -145,7 +138,6 @@ def _generate_d3_dynamic_questions(
     out: List[Dict] = []
     for d, year, dim_key, vals in selected:
         age = year - birth_year
-        # phase_curve_values 归一到 [-5, +5]：以 50 为基线，每 10 分一档
         phase_curve_values = {pid: round((v - 50.0) / 10.0, 4) for pid, v in vals.items()}
         try:
             q = D3_dynamic_event_question(age, year, dim_key, phase_curve_values)
@@ -161,7 +153,7 @@ def _generate_d3_dynamic_questions(
             "likelihood_table": {
                 pid: dict(sorted(row.items())) for pid, row in sorted(q.likelihood_table.items())
             },
-            "discrimination_power": round(d / 50.0, 6),  # 把曲线分歧归一到 [0,1]
+            "discrimination_power": round(d / 50.0, 6),
             "requires_dynamic_year": q.requires_dynamic_year,
             "evidence_note": q.evidence_note,
         })
@@ -169,11 +161,24 @@ def _generate_d3_dynamic_questions(
 
 
 # ============================================================================
-# AskQuestion payload + CLI fallback prompt
+# AskQuestion payload helpers
 # ============================================================================
 
+_NEUTRAL_INSTRUCTION = (
+    "请按你最直觉的反应选；如不确定可挑最接近的一项。"
+    "不要试图揣测题目背后想测什么。"
+)
+
+
 def _build_askquestion_payload(questions: List[Dict]) -> List[Dict]:
-    """转成宿主 AskQuestion 工具能直接消费的格式（每题 id + prompt + options + allow_multiple）。"""
+    """转成宿主 AskQuestion 工具能直接消费的格式。
+
+    v9 · 强制只暴露 prompt + options，**不暴露**：
+      - phase_candidates / prior_distribution / posterior
+      - decision_threshold / provisional_decision
+      - discrimination_power / pairwise_target / evidence_note
+    （详见 elicitation_ethics §E1 / §E2）
+    """
     out = []
     for q in questions:
         out.append({
@@ -181,6 +186,7 @@ def _build_askquestion_payload(questions: List[Dict]) -> List[Dict]:
             "prompt": q["prompt"],
             "options": [{"id": o["id"], "label": o["label"]} for o in q["options"]],
             "allow_multiple": False,
+            "neutral_instruction": _NEUTRAL_INSTRUCTION,
         })
     return out
 
@@ -192,7 +198,7 @@ def _build_cli_fallback_prompt(questions: List[Dict]) -> str:
         "",
     ]
     for q in questions:
-        lines.append(f"{q['id']}  [{q['dimension']} · {q['weight_class']}]")
+        lines.append(f"{q['id']}")
         lines.append(f"  问：{q['prompt']}")
         for o in q["options"]:
             lines.append(f"    {o['id']}) {o['label']}")
@@ -201,8 +207,16 @@ def _build_cli_fallback_prompt(questions: List[Dict]) -> str:
 
 
 # ============================================================================
-# 顶层 build
+# §A · build (R1) · v9 deprecated 兼容入口
 # ============================================================================
+
+_R1_DEPRECATION_MSG = (
+    "[handshake.py R1] DEPRECATED · v9 hard cutover · "
+    "请改用 `python scripts/adaptive_elicit.py next` 一题一轮自适应问答；"
+    "本入口仅为 he_pan_orchestrator / mcp_server / 旧 examples 兜底，"
+    "输出仍是一次性题集，但 askquestion_payload 已剥离所有后验字段。"
+)
+
 
 def build(
     bazi: Dict,
@@ -213,21 +227,20 @@ def build(
     candidate_top_k: int = 5,
     enable_d3: bool = True,
 ) -> Dict:
-    """v8 · 生成 phase-discriminative 题集 + 候选 phase 先验 + AskQuestion payload。
+    """[deprecated v9] 一次性题集生成。
 
-    Args:
-        bazi: bazi.json 内容
-        curves: curves.json 内容（D3 流年题需要；不提供则跳过 D3）
-        current_year: 当前公历年；None → today.year
-        static_top_k: 静态题最多保留 N 道（按 discrimination_power 倒排）
-        d3_n_questions: D3 动态流年题数量
-        candidate_top_k: phase_candidates 列表长度
-        enable_d3: 是否启用 D3 动态流年题
+    R1 默认路径已迁到 [adaptive_elicit.py](adaptive_elicit.py)。本函数保留兼容接口，
+    但输出 schema 标记 `deprecated_v9: True`。
+
+    输出对外 askquestion_payload **不再包含** 任何 phase / 后验信息（已剥离）。
+    顶层仍保留 `phase_candidates` / `prior_distribution` 字段供 LLM 内部 reasoning，
+    但 elicitation_ethics §E1 强制：**禁止把它们呈现给用户**。
     """
     if current_year is None:
         current_year = dt.date.today().year
 
-    # 1. detector → prior
+    print(_R1_DEPRECATION_MSG, file=sys.stderr)
+
     detection = detect_all_phase_candidates(bazi)
     prior = _compute_prior_distribution(detection["all_detection_details"])
 
@@ -235,7 +248,6 @@ def build(
     cand_top = sorted_phases[:candidate_top_k]
     candidate_phase_ids = [pid for pid, _ in cand_top]
 
-    # phase_candidates 输出（含 detector 来源）
     triggered_by_phase: Dict[str, str] = {}
     for det in detection["triggered_candidates"]:
         sp = det.get("suggested_phase")
@@ -250,10 +262,8 @@ def build(
             "detector_source": triggered_by_phase.get(pid, "baseline"),
         })
 
-    # 2. 静态题（D1+D2+D4+D5）按 discrimination_power 取 top
     static_questions = compute_question_likelihoods(bazi, top_k=static_top_k)
 
-    # 3. D3 动态流年题
     dynamic_questions: List[Dict] = []
     if enable_d3 and curves is not None:
         dynamic_questions = _generate_d3_dynamic_questions(
@@ -263,7 +273,6 @@ def build(
             n_questions=d3_n_questions,
         )
 
-    # 4. 合并 + 按维度排序（D1 → D2 → D3 → D4 → D5），同维度内按 dp 倒排
     DIM_ORDER = {
         "ethnography_family": 0,
         "relationship": 1,
@@ -274,15 +283,15 @@ def build(
     all_questions = static_questions + dynamic_questions
     all_questions.sort(key=lambda q: (DIM_ORDER.get(q["dimension"], 99), -q["discrimination_power"], q["id"]))
 
-    # 5. AskQuestion payload + CLI prompt
     askquestion_payload = _build_askquestion_payload(all_questions)
     cli_fallback_prompt = _build_cli_fallback_prompt(all_questions)
 
-    # 6. 当前默认 phase（仅先验）= 后验 with no answers
     provisional_decision = decide_phase(bazi, user_answers=None)
 
     return {
-        "version": 8,
+        "version": 9,
+        "deprecated_v9": True,
+        "deprecation_notice": _R1_DEPRECATION_MSG,
         "round": 1,
         "current_year": current_year,
         "bazi_summary": {
@@ -318,17 +327,92 @@ def build(
             "blacklist_terms": sorted(FAIRNESS_BLACKLIST),
         },
         "agent_instructions": (
-            "v8 协议：必须用宿主结构化 AskQuestion 一次抛 askquestion_payload 全部 N 题，"
-            "禁止用自然语言转述题面让用户口头回答。收到 user_answers 后调 phase_posterior.py "
-            "算后验：≥0.80 high adopt / 0.60-0.80 mid adopt / 0.40-0.60 追问轮 / <0.40 拒绝出图。"
-            "详见 references/handshake_protocol.md §3。"
+            "[v9 deprecated] 兼容入口。新代码请用 adaptive_elicit.py 走自适应问答。"
+            "若必须沿用本入口：用宿主 AskQuestion 一次抛 askquestion_payload 全部题，"
+            "禁止把 phase_candidates / prior_distribution / decision_threshold 等"
+            "字段展示或转述给用户（违反 elicitation_ethics.md §E1 / §E2）。"
         ),
     }
 
 
 # ============================================================================
-# Round 2 confirmation handshake
+# §B · build_round2 · 主用途 · EIG 选题（限定在 R1 决策 vs runner-up）
 # ============================================================================
+
+def _eig_two_phase(
+    q,
+    decided_phase: str,
+    runner_up_phase: str,
+    decided_prob: float,
+    runner_up_prob: float,
+) -> float:
+    """在 2-phase 后验 [decided, runner_up] 上算 weighted_eig，用于 R2 选题排序。
+
+    比 v8 pairwise_discrimination_power（纯 L1 距离）更接近"信息论意义上"的判别力，
+    且与单题流式 adaptive_elicit 用同一个排序函数（同源逻辑保 bit-for-bit）。
+    """
+    s = decided_prob + runner_up_prob
+    if s <= 0:
+        post = {decided_phase: 0.5, runner_up_phase: 0.5}
+    else:
+        post = {decided_phase: decided_prob / s, runner_up_phase: runner_up_prob / s}
+    return weighted_eig(q, post)
+
+
+def _compute_confirmation_questions_eig(
+    bazi_dict: Dict,
+    decided_phase: str,
+    runner_up_phase: str,
+    decided_prob: float,
+    runner_up_prob: float,
+    exclude_ids: Optional[List[str]] = None,
+    top_k: int = 6,
+    eig_threshold: float = 0.02,
+) -> List[Dict]:
+    """v9 R2 · 用 weighted_eig（2-phase 后验）挑 confirmation 题。
+
+    behavior：
+      - EIG 用对称的 2-phase 后验（{decided:0.5, runner_up:0.5}）算，
+        防止 R1 已极度确定（如 0.99）时所有题 EIG≈0 → 选不出题
+      - 用真实 R1 后验排 tie-break，但不参与门槛判定
+      - 若全部题低于 eig_threshold，则放弃门槛、强制返回 top_k
+    """
+    excluded = set(exclude_ids or [])
+    scored: List[Tuple[float, float, "object"]] = []
+    for q in get_static_questions():
+        if q.id in excluded:
+            continue
+        eig_symmetric = _eig_two_phase(q, decided_phase, runner_up_phase, 0.5, 0.5)
+        eig_real = _eig_two_phase(
+            q, decided_phase, runner_up_phase,
+            max(decided_prob, 1e-6), max(runner_up_prob, 1e-6),
+        )
+        scored.append((eig_symmetric, eig_real, q))
+
+    scored.sort(key=lambda x: (-x[0], -x[1], x[2].id))
+    above = [t for t in scored if t[0] >= eig_threshold]
+    selected = above[:top_k] if above else scored[:top_k]
+    selected = [(s, q) for s, _, q in selected]
+
+    out: List[Dict] = []
+    for eig, q in selected:
+        out.append({
+            "id": q.id,
+            "dimension": q.dimension,
+            "weight_class": q.weight_class,
+            "prompt": q.prompt,
+            "options": [{"id": o.id, "label": o.label} for o in q.options],
+            "likelihood_table": {
+                pid: dict(sorted(row.items())) for pid, row in sorted(q.likelihood_table.items())
+            },
+            "weighted_eig": round(eig, 6),
+            "discrimination_power": round(eig, 6),  # 兼容字段
+            "pairwise_target": {"a": decided_phase, "b": runner_up_phase},
+            "requires_dynamic_year": q.requires_dynamic_year,
+            "evidence_note": q.evidence_note,
+        })
+    return out
+
 
 def build_round2(
     bazi: Dict,
@@ -340,25 +424,26 @@ def build_round2(
     d3_n_questions: int = 2,
     enable_d3: bool = True,
 ) -> Dict:
-    """v8 · 生成 Round 2 confirmation 题集。
+    """v9 · Round 2 confirmation 题集（**主 entrypoint**）。
 
-    前置条件：bazi.json 中已经存在 phase_decision（来自 R1 phase_posterior 的输出）。
+    前置条件：bazi.json 中已经存在 phase_decision（来自 R1 phase_posterior /
+    adaptive_elicit 的输出）。
 
-    R2 选题策略：
-      - 在 R1 后验的 top phase 与 runner-up phase 之间，按 pairwise L1 区分度倒排取 top_k
-      - 排除 R1 已经问过的题（依据 r1_user_answers 的 key 或 r1_handshake.questions[].id）
-      - 可附加少量 D3 动态流年题，只在 decided vs runner-up 之间预测分歧大的年份生成
+    R2 选题策略（v9 升级）：
+      - 在 R1 决策 phase 与 runner-up 之间用 weighted_eig 挑高判别力题
+      - 排除 R1 已经问过的题
+      - 可附加少量 D3 动态流年题（仅 decided vs runner-up 间预测分歧大的年份）
 
-    详见 references/handshake_protocol.md §4。
+    详见 references/handshake_protocol.md §4 v9。
     """
     if current_year is None:
         current_year = dt.date.today().year
 
-    # 1. 读取 R1 后验（必须）—— 没有 R1 phase_decision 直接报错
     pd = bazi.get("phase_decision")
     if not pd:
         raise ValueError(
-            "build_round2 requires bazi.phase_decision (run phase_posterior.py round=1 first)."
+            "build_round2 requires bazi.phase_decision "
+            "(run adaptive_elicit.py 或 phase_posterior.py round=1 first)."
         )
     posterior = pd.get("posterior_distribution") or pd.get("prior_distribution") or {}
     if not posterior:
@@ -368,7 +453,6 @@ def build_round2(
     decided_phase = pd.get("decision") or sorted_phases[0][0]
     decided_prob = float(pd.get("decision_probability") or sorted_phases[0][1])
 
-    # runner-up：决策之外 prob 最大的那个
     runner_up_phase = None
     runner_up_prob = 0.0
     for pid, p in sorted_phases:
@@ -377,34 +461,36 @@ def build_round2(
             runner_up_prob = float(p)
             break
     if runner_up_phase is None:
-        runner_up_phase = "day_master_dominant" if decided_phase != "day_master_dominant" else "floating_dms_to_cong_cai"
+        runner_up_phase = (
+            "day_master_dominant"
+            if decided_phase != "day_master_dominant"
+            else "floating_dms_to_cong_cai"
+        )
 
-    # 2. 收集 R1 已被用户**实际作答**的 question_id（仅这些需要排除；
-    #    handshake.questions 只是 R1 候选池，未必全部被问过）
     asked_ids: set = set()
     if r1_user_answers:
         asked_ids.update(r1_user_answers.keys())
 
-    # 3. 静态题：pairwise discriminative
-    static_questions = compute_confirmation_questions(
+    # v9 · EIG 选题（替代 v8 的 pairwise L1）
+    static_questions = _compute_confirmation_questions_eig(
         bazi_dict=bazi,
         decided_phase=decided_phase,
         runner_up_phase=runner_up_phase,
+        decided_prob=decided_prob,
+        runner_up_prob=runner_up_prob,
         exclude_ids=sorted(asked_ids),
         top_k=confirm_top_k,
     )
 
-    # 4. D3 动态题：仅在 decided vs runner_up 两个 phase 之间挑分歧最大的年份
     dynamic_questions: List[Dict] = []
     if enable_d3 and curves is not None:
         d3_pool = _generate_d3_dynamic_questions(
             bazi=bazi,
             candidate_phase_ids=[decided_phase, runner_up_phase],
             current_year=current_year,
-            n_questions=d3_n_questions * 2,  # 多生成一些再过滤
+            n_questions=d3_n_questions * 2,
             min_divergence=3.0,
         )
-        # 过滤：剔除 R1 已问过的、按 pairwise dp 倒排
         scored: List[Tuple[float, Dict]] = []
         for q in d3_pool:
             if q.get("id") in asked_ids:
@@ -438,7 +524,7 @@ def build_round2(
     cli_fallback_prompt = _build_cli_fallback_prompt(all_questions)
 
     return {
-        "version": 8,
+        "version": 9,
         "round": 2,
         "current_year": current_year,
         "bazi_summary": {
@@ -455,10 +541,7 @@ def build_round2(
             "runner_up_probability": round(runner_up_prob, 6),
             "answered_question_ids": sorted(asked_ids),
         },
-        "pairwise_target": {
-            "a": decided_phase,
-            "b": runner_up_phase,
-        },
+        "pairwise_target": {"a": decided_phase, "b": runner_up_phase},
         "questions": all_questions,
         "askquestion_payload": askquestion_payload,
         "cli_fallback_prompt": cli_fallback_prompt,
@@ -472,12 +555,14 @@ def build_round2(
             "n_total_questions": len(all_questions),
             "n_excluded_from_r1": len(asked_ids),
             "fairness_blacklist_applied": True,
+            "selection_method": "weighted_eig_two_phase",
         },
         "agent_instructions": (
-            "v8 R2 协议：用宿主结构化 AskQuestion 抛 askquestion_payload 全部 N 题给用户点选。"
-            "收到 R2 user_answers 后，调 phase_posterior.py --round 2 合并 R1+R2 答案算最终后验，"
-            "对照 confirmation_threshold 判 confirmed / weakly_confirmed / inconsistent。"
-            "详见 references/handshake_protocol.md §4。"
+            "v9 R2 协议：用宿主结构化 AskQuestion 抛 askquestion_payload 全部 N 题给用户。"
+            "askquestion_payload 已剥离所有后验信息；禁止把 round1_summary / pairwise_target "
+            "等顶层字段呈现给用户（elicitation_ethics §E1）。收到 R2 user_answers 后调 "
+            "phase_posterior.py --round 2 算最终后验 + confirmation_status。"
+            "详见 references/handshake_protocol.md §4 v9。"
         ),
     }
 
@@ -488,28 +573,29 @@ def build_round2(
 
 def main():
     ap = argparse.ArgumentParser(
-        description="v8 · 生成 phase-discriminative 题集 (handshake.json)"
+        description="v9 · phase confirmation handshake (R2 主 · R1 deprecated)"
     )
     ap.add_argument("--bazi", required=True, help="bazi.json 路径")
     ap.add_argument("--curves", required=False, default=None,
-                    help="curves.json 路径（D3 动态流年题需要；不提供则只出静态题）")
+                    help="curves.json 路径（D3 动态流年题需要）")
     ap.add_argument("--current-year", type=int, default=None,
                     help="当前公历年（默认 today.year）")
     ap.add_argument("--out", default="handshake.json", help="输出路径")
     ap.add_argument("--static-top-k", type=int, default=22,
-                    help="静态题最多保留 N 道（按 discrimination_power 倒排）")
+                    help="(R1 deprecated) 静态题最多保留 N 道")
     ap.add_argument("--d3-questions", type=int, default=4,
-                    help="D3 动态流年题数量（默认 4）")
-    ap.add_argument("--no-d3", action="store_true",
-                    help="跳过 D3 动态流年题（用于测试 / 加速）")
+                    help="D3 动态流年题数量")
+    ap.add_argument("--no-d3", action="store_true", help="跳过 D3 动态流年题")
     ap.add_argument("--round", type=int, default=1, choices=[1, 2],
-                    help="校验轮次：1=初轮判别题；2=基于 R1 决策的 confirmation 题")
+                    help="校验轮次：1=v9 deprecated 兼容入口；2=R2 confirmation（主用途）")
     ap.add_argument("--r1-handshake", default=None,
-                    help="（round=2 必填）R1 阶段的 handshake.json，用于排除已问过的题")
+                    help="（round=2 可选）R1 阶段的 handshake.json")
     ap.add_argument("--r1-answers", default=None,
                     help="（round=2 推荐）R1 用户答案 JSON {qid:opt}")
     ap.add_argument("--confirm-top-k", type=int, default=6,
                     help="（round=2）confirmation 静态题数量上限（默认 6）")
+    ap.add_argument("--strict-v9", action="store_true",
+                    help="round=1 时硬错出（推荐 CI 开启 · 强制走 adaptive_elicit）")
     args = ap.parse_args()
 
     bazi = json.loads(Path(args.bazi).read_text(encoding="utf-8"))
@@ -547,11 +633,22 @@ def main():
             f"target={r1s['decision']}(p={r1s['decision_probability']:.3f}) vs "
             f"runner_up={r1s['runner_up']}(p={r1s['runner_up_probability']:.3f}); "
             f"static={meta['n_static_questions']}, dynamic={meta['n_dynamic_questions']}, "
-            f"excluded_r1={meta['n_excluded_from_r1']}"
+            f"excluded_r1={meta['n_excluded_from_r1']}, "
+            f"selection={meta['selection_method']}"
         )
         return
 
-    # round = 1（默认）
+    # round = 1（deprecated 兼容入口）
+    if args.strict_v9:
+        print(
+            "[handshake R1] STRICT v9: 硬切到 adaptive_elicit.py。请改用：\n"
+            f"  python scripts/adaptive_elicit.py next --bazi {args.bazi} "
+            f"--curves {args.curves or '<curves.json>'} "
+            "--state output/.elicit.state.json",
+            file=sys.stderr,
+        )
+        sys.exit(2)
+
     out = build(
         bazi=bazi,
         curves=curves,
@@ -568,12 +665,13 @@ def main():
     meta = out["_meta"]
     decision = out["provisional_decision"]
     print(
-        f"[handshake] wrote {args.out}: "
+        f"[handshake R1 · deprecated_v9] wrote {args.out}: "
         f"phase_candidates={len(out['phase_candidates'])}, "
         f"static={meta['n_static_questions']}, dynamic={meta['n_dynamic_questions']}, "
         f"total={meta['n_total_questions']}; "
         f"provisional={decision['decision']}({decision['confidence']}, "
-        f"prob={decision['decision_probability']:.3f})"
+        f"prob={decision['decision_probability']:.3f}) "
+        f"--- 新代码请改用 adaptive_elicit.py"
     )
 
 

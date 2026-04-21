@@ -177,6 +177,22 @@ def geju_score_with_zuogong(base_geju: float, phase_meta: PhaseMeta, year_pillar
 
 `ZUOGONG_BONUS = 10`（可调，写入 calibration/thresholds.yaml）。
 
+#### trigger_branches 当前覆盖（v9.1.1）
+
+5 大族 11 个 zuogong phase 的 trigger 集合（每条均带古籍出处，详见 `scripts/_phase_registry.py`）：
+
+| 族 | phase id | trigger 支 | 出处 |
+|---|---|---|---|
+| 刃做功族 | `yangren_chong_cai` / `yang_ren_jia_sha` / `riren_ge` | 子/午/卯/酉（四仲，刃位与冲位） | 盲派象法·刃做功 |
+| 伤官生财 | `shang_guan_sheng_cai` / `shang_guan_sheng_cai_geju` | 寅/申/巳/亥（四生，财根发用地） | 子平真诠·伤官生财 + 穷通宝鉴·四时论 |
+| 伤官佩印 | `shang_guan_pei_yin_geju` | 辰/戌/丑/未（四库，印星归库） | 子平真诠·伤官佩印 + 滴天髓·伤官 |
+| 杀印族 | `sha_yin_xiang_sheng_geju` / `qi_yin_xiang_sheng` | 寅/申/巳/亥（印旺 + 杀根透发地） | 子平真诠·杀印相生 + 滴天髓·七杀 |
+| 食制杀 | `shi_shen_zhi_sha_geju` | 寅/申/巳/亥（食神禄旺地 + 杀冲化地） | 子平真诠·食神制杀 |
+| 木火通明 | `mu_huo_tong_ming` | 巳/午（火地） | 滴天髓·五行论 |
+| 金白水清 | `jin_bai_shui_qing` | 亥/子（水地） | 滴天髓·五行论 |
+
+> 增加新做功格时：在 `_phase_registry.py` 的 `PhaseMeta.zuogong_trigger_branches` 字段声明，无须改 L6 代码。
+
 ### §4.7 confirmed_facts phase_full_override（L7）
 
 ```json

@@ -1,5 +1,14 @@
-# Phase Decision Protocol · v8 / v8.1（两轮校验）
+# Phase Decision Protocol · v9（自适应贝叶斯问答）/ v8.1 兼容
 
+> **v9（本文件当前版本）**：R1 的 disambiguation 信号收集从「一次性 26 题」
+> 切到「自适应 EIG 单题流式」（[scripts/adaptive_elicit.py](../scripts/adaptive_elicit.py)），
+> 平均 5–8 题落地（最多 12 题、prior 强先验时 0 题 fast-path）。后验更新公式
+> 与 v8 完全一致（`decide_phase` / `weight_class × likelihood`），变化只在
+> **何时问 / 问哪一题 / 何时停**这三个维度。
+>
+> 详见 [handshake_protocol.md §0](handshake_protocol.md) v9 段 +
+> [elicitation_ethics.md](elicitation_ethics.md) §E1–§E6 双盲约束。
+>
 > 本协议替代 [phase_inversion_protocol.md](phase_inversion_protocol.md) 的「事后兜底」立场。
 > 旧协议把"反演"做成"R0+R1+R2 命中率 ≤ 2/6 时才触发"的兜底机制；新协议把"相位决策"做成 `solve_bazi` 阶段就强制要做的一等公民，由 detector 算先验、用户校验答案算后验、贝叶斯落地。
 >

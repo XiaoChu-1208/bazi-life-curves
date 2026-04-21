@@ -106,6 +106,39 @@ def _check_blacklist(q: Question) -> None:
         )
 
 
+# v9 · 算命专业词典（phase / 十神 / 五行强弱）
+# 出现这些词意味着题面在向用户**泄露算法内部模型**，违反 elicitation_ethics §E1 / §E4。
+# 当前阶段（v9 PR1）只 warn，不 hard-fail —— 题库 v10 全量改写后改为 assert。
+_PHASE_LEAK_TERMS = (
+    "格局", "从财", "从官", "从杀", "从儿", "从印", "从势",
+    "化气", "真化", "假化", "真从", "假从",
+    "三奇", "成象", "日主", "用神", "喜神", "忌神", "调候",
+    "下马威", "盲派", "盲师", "纳音", "胎元", "命宫",
+    "正官", "七杀", "偏官", "偏财", "正财", "食神", "伤官",
+    "偏印", "枭神", "正印", "比肩", "劫财", "羊刃",
+    "食伤", "官杀", "印星", "财星", "比劫",
+    "身强", "身弱", "太过", "不及", "失令", "得令", "通根",
+    "透干", "扶抑",
+)
+
+
+def _check_no_phase_leak(q: Question, *, strict: bool = False) -> List[str]:
+    """v9 · 静态扫题面 / option label 中是否泄露算法内部命理词。
+
+    返回命中的词列表（可能为空）。
+    strict=True 时一旦命中即 raise；否则只在加载日志里 warn（用于 v9 → v10 渐进迁移）。
+
+    详见 references/elicitation_ethics.md §E1 + scripts/audit_questions.py B1/B2/B3。
+    """
+    text = q.prompt + " || " + " | ".join(o.label for o in q.options)
+    hits = [w for w in _PHASE_LEAK_TERMS if w in text]
+    if hits and strict:
+        raise AssertionError(
+            f"{q.id} 题面泄露命理词: {hits} —— 违反 elicitation_ethics §E1"
+        )
+    return hits
+
+
 def _check_discrimination(q: Question, threshold: float = 0.20) -> None:
     """每题至少存在 2 个 phase 间出现 ≥ threshold 的最大 option 概率差。"""
     phases = list(q.likelihood_table.keys())
@@ -788,8 +821,14 @@ def D3_dynamic_event_question(
 # D6 专用 phase 短别名（zuogong 维度代表）
 P_YRCC = "yangren_chong_cai"           # 刃冲财做功
 P_YRJS = "yang_ren_jia_sha"            # 阳刃驾杀
-P_SGSC = "shang_guan_sheng_cai"        # 伤官生财
+P_SGSC = "shang_guan_sheng_cai"        # 伤官生财（detector）
+P_SGSC_G = "shang_guan_sheng_cai_geju" # 伤官生财格（geju metadata）
+P_SGPY = "shang_guan_pei_yin_geju"     # 伤官佩印格
 P_SYXS = "sha_yin_xiang_sheng_geju"    # 杀印相生（格局派）
+P_QYXS = "qi_yin_xiang_sheng"          # 杀印相生（盲派 detector）
+P_SSZS = "shi_shen_zhi_sha_geju"       # 食神制杀格
+P_MHTM = "mu_huo_tong_ming"            # 木火通明
+P_JBSQ = "jin_bai_shui_qing"           # 金白水清
 P_RIREN = "riren_ge"                    # 日刃格
 
 D6_QUESTIONS: List[Question] = [
@@ -810,6 +849,17 @@ D6_QUESTIONS: List[Question] = [
             P_YRJS:    {"A": 0.55, "B": 0.15, "C": 0.20, "D": 0.10},
             P_RIREN:   {"A": 0.50, "B": 0.20, "C": 0.20, "D": 0.10},
             P_SGSC:    {"A": 0.35, "B": 0.35, "C": 0.20, "D": 0.10},
+            # 伤官族（geju 同质 + 佩印偏 B）
+            P_SGSC_G:  {"A": 0.35, "B": 0.35, "C": 0.20, "D": 0.10},
+            P_SGPY:    {"A": 0.25, "B": 0.45, "C": 0.20, "D": 0.10},
+            # 杀印族（借外力 + 耐心 + 偶有外推）→ B/C 偏高
+            P_SYXS:    {"A": 0.20, "B": 0.40, "C": 0.25, "D": 0.15},
+            P_QYXS:    {"A": 0.20, "B": 0.40, "C": 0.25, "D": 0.15},
+            # 食制杀（主动制衡，A 偏高弱于刃做功）
+            P_SSZS:    {"A": 0.40, "B": 0.25, "C": 0.25, "D": 0.10},
+            # 通明 / 白清（才华外显 + 顺势而为）→ C 主导
+            P_MHTM:    {"A": 0.20, "B": 0.30, "C": 0.40, "D": 0.10},
+            P_JBSQ:    {"A": 0.20, "B": 0.30, "C": 0.40, "D": 0.10},
             # 力量视角（DM / 旺神作主）→ B 高
             P_DM:      {"A": 0.25, "B": 0.45, "C": 0.20, "D": 0.10},
             P_DGCAI:   {"A": 0.20, "B": 0.50, "C": 0.20, "D": 0.10},
@@ -843,6 +893,17 @@ D6_QUESTIONS: List[Question] = [
             P_YRJS:    {"A": 0.50, "B": 0.30, "C": 0.10, "D": 0.10},
             P_RIREN:   {"A": 0.45, "B": 0.30, "C": 0.15, "D": 0.10},
             P_SGSC:    {"A": 0.30, "B": 0.40, "C": 0.20, "D": 0.10},
+            # 伤官族（geju 同质 + 佩印 B 主导）
+            P_SGSC_G:  {"A": 0.30, "B": 0.40, "C": 0.20, "D": 0.10},
+            P_SGPY:    {"A": 0.25, "B": 0.45, "C": 0.20, "D": 0.10},
+            # 杀印族（B/C 偏高）
+            P_SYXS:    {"A": 0.20, "B": 0.40, "C": 0.25, "D": 0.15},
+            P_QYXS:    {"A": 0.20, "B": 0.40, "C": 0.25, "D": 0.15},
+            # 食制杀
+            P_SSZS:    {"A": 0.40, "B": 0.25, "C": 0.25, "D": 0.10},
+            # 通明 / 白清 → C 主导
+            P_MHTM:    {"A": 0.20, "B": 0.30, "C": 0.40, "D": 0.10},
+            P_JBSQ:    {"A": 0.20, "B": 0.30, "C": 0.40, "D": 0.10},
             # 力量视角 → C 高（累积型）
             P_DM:      {"A": 0.15, "B": 0.25, "C": 0.50, "D": 0.10},
             P_DGCAI:   {"A": 0.15, "B": 0.25, "C": 0.50, "D": 0.10},
@@ -875,6 +936,17 @@ D6_QUESTIONS: List[Question] = [
             P_YRJS:    {"A": 0.55, "B": 0.25, "C": 0.10, "D": 0.10},
             P_RIREN:   {"A": 0.50, "B": 0.30, "C": 0.10, "D": 0.10},
             P_SGSC:    {"A": 0.30, "B": 0.40, "C": 0.20, "D": 0.10},
+            # 伤官族
+            P_SGSC_G:  {"A": 0.30, "B": 0.40, "C": 0.20, "D": 0.10},
+            P_SGPY:    {"A": 0.25, "B": 0.45, "C": 0.20, "D": 0.10},
+            # 杀印族
+            P_SYXS:    {"A": 0.20, "B": 0.40, "C": 0.25, "D": 0.15},
+            P_QYXS:    {"A": 0.20, "B": 0.40, "C": 0.25, "D": 0.15},
+            # 食制杀
+            P_SSZS:    {"A": 0.40, "B": 0.25, "C": 0.25, "D": 0.10},
+            # 通明 / 白清
+            P_MHTM:    {"A": 0.20, "B": 0.30, "C": 0.40, "D": 0.10},
+            P_JBSQ:    {"A": 0.20, "B": 0.30, "C": 0.40, "D": 0.10},
             P_DM:      {"A": 0.15, "B": 0.30, "C": 0.45, "D": 0.10},
             P_DGCAI:   {"A": 0.15, "B": 0.30, "C": 0.45, "D": 0.10},
             P_DGGUAN:  {"A": 0.20, "B": 0.30, "C": 0.40, "D": 0.10},
@@ -901,10 +973,22 @@ STATIC_QUESTIONS: List[Question] = (
 )
 
 
+_phase_leak_warns: List[str] = []
 for _q in STATIC_QUESTIONS:
     _check_likelihood_sums(_q)
     _check_blacklist(_q)
     _check_discrimination(_q)
+    _hits = _check_no_phase_leak(_q, strict=False)
+    if _hits:
+        _phase_leak_warns.append(f"  {_q.id}: {_hits}")
+
+if _phase_leak_warns:
+    import sys as _sys
+    _sys.stderr.write(
+        "[_question_bank.py] WARN · v9 · 检测到题面命理词泄露（不阻断模块加载）：\n"
+        + "\n".join(_phase_leak_warns)
+        + "\n  违反 elicitation_ethics §E1。题库 v10 改写后将改成 strict assert。\n"
+    )
 
 
 def get_static_questions() -> List[Question]:

@@ -79,8 +79,18 @@ def test_l1_zuogong_dimension_phases_registered():
     assert len(zuogong_ids) >= 5, (
         f"zuogong 维度 phase 数 {len(zuogong_ids)} 过少, 做功体系覆盖不足: {zuogong_ids}"
     )
-    # 必须包含的经典做功格
-    must_have = {"yangren_chong_cai", "yang_ren_jia_sha", "shang_guan_sheng_cai", "riren_ge"}
+    # 必须包含的 8 个代表 phase（覆盖刃 / 伤官 / 杀印 / 食制 / 通明白清 五大族）
+    # v9.1 扩展防止族群覆盖被回退
+    must_have = {
+        "yangren_chong_cai",          # 刃做功族
+        "yang_ren_jia_sha",           # 刃做功族
+        "shang_guan_sheng_cai",       # 伤官生财族
+        "shang_guan_pei_yin_geju",    # 伤官佩印族
+        "sha_yin_xiang_sheng_geju",   # 杀印族
+        "shi_shen_zhi_sha_geju",      # 食制杀
+        "mu_huo_tong_ming",           # 木火通明
+        "jin_bai_shui_qing",          # 金白水清
+    }
     missing = must_have - set(zuogong_ids)
     assert not missing, f"以下经典做功格未注册到 registry: {missing}"
 

@@ -1,5 +1,138 @@
 # Changelog
 
+## v9.2 — 2026-04 · 自适应贝叶斯问答 + 双盲 6 约束 + 题库静态审计
+
+> **Triggering pattern**: 用户反馈 v8 一次性 28 题流程"问得太多 / 模棱两可 / 像在被试卷"，
+> 且现有 LLM 转述 + 进度暴露存在多处 sycophancy / anchoring 风险。本次把 R1 默认路径
+> 重写为自适应贝叶斯单题流式（EIG 选题 + 4 条早停 + 0 题 fast-path），并立 6 条工程
+> 级双盲约束，把"算法此刻最像什么 phase"对用户和 LLM 同步隔离。
+
+### 新增脚本（核心算法）
+- `scripts/_eig_selector.py`：EIG 算法纯函数（`weighted_eig` / `bayes_update` /
+  `should_stop` 4 条早停 / `pick_top_question`），带自检单测
+  - 选题权重 hard×2.0 / soft×0.7（仅排序），后验更新权重 hard×2.0 / soft×1.0（与
+    `decide_phase` 同源）
+  - 4 条早停：S1 强落地（top1≥0.95 + margin≥0.05）/ S2 边际收益消失（top1≥0.75 +
+    max_eig<0.05）/ S3 硬封顶（≥12 题）/ S4 收敛（最近 4 题摆动<0.03）
+- `scripts/adaptive_elicit.py`：v9 主入口，三个 CLI 子命令
+  - `next` 单题流式（默认）：state 持久化 + 0 题 fast-path（prior top1≥0.85）
+  - `dump-question-set --tier core14|full28` 一次性导出 batch 题集 markdown
+  - `submit-batch` 一次性提交答案 → finalize（confidence 默认上限 mid，top1≥0.97 解锁 high）
+- `scripts/audit_questions.py`：8 维 ambiguity detector + 命理词典扫描
+  - B1/B2/B3 critical（phase / 十神 / 五行强弱泄露）
+  - A1–A8 ambiguity（vague_quantifier / subjective_judgment / multi_concept /
+    temporal / counterfactual / double_neg / option_overlap / leading）
+
+### 新增文档（双盲 6 约束 + 题库审计）
+- `references/elicitation_ethics.md`：6 条工程约束论述（E1 后验隔离 / E2 不命名 phase /
+  E3 不倒推进度 / E4 不揭示意图 / E5 题面无命理词 / E6 batch 缓解）+ 与
+  fairness_protocol 的分工矩阵
+- `references/batch_elicitation_prompt.md`：LLM 给用户的固定开场白模板 + 关键词分流
+  + Anti-pattern 黑名单
+- `references/question_bank_audit.md`：现题库 25 题审计报告（critical=0 / high=1 /
+  medium=4 / low=4 / ok=16）
+- `references/question_bank_rewrite_examples.md`：D4_Q1 / D4_Q2 / D5_Q1 / D2_Q1 /
+  D1_Q1 五道改写示范
+
+### 修改：handshake.py v9 hard cutover
+- R1 默认入口标 `deprecated_v9: true`（保留 he_pan_orchestrator / mcp_server / 旧
+  examples 兜底；新加 `--strict-v9` 标志硬切到 adaptive_elicit）
+- R2 confirmation 选题函数从 v8 pairwise L1 升级为 weighted EIG（限定 2-phase 后验，
+  对称 0.5/0.5 算 EIG 排序，避免 R1 已极度确定时选不出题）
+- `askquestion_payload` 严格剥离所有后验字段（`weighted_eig` / `pairwise_target` /
+  `discrimination_power` / `likelihood_table` 全部不进 payload）
+- `_build_askquestion_payload` 白名单只输出 prompt + options + neutral_instruction
+
+### 修改：_question_bank.py 加 `_check_no_phase_leak`
+- 新增 `_PHASE_LEAK_TERMS` 词典（phase / 十神 / 五行强弱共 ~50 词）
+- 模块加载时 warn-only 扫描所有 STATIC_QUESTIONS（v10 全量改写后改 strict assert）
+- 当前 25 题全部清洁，无 warn
+
+### 修改：协议文档 + AGENTS.md Pipeline
+- `handshake_protocol.md` 加 §0 v9 自适应路径段（CLI / state schema / ASK 单轮输出 /
+  finalize 输出 / EIG 选题 + 4 条早停说明）+ 更新 §7 接口契约（v9 默认 + v8
+  deprecated 双链路）
+- `phase_decision_protocol.md` 文头加 v9 段（指向 adaptive_elicit + ethics）
+- `AGENTS.md` Pipeline 段、目录结构、§4.1 协议映射、§4.5 防御铁律、§5.1 一键示例、
+  §8 LLM 回答指南全部刷到 v9
+
+### 测试
+- `tests/L0_static/test_no_nondeterministic_calls.py` 把 `_eig_selector` /
+  `audit_questions` / `adaptive_elicit` 显式归类（前两者 DETERMINISTIC_CORE，
+  adaptive_elicit ALLOWLIST 因用 `dt.date.today()` + `random.Random(bazi_fp)` 做
+  确定性洗牌）
+- 全套 pytest **194 passed, 7 skipped, 0 failed**
+- examples 两份 adaptive_elicit fast-path 命中（prior 0.90 ≥ 0.85）
+- 合成 jobs_steve case 流式问答 6 题 finalize（S2 边际收益消失）
+- batch dump-question-set core14 输出 14 题（D1×6 + D4×6 + D3×2）
+- handshake R2 EIG 选题输出 6 题 confirmation
+- `calibrate.py` 与改动前 byte-equal（同样 fail，原因相同，非新引入）
+
+### 不变量保护
+- `decide_phase` / `phase_posterior.py` 后验更新公式未动 → bazi.json schema 保持兼容
+- `score_curves.py` 输出未动 → examples 曲线 sha256 未受影响
+- AskQuestion 抛题契约保持向后兼容（payload 是去字段而非新增字段）
+
+---
+
+## v9.1.1 — 2026-04 · zuogong phase 配置矩阵全量补齐
+
+> **Triggering pattern**: v9.1.0 已建好"做功视角"7 层骨架，但配置层仅刃做功族 3 个 phase
+> 三件齐全；伤官 / 杀印 / 食制 / 通明白清 8 个 phase 还停留在 metadata only 或部分配
+> 的状态，矩阵右侧大片 ❌。本次按"古籍出处 + e2e fixture"流程把 8 个 phase 一次补齐。
+
+### L1 · _phase_registry 三件套补齐
+- 伤官族 3 phase
+  - `shang_guan_sheng_cai`：trigger=寅申巳亥（《子平真诠·伤官生财》"财根为应期"+《穷通宝鉴·四时论》"四生为发用之地"）
+  - `shang_guan_sheng_cai_geju`：trigger=寅申巳亥 + reversal 加 `bi_jie_duo_cai: neutral`（盲派师承传"伤官生财，比劫透露同行竞合"）
+  - `shang_guan_pei_yin_geju`：trigger=辰戌丑未（《子平真诠·伤官佩印》"佩印者，藏神固本"+《滴天髓·伤官》"印藏库中，逢库为应"）
+- 杀印族 2 phase
+  - `sha_yin_xiang_sheng_geju`：trigger=寅申巳亥 + reversal 加 `qi_sha_feng_yin: positive`（《滴天髓·七杀》"逢印化杀，反凶为吉"）
+  - `qi_yin_xiang_sheng`：补齐 trigger + 同 reversal
+- 食制杀 1 phase
+  - `shi_shen_zhi_sha_geju`：trigger=寅申巳亥 + reversal `shi_shen_zhi_sha: positive` / `qi_sha_feng_yin: neutral`（《滴天髓·七杀》"食制者贵，最忌印夺"）
+- 通明 / 白清 2 phase
+  - `mu_huo_tong_ming`：trigger=巳午（《滴天髓·五行论》"木火通明者，逢火地大显"）
+  - `jin_bai_shui_qing`：trigger=亥子（《滴天髓·五行论》"金水相涵，逢水地清贵"）
+  - reversal_overrides by-design 留空（流通秀气类无明确事件反转规则；不强凑古籍依据）
+
+### L3 · _question_bank D6 likelihood 全量化
+- D6_Q1/Q2/Q3 三题各加 7 个 phase 显式 likelihood row（共 21 row），覆盖 5 大族族群化判别
+- 族内梯度对比：
+  - 伤官生财（`P_SGSC_G`）A/B 双高，伤官佩印（`P_SGPY`）B 主导（耐心经营）
+  - 杀印族 B/C 偏高（借印化煞 + 耐心借势）
+  - 食制杀 A 偏高（主动制衡，弱于纯刃做功）
+  - 通明 / 白清 C 主导（顺势而为）
+- `_check_discrimination` 模块加载断言保持 pass
+
+### L5 · mangpai_reversal_rules.yaml 新增事件反转
+- 新增 `qi_sha_feng_yin` 两条规则（positive：印化七杀凶转吉；neutral：食制格印夺破格）
+- 新增 `shi_shen_zhi_sha` 一条规则（positive：食神制杀格成事，主动制衡获利）
+- 总规则数 5 → 10，event_keys 5 → 7
+
+### 验收 · 新增 4 个 e2e fixture（共 16 个验收点）
+- `tests/test_shang_guan_sheng_cai.py`：伤官族 4 点（L1 注册三件 / L3 D6 偏 B 佩印 / L5 反转 ≥ 3 / L6 trigger 年 geju 抬升 ≥ 2.0）
+- `tests/test_sha_yin_xiang_sheng.py`：杀印族 4 点（含 qi_sha_feng_yin polarity=positive 反转断言）
+- `tests/test_shi_shen_zhi_sha.py`：食制杀 4 点（含 shi_shen_zhi_sha polarity=positive 反转断言）
+- `tests/test_tongming_baiqing.py`：通明 + 白清 4 点（合并测试，共享结构；不测 L5 反转 by-design）
+- `tests/test_yangren_chong_cai.py::test_l1_zuogong_dimension_phases_registered` 的 must_have 集合扩展为 8 个代表 phase（覆盖五大族），防止后续族群覆盖被回退
+
+### 配置矩阵 · 100% 对齐
+| 族 | trigger | reversal | D6 likelihood | e2e fixture |
+|---|---|---|---|---|
+| 刃做功族 | ✅ | ✅ | ✅ | ✅ yangren_chong_cai |
+| 伤官族 | ✅ | ✅ | ✅ | ✅ shang_guan_sheng_cai |
+| 杀印族 | ✅ | ✅ | ✅ | ✅ sha_yin_xiang_sheng |
+| 食制杀 | ✅ | ✅ | ✅ | ✅ shi_shen_zhi_sha |
+| 通明 / 白清 | ✅ | by-design 留空 | ✅ | ✅ tongming_baiqing |
+
+### 不变量保护
+- 14 个 v8 core phase 的 likelihood 未动 → examples sha256 byte-equal（`shang_guan_sheng_cai.curves.json` = `cf1f6c88...`，`guan_yin_xiang_sheng.curves.json` = `7346cfc5...`）
+- 默认 phase=`day_master_dominant` 下 `mangpai_events.detect_all` 反转事件数仍为 0
+- 全套 192 tests pass（v9.1.0 的 176 + 本轮新增 16）
+
+---
+
 ## v9.1.0 — 2026-04 · 盲派做功视角接入 · 7 层架构改造
 
 > **Triggering pattern**: 一类壬日干 + 午刃 + 子财 + 阳刃驾结构的命局，盲派视角应识别为"刃冲财做功"。

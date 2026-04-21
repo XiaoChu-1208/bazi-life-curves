@@ -216,9 +216,15 @@ _register(PhaseMeta(
     dimension="zuogong",
     source="子平真诠·伤官格 + 盲派象法·伤官生财",
     requires={"shang_guan_present": "required", "cai_present": "required"},
-    zuogong_trigger_branches=(),  # 不绑定特定支；靠 cai/shangguan 年共振
+    # 寅申巳亥 = 四生支：财根发用 + 食伤生发地
+    # 出处《子平真诠·伤官生财》"伤官见财，财根为应期"
+    #     《穷通宝鉴·四时论》"四生为发用之地"
+    zuogong_trigger_branches=("寅", "申", "巳", "亥"),
     reversal_overrides={
         "shang_guan_jian_guan": "neutral",  # 有财转化，不再纯负
+        # 财通关后比劫同行，转为竞合推进而非夺财
+        # 出处：盲派师承传"伤官生财，比劫透露同行竞合"
+        "bi_jie_duo_cai": "neutral",
     },
 ))
 
@@ -227,10 +233,17 @@ _register(PhaseMeta(
     name_cn="杀印相生格",
     school="mangpai_geju",
     dimension="zuogong",
-    source="子平真诠·七杀格·杀印相生 + 盲派象法",
+    source="子平真诠·七杀格·杀印相生 + 滴天髓·七杀（逢印化杀，反凶为吉）+ 盲派象法",
     requires={"qisha_present": "required", "yin_present": "required"},
+    # 寅申巳亥 = 四生支：印旺地 + 杀根透发地
+    # 出处《子平真诠·七杀格·杀印相生》"杀印相生者，逢印生杀根之地为应"
+    #     《滴天髓·七杀》
+    zuogong_trigger_branches=("寅", "申", "巳", "亥"),
     reversal_overrides={
         "yangren_chong": "neutral",
+        # 杀逢印化为贵格成事
+        # 出处《滴天髓·七杀》"逢印化杀，反凶为吉"
+        "qi_sha_feng_yin": "positive",
     },
 ))
 
@@ -239,8 +252,19 @@ _register(PhaseMeta(
     name_cn="食神制杀格",
     school="mangpai_geju",
     dimension="zuogong",
-    source="子平真诠·七杀格·食神制杀",
+    source="子平真诠·七杀格·食神制杀 + 滴天髓·七杀（食制者贵，最忌印夺）",
     requires={"shishen_present": "required", "qisha_present": "required"},
+    # 寅申巳亥 = 四生支：食神禄旺地 + 杀冲化地
+    # 出处《子平真诠·七杀格·食神制杀》"食制者，逢食地或杀冲化为应"
+    zuogong_trigger_branches=("寅", "申", "巳", "亥"),
+    reversal_overrides={
+        # 食神制杀格成事，主动制衡获利
+        # 出处《子平真诠·七杀格·食神制杀》
+        "shi_shen_zhi_sha": "positive",
+        # 食制不需印化，印夺反破格
+        # 出处《滴天髓·七杀》"食制者贵，最忌印夺"
+        "qi_sha_feng_yin": "neutral",
+    },
 ))
 
 _register(PhaseMeta(
@@ -248,8 +272,12 @@ _register(PhaseMeta(
     name_cn="伤官配印格",
     school="mangpai_geju",
     dimension="zuogong",
-    source="子平真诠·伤官格·伤官佩印",
+    source="子平真诠·伤官格·伤官佩印 + 滴天髓·伤官（印藏库中，逢库为应）",
     requires={"shang_guan_present": "required", "yin_present": "required"},
+    # 辰戌丑未 = 四库支：印星归库为兑现
+    # 出处《子平真诠·伤官佩印》"佩印者，藏神固本"
+    #     《滴天髓·伤官》"印藏库中，逢库为应"
+    zuogong_trigger_branches=("辰", "戌", "丑", "未"),
     reversal_overrides={
         "shang_guan_jian_guan": "positive",  # 佩印化伤，反吉
     },
@@ -333,10 +361,19 @@ _register(PhaseMeta(id="shang_guan_jian_guan", name_cn="伤官见官",
                     source="盲派象法·伤官见官"))
 _register(PhaseMeta(id="qi_yin_xiang_sheng", name_cn="杀印相生",
                     school="mangpai_geju", dimension="zuogong",
-                    source="盲派象法·杀印相生"))
+                    source="盲派象法·杀印相生 + 滴天髓·七杀（逢印化杀，反凶为吉）",
+                    # 与 sha_yin_xiang_sheng_geju 同源，trigger 一致
+                    zuogong_trigger_branches=("寅", "申", "巳", "亥"),
+                    reversal_overrides={
+                        "yangren_chong": "neutral",
+                        "qi_sha_feng_yin": "positive",
+                    }))
 _register(PhaseMeta(id="shang_guan_sheng_cai", name_cn="伤官生财",
                     school="mangpai_geju", dimension="zuogong",
-                    source="盲派象法·伤官生财",
+                    source="盲派象法·伤官生财 + 子平真诠·伤官生财（财根为应期）",
+                    # 寅申巳亥 = 四生支：与 shang_guan_sheng_cai_geju 同源
+                    # 出处《子平真诠·伤官生财》《穷通宝鉴·四时论》
+                    zuogong_trigger_branches=("寅", "申", "巳", "亥"),
                     reversal_overrides={"shang_guan_jian_guan": "neutral"}))
 _register(PhaseMeta(id="si_sheng_si_bai", name_cn="四生/四败/四库齐",
                     school="mangpai", dimension="special",
@@ -352,10 +389,22 @@ _register(PhaseMeta(id="hua_gai_ru_ming", name_cn="华盖入命",
                     source="盲派象法·华盖"))
 _register(PhaseMeta(id="jin_bai_shui_qing", name_cn="金白水清",
                     school="mangpai", dimension="zuogong",
-                    source="盲派象法·金白水清"))
+                    source="盲派象法·金白水清 + 滴天髓·五行论（金水相涵，逢水地清贵）",
+                    # 亥子 = 水支：金白水清应在水地
+                    # 出处《滴天髓·五行论》"金水相涵，逢水地清贵"
+                    zuogong_trigger_branches=("亥", "子"),
+                    # reversal_overrides 留空 by-design：
+                    # 通明 / 白清 属于流通秀气类，无明确事件反转规则
+                    # AGENTS.md 不要求强加 reversal；不强凑古籍依据
+                    reversal_overrides={}))
 _register(PhaseMeta(id="mu_huo_tong_ming", name_cn="木火通明",
                     school="mangpai", dimension="zuogong",
-                    source="盲派象法·木火通明"))
+                    source="盲派象法·木火通明 + 滴天髓·五行论（木火通明者，逢火地大显）",
+                    # 巳午 = 火支：木火通明应在火地
+                    # 出处《滴天髓·五行论》"木火通明者，逢火地大显"
+                    zuogong_trigger_branches=("巳", "午"),
+                    # reversal_overrides 留空 by-design（同 jin_bai_shui_qing）
+                    reversal_overrides={}))
 
 
 # ============================================================================

@@ -25,12 +25,23 @@ score_curves.py                # 4 维曲线打分（spirit/wealth/fame/emotion 
     ↓ output/curves.json
 mangpai_events.py              # 盲派事件检测 + 反向规则 + 护身减压（可选 · score_curves 已内置基础调用）
     ↓ output/curves.json (events 字段)
-handshake.py (round 1)         # v8 · 输出 5 维度 ~28 道 phase-discriminative 多选题（必跑）
-    ↓ output/handshake.r1.json # 含 phase_candidates + prior_distribution + askquestion_payload
+adaptive_elicit.py next        # v9 · 自适应贝叶斯单题流式问答（默认 R1 路径）
+    ↓ 循环 ASK → AskQuestion 单题 → answer → ASK ...
+    ↓ 触发 S1/S2/S3/S4 早停（通常 5-8 题，最多 12 题；prior top1 ≥ 0.85 直接 0 题 fast-path）
+    ↓ output/.elicit.state.json   # 内含 posterior / asked_history（点开头隐藏 · LLM 不得回灌）
+    ↓ output/bazi.json            # bazi.phase + bazi.phase_decision（is_provisional=false）
+[可选 batch 通道]
+adaptive_elicit.py dump-question-set --tier core14|full28
+    → 用户贴题集 markdown 一次答完
+adaptive_elicit.py submit-batch
+    → output/bazi.json（confidence 默认上限 mid · top1≥0.97 才解锁 high）
+
+[deprecated v9] handshake.py (round 1)  # v8 一次性 26 题路径，仅 he_pan_orchestrator/mcp_server 兜底
+    ↓ output/handshake.r1.json [deprecated_v9: true · askquestion_payload 已剥离后验]
 [Agent 调宿主 AskQuestion 抛点选 UI → 用户答案 → user_answers.r1.json]
-phase_posterior.py (round 1)   # v8 · 贝叶斯后验更新，写出 R1 phase / 调候 / 用神 / 喜神 / 忌神
-    ↓ output/bazi.json         # bazi.phase + bazi.phase_decision（is_provisional=false）
-handshake.py --round 2         # v8.1 · 基于 R1 决策的 confirmation 题（targeted top vs runner-up）
+phase_posterior.py (round 1)   # v8 · 贝叶斯后验更新（兼容路径）
+
+handshake.py --round 2         # v9 · 基于 R1 决策的 EIG 选题 confirmation（限定 2-phase 后验）
     ↓ output/handshake.r2.json # 含 round1_summary + pairwise_target + 6-8 道 confirmation 题
 [Agent 调宿主 AskQuestion 抛 R2 题 → user_answers.r2.json]
 phase_posterior.py --round 2   # v8.1 · 合并 R1+R2 算最终后验 + confirmation_status
@@ -44,10 +55,13 @@ render_artifact.py             # 交互 HTML（Recharts + marked.js）·
 [deprecated] phase_inversion_loop.py  # v7 老路径，保留可运行但不再是主流程
 ```
 
-**关键不可跳步（v8 / v8.1）**：
+**关键不可跳步（v9）**：
 
-- 不能跳过 `handshake.py` + `phase_posterior.py` 直接渲染 HTML —— `bazi.phase_decision.is_provisional=true` 时 render_artifact 必须拒绝
+- **R1 默认路径必须走 `adaptive_elicit.py next`**，不要再用 `handshake.py` 默认入口（已 deprecated_v9）
+- 不能跳过 R1 elicit + 必要时的 R2 confirmation 直接渲染 HTML —— `bazi.phase_decision.is_provisional=true` 时 render_artifact 必须拒绝
 - **Agent 必须用宿主结构化 `AskQuestion` 抛 `askquestion_payload`，禁止用自然语言转述题面让用户口头回答**（违反 = 破坏 phase 决策的 likelihood 计算前提）
+- **第一次抛单题前必须给用户 [batch_elicitation_prompt.md](references/batch_elicitation_prompt.md) §1 开场白**（介绍 batch 通道）
+- **不得把 `.elicit.state.json` / `posterior` / `phase_candidates` 等内部字段呈现或转述给用户**（[elicitation_ethics.md](references/elicitation_ethics.md) §E1）；不得在 elicit 中途命名 phase（§E2）；不得倒推进度（§E3）；不得揭示题目意图（§E4）
 - **R1 后验 < 0.95 或 runner-up ≥ 0.02 时必须走 Round 2 confirmation**（详见 [handshake_protocol.md §4](references/handshake_protocol.md) HS-R7）
 - **R2 confirmation_status=`decision_changed` 时必须 escalate 报告决策反转，不允许直接出图**（HS-R6）
 - 不能让 LLM 自己改 `curves.json` 的数值 —— 那是 `score_curves.py` 的职责
@@ -73,9 +87,12 @@ bazi-life-curves/
 │   ├── solve_bazi.py              # 入口 1
 │   ├── score_curves.py            # 入口 2
 │   ├── mangpai_events.py          # 入口 3（可选）
-│   ├── handshake.py               # 入口 4（必跑）· v8 输出 phase-discriminative 5 维度题集
+│   ├── adaptive_elicit.py         # 入口 4（必跑）· v9 自适应贝叶斯单题流式 + batch 双通道
+│   ├── _eig_selector.py           # v9 EIG 算法核心（pure function · 4 条早停）
+│   ├── handshake.py               # 入口 4 兼容（deprecated R1 + EIG-based R2 confirmation）
 │   ├── phase_posterior.py         # 入口 4.5 · v8 用户答案 → 贝叶斯后验 → 落地 phase
 │   ├── _question_bank.py          # v8 5 维度 28 题 dataclass（与 references/discriminative_question_bank.md 1:1）
+│   ├── audit_questions.py         # v9 题库可答性 / 中性度静态审计（8 维 ambiguity + 命理词典）
 │   ├── phase_inversion_loop.py    # [deprecated v8] 老 R0/R1/R2 反演路径，保留可运行
 │   ├── save_confirmed_facts.py    # 校验反馈固化（v8 加 --user-choices 参数 + schema migration）
 │   ├── family_profile.py          # [legacy] 旧 R3 原生家庭，逻辑已迁入 D1 题库
@@ -100,7 +117,8 @@ bazi-life-curves/
 |---|---|
 | `score_curves.py` 的扶抑/调候/格局权重 | `references/methodology.md` + `references/scoring_rubric.md` |
 | `mangpai_events.py` 的事件 / 反向 / 护身 | `references/mangpai_protocol.md` |
-| `handshake.py` 的题集生成 / askquestion_payload schema / Round 2 confirmation 题 | `references/handshake_protocol.md` (v8 / §4 v8.1) |
+| `adaptive_elicit.py` / `_eig_selector.py` 的选题 / 早停 / state schema | `references/handshake_protocol.md` §0 (v9) + `references/elicitation_ethics.md` |
+| `handshake.py` 的 R2 confirmation 题（deprecated R1 也在此）| `references/handshake_protocol.md` (v8 / §4 v8.1 + v9 §0) |
 | `_bazi_core.py` 的 detector / decide_phase / pairwise_discrimination_power / assess_confirmation | `references/phase_decision_protocol.md` (v8 / §7 v8.1) + `references/diagnosis_pitfalls.md` §14 |
 | `_question_bank.py` / `references/discriminative_question_bank.md` 题目 / likelihood_table | 两边必须 1:1 同步；calibrate.py 做一致性检查 |
 | `phase_posterior.py` 后验阈值 / R1 决策规则 / R2 confirmation_status | `references/phase_decision_protocol.md` §5 / §7 |
@@ -133,7 +151,7 @@ diff <(python scripts/score_curves.py --bazi examples/guan_yin_xiang_sheng.bazi.
 
 ### 4.5 LLM 后视镜归因防御铁律
 
-任何接受用户输入的脚本（`handshake.py` / `save_confirmed_facts.py`）**必须**：
+任何接受用户输入的脚本（`adaptive_elicit.py` / `handshake.py` / `save_confirmed_facts.py`）**必须**：
 
 - 拒绝 "我 X 岁升职 / 我已婚 / 我离婚 / 我读了 X 大学" 这类**带具体身份标签**的事实
 - 只接受 "我 X 岁那年财务有大波动（涨/跌）" 这类**结构性事实**
@@ -148,9 +166,14 @@ diff <(python scripts/score_curves.py --bazi examples/guan_yin_xiang_sheng.bazi.
 ```bash
 mkdir -p output
 
-python scripts/solve_bazi.py --pillars "甲子 丁卯 丙寅 戊戌" --gender M --birth-year 1984 --orientation hetero --out output/test1.bazi.json
+python scripts/solve_bazi.py --pillars "甲子 丁卯 丙寅 戊戌" --gender M --birth-year 1984 --orientation hetero --qiyun-age 8 --out output/test1.bazi.json
 python scripts/score_curves.py --bazi output/test1.bazi.json --out output/test1.curves.json --age-end 80
-python scripts/handshake.py --bazi output/test1.bazi.json --curves output/test1.curves.json --out output/test1.handshake.json
+# v9 默认：自适应单题流式（循环到 finalize；非交互测试可改用 batch）
+python scripts/adaptive_elicit.py next --bazi output/test1.bazi.json --curves output/test1.curves.json --state output/.test1.elicit.state.json
+# 或 batch 模式：导出 → 填答 → 提交
+python scripts/adaptive_elicit.py dump-question-set --bazi output/test1.bazi.json --curves output/test1.curves.json --tier core14 --out output/test1.questions.md
+# [...用户填答 → 写到 output/test1.answers.json...]
+# python scripts/adaptive_elicit.py submit-batch --bazi output/test1.bazi.json --answers output/test1.answers.json
 python scripts/render_artifact.py --curves output/test1.curves.json --out output/test1.html
 ```
 
@@ -191,10 +214,14 @@ python scripts/calibrate.py
 ### 当用户问"算个八字"
 
 1. 先用 `solve_bazi.py` 解析（询问性别 + 公历生辰 + 取向）
-2. 跑 `score_curves.py` + `handshake.py`（R1）
-3. **R1**：调宿主 AskQuestion 抛 `askquestion_payload` 全部题给用户点选；不能口头转述
-4. 跑 `phase_posterior.py --round 1` 写出 R1 phase_decision
-5. **R2**：跑 `handshake.py --round 2`（confirmation 题）→ AskQuestion 抛 → `phase_posterior.py --round 2`
+2. 跑 `score_curves.py`
+3. **R1（v9 默认）**：跑 `adaptive_elicit.py next` 进入自适应单题流式
+   - 第一次抛题前必须按 [batch_elicitation_prompt.md](references/batch_elicitation_prompt.md) §1 给用户开场白（介绍 batch 通道）
+   - 用户若选 batch：跑 `dump-question-set --tier core14|full28` 把题集贴回 → 用户填答 → `submit-batch`
+   - 用户若选流式：每轮调宿主 AskQuestion 抛 `askquestion_payload` 单题，回答后 `--answer 'qid:opt'` 进下一轮
+   - 全程**禁止**把 `posterior` / `phase_candidates` / `EIG` 转述给用户，**禁止**在 finalize 前命名 phase（[elicitation_ethics.md](references/elicitation_ethics.md) §E1–§E4）
+4. R1 finalize 后 `bazi.json` 直接写入 `phase` + `phase_decision`，不需要单独跑 `phase_posterior.py --round 1`
+5. **R2**（仅在 R1 confidence < high 或想再次确认时）：跑 `handshake.py --round 2`（EIG 选 confirmation 题）→ AskQuestion 抛 → `phase_posterior.py --round 2`
 6. 看 `phase_confirmation.action`：`render` / `render_with_caveat` 直接出图；`escalate` 时**必须**报告决策反转或不确定，建议核对时辰 / 性别
 7. 用 `render_artifact.py` 出 HTML，或按 `multi_dim_xiangshu_protocol.md` 流式输出 markdown 解读
 
