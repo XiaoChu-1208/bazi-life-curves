@@ -299,6 +299,22 @@ def _compute_zeitgeist_from_bazi(bazi_path: str) -> dict | None:
         return None
 
 
+def _safe_json(obj) -> str:
+    """v9.3.1 · 把对象序列化为可安全嵌入 HTML <script type="application/json"> 的 JSON.
+
+    防御点:
+      - replace '<' → '\\u003c': 让 '</script>' / '<!--' / '<script>' 在 raw text
+        模式下都不会提前终止 script tag (这是 OWASP / Django mark_safe_lazy 同款手法)
+      - replace U+2028 / U+2029: 老 JS 引擎里这两个会被当作行终止符把 JSON 切断
+    """
+    return (
+        json.dumps(obj, ensure_ascii=False)
+        .replace("<", "\\u003c")
+        .replace("\u2028", "\\u2028")
+        .replace("\u2029", "\\u2029")
+    )
+
+
 def render(curves: dict,
            analysis: dict | None = None,
            zeitgeist: dict | None = None,
@@ -314,12 +330,14 @@ def render(curves: dict,
     # 之前漏掉 life_review / dayun_review / key_years / confirmed_facts → 即使 LLM 写了也不显示。
     # v9.2 · virtue_narrative + virtue_motifs（承认维度独立通道，不画曲线）+ allow_partial（流式部分渲染）
     # v9.3.1 · partial 模式可能缺 pillars_str, 走兜底而不是 KeyError 炸掉
+    # v9.3.1 · 安全加固: 全部 JSON 数据合并到单个 <script type="application/json">
+    # 块, 用 _safe_json escape '<', 物理消除 `</script>` 注入面.
     pillars_str = curves.get("pillars_str") if isinstance(curves, dict) else None
     title = f"八字人生曲线图（{pillars_str}）" if pillars_str else "八字人生曲线图"
-    return tmpl.render(
-        title=title,
-        curves_json=json.dumps(curves, ensure_ascii=False),
-        analysis_json=json.dumps({
+    payload = {
+        "title": title,
+        "curves": curves,
+        "analysis": {
             "overall": analysis.get("overall", ""),
             "life_review": analysis.get("life_review", {}),
             "virtue_narrative": analysis.get("virtue_narrative", {}),
@@ -330,11 +348,16 @@ def render(curves: dict,
             "dayun_reviews": analysis.get("dayun_reviews", {}),
             "era_narratives": analysis.get("era_narratives", {}),
             "confirmed_facts": analysis.get("confirmed_facts", {}),
-        }, ensure_ascii=False),
-        zeitgeist_json=json.dumps(zeitgeist or {}, ensure_ascii=False),
-        has_zeitgeist=bool(zeitgeist and zeitgeist.get("era_windows_used")),
-        virtue_motifs_json=json.dumps(virtue_motifs, ensure_ascii=False) if virtue_motifs is not None else "null",
-        has_virtue_motifs=bool(virtue_motifs),
+        },
+        "zeitgeist": zeitgeist or {},
+        "has_zeitgeist": bool(zeitgeist and zeitgeist.get("era_windows_used")),
+        "virtue_motifs": virtue_motifs,
+        "has_virtue_motifs": bool(virtue_motifs),
+        "partial": bool(allow_partial),
+    }
+    return tmpl.render(
+        title=title,
+        bazi_payload_json=_safe_json(payload),
         allow_partial=bool(allow_partial),
     )
 

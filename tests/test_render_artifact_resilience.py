@@ -229,3 +229,114 @@ def test_render_curves_with_only_pillars_no_crash() -> None:
     html = render(curves, analysis={}, allow_partial=True)
     assert "<html" in html.lower()
     assert "NoChartFallback" in html
+
+
+# ─── §5 · 注入安全 (Bug 2 / 5) ─────────────────────────────────
+
+def test_safe_json_escapes_script_close_tag() -> None:
+    """v9.3.1 · 数据里含 '</script>' 字串 → escape 成 '\\u003c/script>',
+    HTML 里物理消失这个 token, 浏览器不会提前关闭 script tag."""
+    from render_artifact import _safe_json
+
+    payload = {"text": "</script><svg/onload=alert(1)>"}
+    out = _safe_json(payload)
+    assert "</script>" not in out
+    assert "\\u003c" in out
+
+
+def test_render_payload_no_script_close_tag_in_data_block() -> None:
+    """JSON 块里即使 LLM 写了 '</script>' 也不会泄漏成 raw close tag."""
+    curves = _ok_curves()
+    analysis = {
+        "overall": "测试 </script><img src=x onerror=alert(1)> 注入",
+        "life_review": {"spirit": "</script>", "wealth": "", "fame": "", "emotion": ""},
+    }
+    html = render(curves, analysis, allow_partial=True)
+    # data 块用 application/json + escape '<', '</script>' 在 raw 数据段不应出现
+    # (模板里 <script type="application/json"> 之外的 vanilla JS 不会包含这个串)
+    # 抽出 <script type="application/json"> ... </script> 之间的内容验证
+    import re
+    m = re.search(
+        r'<script type="application/json"[^>]*>(.*?)</script>',
+        html,
+        re.DOTALL,
+    )
+    assert m, "缺 application/json data 块"
+    data_block = m.group(1)
+    assert "</script>" not in data_block, (
+        "JSON 数据块里仍有 raw '</script>' close tag, 注入面未关闭"
+    )
+    assert "\\u003c/script>" in data_block, (
+        "'</script>' 应被 escape 成 '\\u003c/script>' 而不是物理删除"
+    )
+
+
+def test_render_payload_escapes_html_comment_open() -> None:
+    """JSON 数据里含 '<!--' → escape 成 '\\u003c!--',
+    防止 IE/老浏览器把 script 内容当 HTML 注释吞掉."""
+    curves = _ok_curves()
+    analysis = {"overall": "<!-- evil --><script>alert(1)</script>"}
+    html = render(curves, analysis, allow_partial=True)
+    import re
+    m = re.search(
+        r'<script type="application/json"[^>]*>(.*?)</script>',
+        html, re.DOTALL,
+    )
+    assert m
+    data_block = m.group(1)
+    assert "<!--" not in data_block
+    assert "<script>" not in data_block
+
+
+def test_template_marked_html_renderer_disabled() -> None:
+    """模板必须配置 marked 关闭 raw HTML 透传."""
+    template_path = ROOT / "templates" / "chart_artifact.html.j2"
+    text = template_path.read_text(encoding="utf-8")
+    # 关 raw HTML
+    assert "configureMarked" in text
+    assert "renderer:" in text
+    # 过滤 javascript: 链接
+    assert "javascript:" in text
+    assert "walkTokens" in text
+
+
+def test_template_uses_application_json_data_block() -> None:
+    """模板必须用 <script type='application/json'> 而不是 inline <script>{...}</script>."""
+    template_path = ROOT / "templates" / "chart_artifact.html.j2"
+    text = template_path.read_text(encoding="utf-8")
+    assert 'type="application/json"' in text
+    assert 'id="__bazi_data__"' in text
+    # 旧的 inline 注入语句 (window.__BAZI_X__ = {{ ... }}) 应已迁移
+    # window.__BAZI_X__ = ... 仍存在, 但应是 IIFE 里从 JSON.parse 得到, 不应再有 Jinja {{ }}
+    assert "{{ curves_json" not in text
+    assert "{{ analysis_json" not in text
+
+
+def test_render_only_one_data_script_block() -> None:
+    """即使 LLM 数据里塞了多个 '</script>' 字符串, 模板里 application/json 块仍只有 1 个."""
+    curves = _ok_curves()
+    analysis = {
+        "overall": "</script></script></script>",
+        "life_review": {
+            "spirit": "</script>", "wealth": "</script>",
+            "fame": "</script>", "emotion": "</script>",
+        },
+    }
+    html = render(curves, analysis, allow_partial=True)
+    # application/json 块只有 1 个
+    import re
+    json_blocks = re.findall(
+        r'<script type="application/json"[^>]*>',
+        html,
+    )
+    assert len(json_blocks) == 1, f"data script 块数量应为 1, 实际 {len(json_blocks)}"
+
+
+def test_safe_json_escapes_line_separators() -> None:
+    """U+2028 / U+2029 在老 JS 引擎里会被当作行终止符把 JSON 切断."""
+    from render_artifact import _safe_json
+    out = _safe_json({"text": "a\u2028b\u2029c"})
+    assert "\u2028" not in out
+    assert "\u2029" not in out
+    assert "\\u2028" in out
+    assert "\\u2029" in out

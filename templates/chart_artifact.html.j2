@@ -378,15 +378,29 @@
 <body>
 <div id="app" class="root"></div>
 
+<!-- v9.3.1 · 安全加固: 全部数据走 application/json 块 + Python 端 escape '<',
+     物理消除 '</script>' / '<!--' / '<script>' 注入面. -->
+<script type="application/json" id="__bazi_data__">{{ bazi_payload_json|safe }}</script>
 <script>
-window.__BAZI_CURVES__ = {{ curves_json|safe }};
-window.__BAZI_TITLE__ = {{ title|tojson }};
-window.__BAZI_ANALYSIS__ = {{ analysis_json|safe }};
-window.__BAZI_ZEITGEIST__ = {{ zeitgeist_json|safe }};
-window.__BAZI_HAS_ZEITGEIST__ = {{ "true" if has_zeitgeist else "false" }};
-window.__BAZI_VIRTUE_MOTIFS__ = {{ virtue_motifs_json|safe }};
-window.__BAZI_HAS_VIRTUE_MOTIFS__ = {{ "true" if has_virtue_motifs else "false" }};
-window.__BAZI_PARTIAL__ = {{ "true" if allow_partial else "false" }};
+(function () {
+  var node = document.getElementById('__bazi_data__');
+  var data = {};
+  try {
+    data = JSON.parse((node && node.textContent) || '{}');
+  } catch (e) {
+    if (window.console) console.error('[bazi-artifact] JSON parse failed:', e);
+    data = {};
+  }
+  window.__BAZI_DATA__ = data;
+  window.__BAZI_CURVES__ = data.curves || {};
+  window.__BAZI_TITLE__ = data.title || '';
+  window.__BAZI_ANALYSIS__ = data.analysis || {};
+  window.__BAZI_ZEITGEIST__ = data.zeitgeist || {};
+  window.__BAZI_HAS_ZEITGEIST__ = !!data.has_zeitgeist;
+  window.__BAZI_VIRTUE_MOTIFS__ = data.virtue_motifs || null;
+  window.__BAZI_HAS_VIRTUE_MOTIFS__ = !!data.has_virtue_motifs;
+  window.__BAZI_PARTIAL__ = !!data.partial;
+})();
 </script>
 {% raw %}
 <script type="text/babel" data-presets="env,react">
@@ -408,6 +422,45 @@ const COLOR_FAME    = "#D88E5C";
 const COLOR_EMOTION = "#C77FA0";
 
 const DAYUN_BAND_COLORS = ["#F5F2EA", "#EDF2F4", "#F0E7E7", "#E7F0EE", "#F3EFE8", "#EFEDE6"];
+
+// v9.3.1 · 安全加固: marked 关 raw HTML 透传 + 过滤 javascript:/vbscript:/data: 链接.
+// 不引入 DOMPurify (避免新 CDN 失败面), 用 marked 自带的 walkTokens + html renderer override 覆盖 99% 场景.
+(function configureMarked() {
+  if (!window.marked || window.__BAZI_MARKED_CONFIGURED__) return;
+  try {
+    window.marked.use({
+      // gfm: false  // 保持默认开启 (GFM table / strikethrough)
+      walkTokens: function (token) {
+        if (token.type === "link" || token.type === "image") {
+          var href = (token.href || "").trim().toLowerCase();
+          if (
+            href.indexOf("javascript:") === 0 ||
+            href.indexOf("vbscript:") === 0 ||
+            href.indexOf("data:") === 0
+          ) {
+            // 把危险协议的链接降级为纯文本
+            token.type = "text";
+            token.text = token.text || token.href || "";
+            token.href = "";
+          }
+        }
+      },
+      renderer: {
+        // 关闭 raw HTML 透传: 用户写 <script>...</script> / <img onerror=...> 也会被 escape
+        html: function (token) {
+          var raw = (token && (token.text || token.raw)) || "";
+          return raw
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;");
+        },
+      },
+    });
+    window.__BAZI_MARKED_CONFIGURED__ = true;
+  } catch (e) {
+    if (window.console) console.warn("[bazi-artifact] marked safe-config failed:", e);
+  }
+})();
 
 function Markdown({ source }) {
   if (!source || !source.trim()) return null;

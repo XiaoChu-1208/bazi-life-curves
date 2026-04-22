@@ -150,7 +150,10 @@ def test_render_injects_emotion_dimension_and_virtue_narrative():
 def test_render_partial_flag_sets_window_global():
     curves = _minimal_curves()
     html = render(curves, _full_analysis(), zeitgeist=None, allow_partial=True)
-    assert "__BAZI_PARTIAL__ = true" in html
+    # v9.3.1 · 改走 application/json payload + IIFE 透传到 window;
+    # 验证两处: payload 里的 partial:true 字段 + 启动 IIFE 设置 window 全局
+    assert '"partial":true' in html or '"partial": true' in html
+    assert "window.__BAZI_PARTIAL__" in html
 
 
 def test_render_legacy_dayun_review_singular_also_works():
