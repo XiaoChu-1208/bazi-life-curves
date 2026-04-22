@@ -390,8 +390,10 @@ window.__BAZI_PARTIAL__ = {{ "true" if allow_partial else "false" }};
 </script>
 {% raw %}
 <script type="text/babel" data-presets="env,react">
-const CURVES = window.__BAZI_CURVES__;
-const TITLE = window.__BAZI_TITLE__;
+// v9.3.1 · resilience: CURVES 默认 {} 防 module-top 链式访问崩溃；
+// 模板下方所有 CURVES.x.y 嵌套访问统一走可选链 + 兜底。
+const CURVES = window.__BAZI_CURVES__ || {};
+const TITLE = window.__BAZI_TITLE__ || "八字人生曲线图";
 const ANALYSIS = window.__BAZI_ANALYSIS__ || {};
 const ZEITGEIST = window.__BAZI_ZEITGEIST__ || {};
 const HAS_ZEITGEIST = !!window.__BAZI_HAS_ZEITGEIST__;
@@ -411,6 +413,53 @@ function Markdown({ source }) {
   if (!source || !source.trim()) return null;
   const html = window.marked ? window.marked.parse(source) : source;
   return <div className="markdown" dangerouslySetInnerHTML={{ __html: html }} />;
+}
+
+// v9.3.1 · 顶层 ErrorBoundary：任意 React 子树抛错都能落到可读的错误卡片，
+// 而不是控制台报错 + 整页空白 #app（用户刷新无解）。
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { error: null, info: null };
+  }
+  static getDerivedStateFromError(error) {
+    return { error };
+  }
+  componentDidCatch(error, info) {
+    this.setState({ info });
+    if (window.console) console.error("[bazi-artifact] render error:", error, info);
+  }
+  render() {
+    if (this.state.error) {
+      const msg = (this.state.error && this.state.error.message) || String(this.state.error);
+      return (
+        <div className="error-boundary" data-resilience-fallback="error-boundary"
+             style={{
+               margin: "32px auto", maxWidth: 720, padding: "24px",
+               background: "#fef6f0", border: "1px solid #d9a384",
+               borderRadius: 8, color: "#7a3a1f", fontSize: 14, lineHeight: 1.6,
+             }}>
+          <div style={{fontWeight: 700, fontSize: 16, marginBottom: 8}}>
+            报告渲染失败
+          </div>
+          <div style={{marginBottom: 12}}>
+            页面加载时遇到错误，常见原因：曲线数据不完整 / LLM 输出片段格式异常 / 浏览器与脚本不兼容。
+          </div>
+          <details style={{marginBottom: 12, fontSize: 12, color: "#9a4632"}}>
+            <summary style={{cursor: "pointer"}}>查看错误详情（开发者用）</summary>
+            <pre style={{
+              marginTop: 8, padding: 10, background: "#fff", border: "1px solid #ebd0bf",
+              borderRadius: 4, overflow: "auto", whiteSpace: "pre-wrap", wordBreak: "break-word",
+            }}>{msg}</pre>
+          </details>
+          <div style={{fontSize: 12, color: "#9a6a4a"}}>
+            建议：刷新页面；若多次失败，请把这段错误信息附在 issue 里反馈。
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
 }
 
 const {
@@ -433,20 +482,21 @@ function buildSegmentTrend(yearly) {
 }
 
 function buildSeries(curves) {
-  // 主线：每年一个点
-  const main = curves.points.map(p => ({
+  // v9.3.1 · resilience guard: curves / curves.points 任一缺失返回空 series，
+  // 让 chart 渲染层走 NoChartFallback，不再整页 TypeError。
+  const points = Array.isArray(curves && curves.points) ? curves.points : [];
+  const main = points.map(p => ({
     age: p.age, year: p.year, dayun: p.dayun,
     spirit:  p.spirit_yearly,
     wealth:  p.wealth_yearly,
     fame:    p.fame_yearly,
     emotion: p.emotion_yearly,
   }));
-  // 5 年段趋势
-  const spiritTrend  = buildSegmentTrend(curves.points.map(p => ({age: p.age, value: p.spirit_yearly})));
-  const wealthTrend  = buildSegmentTrend(curves.points.map(p => ({age: p.age, value: p.wealth_yearly})));
-  const fameTrend    = buildSegmentTrend(curves.points.map(p => ({age: p.age, value: p.fame_yearly})));
+  const spiritTrend  = buildSegmentTrend(points.map(p => ({age: p.age, value: p.spirit_yearly})));
+  const wealthTrend  = buildSegmentTrend(points.map(p => ({age: p.age, value: p.wealth_yearly})));
+  const fameTrend    = buildSegmentTrend(points.map(p => ({age: p.age, value: p.fame_yearly})));
   const emotionTrend = buildSegmentTrend(
-    curves.points
+    points
       .filter(p => p.emotion_yearly != null)
       .map(p => ({age: p.age, value: p.emotion_yearly}))
   );
@@ -486,13 +536,35 @@ function MangpaiBlock({ events }) {
   );
 }
 
+// v9.3.1 · 空数据 fallback 卡片（与 scripts/render_chart.py:40-42 拒空点行为对齐）
+function NoChartFallback({ reason }) {
+  return (
+    <div className="no-chart-fallback" data-resilience-fallback="no-chart">
+      <div style={{
+        padding: "32px 24px", margin: "16px 0",
+        background: "#fbf8f1", border: "1px dashed #c8b994",
+        borderRadius: 8, textAlign: "center", color: "#7a6a3e",
+      }}>
+        <div style={{fontSize: 14, fontWeight: 600, marginBottom: 6}}>暂无可绘制的人生曲线数据</div>
+        <div style={{fontSize: 12, color: "#9a8a5e"}}>
+          {reason || "curves.points 为空或缺失。请检查 score_curves.py 是否成功生成 points，或在 stream 早期阶段属正常情况。"}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function App() {
   const series = buildSeries(CURVES);
   const data = series.main;
   const ages = data.map(d => d.age);
-  const minAge = Math.min(...ages);
-  const maxAge = Math.max(...ages);
-  const segments = CURVES.dayun_segments || [];
+  // v9.3.1 · 空 ages → Math.min/max 给 ±Infinity，下游 Recharts 行为异常。
+  // 用 hasChartData 控制是否渲染图表，仍渲染 meta（让用户看到日主等基础信息），
+  // 而不是整页崩。
+  const hasChartData = ages.length > 0;
+  const minAge = hasChartData ? Math.min(...ages) : 0;
+  const maxAge = hasChartData ? Math.max(...ages) : 0;
+  const segments = (CURVES && CURVES.dayun_segments) || [];
 
   // 把 5 年段趋势数据 inline 到 data（用 null 填空）
   const trendByAge = { spirit: {}, wealth: {}, fame: {}, emotion: {} };
@@ -654,10 +726,13 @@ function App() {
     <>
       <h1>{TITLE}</h1>
       <div className="meta">
-        日主 <b>{CURVES.day_master}</b>（{CURVES.strength.label}） · 用神 <b>{CURVES.yongshen.yongshen}</b>
-        {CURVES.yongshen.tongguan ? ` · 通关 ${CURVES.yongshen.tongguan}` : ""}
-        · 调候 {CURVES.yongshen.season}
-        · 出生 {CURVES.birth_year}
+        {/* v9.3.1 · resilience: 全部嵌套访问改可选链 + 兜底，缺字段不再白屏 */}
+        日主 <b>{CURVES.day_master || "—"}</b>
+        （{(CURVES.strength && CURVES.strength.label) || "—"}）
+        {(CURVES.yongshen && CURVES.yongshen.yongshen) ? <> · 用神 <b>{CURVES.yongshen.yongshen}</b></> : null}
+        {(CURVES.yongshen && CURVES.yongshen.tongguan) ? ` · 通关 ${CURVES.yongshen.tongguan}` : ""}
+        {(CURVES.yongshen && CURVES.yongshen.season) ? ` · 调候 ${CURVES.yongshen.season}` : ""}
+        {CURVES.birth_year ? ` · 出生 ${CURVES.birth_year}` : ""}
       </div>
 
       {/* === v9 盲派 / 子平正格冲突警示卡 === */}
@@ -714,6 +789,8 @@ function App() {
       )}
 
       {/* === 主图 === */}
+      {!hasChartData && <NoChartFallback />}
+      {hasChartData && (
       <div className="chart-wrap">
         <div className="legend-row">
           <span className="legend-item"><span className="legend-line" style={{borderTopColor: COLOR_SPIRIT}}></span>精神 · 当年</span>
@@ -814,6 +891,7 @@ function App() {
           </div>
         )}
       </div>
+      )}
 
       {/* === P5: 历次校验记忆（仅在有 confirmed_facts 时显示） === */}
       {ANALYSIS.confirmed_facts && Object.keys(ANALYSIS.confirmed_facts || {}).length > 0 && (
@@ -1204,7 +1282,11 @@ function App() {
   );
 }
 
-ReactDOM.createRoot(document.getElementById("app")).render(<App />);
+ReactDOM.createRoot(document.getElementById("app")).render(
+  <ErrorBoundary>
+    <App />
+  </ErrorBoundary>
+);
 </script>
 {% endraw %}
 </body>

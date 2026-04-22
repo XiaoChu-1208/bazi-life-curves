@@ -44,7 +44,8 @@ def _minimal_curves() -> dict:
         "version": 9,
         "pillars_str": "庚午 辛巳 壬子 丁未",
         "baseline": {"spirit": 50.0, "wealth": 50.0, "fame": 50.0, "emotion": 50.0},
-        "points": {},
+        # v9.3.1 · points 必须是 list (旧 fixture 错写成 dict, 新 schema 守卫拒收)
+        "points": [],
         "dayun": {
             "segments": [
                 {"label": "戊辰", "start_age": 5, "end_age": 14,

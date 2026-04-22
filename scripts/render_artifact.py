@@ -80,6 +80,81 @@ class LlmCoverageError(RuntimeError):
     """LLM 应写未写, --strict-llm 下抛出。"""
 
 
+class CurvesSchemaError(RuntimeError):
+    """v9.3.1 · curves.json 关键字段缺失/类型不对; 非 partial 模式下抛出。
+
+    与模板 resilience guard 互补:
+      - 模板侧: 缺字段时降级到 NoChartFallback / meta 兜底, 不再白屏
+      - 脚本侧: 非 partial 时直接 raise, 让 CI / 构建发现源头问题
+        (partial 模式 / agent 流式中间产物则吞掉走模板兜底)
+    """
+
+
+# 必须存在 (任意分发版都不能缺) 的最小 schema, 模板访问这些字段会进 critical path
+_CURVES_REQUIRED_TOP_LEVEL: tuple[str, ...] = (
+    "pillars_str",
+    "points",
+)
+
+# 期望存在 (缺时会触发模板兜底, 但不会白屏) 的扩展字段, 仅打 warning
+_CURVES_EXPECTED_TOP_LEVEL: tuple[str, ...] = (
+    "day_master",
+    "birth_year",
+    "baseline",
+    "dayun_segments",
+    "yongshen",
+    "strength",
+)
+
+
+def validate_curves_min_schema(curves: dict, *, allow_partial: bool) -> list[str]:
+    """v9.3.1 · 渲染前校验 curves 最小 schema; 缺关键字段且非 partial → raise.
+
+    返回 warnings 列表 (即使没 raise 也可能有 expected 字段缺失). 调用方负责 print.
+    """
+    warnings: list[str] = []
+    if not isinstance(curves, dict):
+        if allow_partial:
+            warnings.append(
+                "curves 不是 dict (partial 模式吞掉, 模板会走 NoChartFallback)"
+            )
+            return warnings
+        raise CurvesSchemaError(
+            f"curves 必须是 dict, 实际是 {type(curves).__name__}"
+        )
+
+    missing_required = [k for k in _CURVES_REQUIRED_TOP_LEVEL if k not in curves]
+    points = curves.get("points")
+    points_invalid = (
+        "points" in curves
+        and points is not None
+        and not isinstance(points, list)
+    )
+
+    if missing_required or points_invalid:
+        msg_parts = []
+        if missing_required:
+            msg_parts.append(f"缺必填字段: {missing_required}")
+        if points_invalid:
+            msg_parts.append(f"points 必须是 list 或 null, 实际 {type(points).__name__}")
+        msg = "curves schema 不合规: " + "; ".join(msg_parts)
+        if allow_partial:
+            warnings.append(msg + " (partial 模式吞掉, 模板会走 NoChartFallback)")
+        else:
+            raise CurvesSchemaError(
+                msg + "\n  · 模板会走 NoChartFallback 不白屏, 但分发版前请补齐源数据.\n"
+                "  · 若是 agent 流式中间产物, 加 --allow-partial 跳过本检查."
+            )
+
+    missing_expected = [k for k in _CURVES_EXPECTED_TOP_LEVEL if k not in curves]
+    if missing_expected:
+        warnings.append(
+            f"curves 缺扩展字段 {missing_expected} (模板会走兜底显示 '—', 不影响渲染)"
+        )
+
+    return warnings
+
+
 # 一份可静态枚举的"必填项"——分两档:
 #   required: 任何曲线都必须有 (overall + life_review.*)
 #   conditional: 视 curves / zeitgeist 内容决定 (大运 / 关键年 / era_window)
@@ -238,8 +313,11 @@ def render(curves: dict,
     # v9.1 · 注入模板里**所有**实际引用的 ANALYSIS.* 字段;
     # 之前漏掉 life_review / dayun_review / key_years / confirmed_facts → 即使 LLM 写了也不显示。
     # v9.2 · virtue_narrative + virtue_motifs（承认维度独立通道，不画曲线）+ allow_partial（流式部分渲染）
+    # v9.3.1 · partial 模式可能缺 pillars_str, 走兜底而不是 KeyError 炸掉
+    pillars_str = curves.get("pillars_str") if isinstance(curves, dict) else None
+    title = f"八字人生曲线图（{pillars_str}）" if pillars_str else "八字人生曲线图"
     return tmpl.render(
-        title=f"八字人生曲线图（{curves['pillars_str']}）",
+        title=title,
         curves_json=json.dumps(curves, ensure_ascii=False),
         analysis_json=json.dumps({
             "overall": analysis.get("overall", ""),
@@ -566,6 +644,11 @@ def main():
     virtue_motifs = None
     if args.virtue_motifs:
         virtue_motifs = json.loads(Path(args.virtue_motifs).read_text(encoding="utf-8"))
+
+    # v9.3.1 · curves schema 预检 (与模板 resilience guard 互补)
+    schema_warnings = validate_curves_min_schema(curves, allow_partial=args.allow_partial)
+    for w in schema_warnings:
+        print(f"[curves-schema] {w}", file=sys.stderr)
 
     coverage = audit_llm_coverage(curves, analysis, zeitgeist, virtue_motifs)
     _print_coverage(coverage)
