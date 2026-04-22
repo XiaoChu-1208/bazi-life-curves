@@ -854,61 +854,19 @@
   "phase": {
     "id": "day_master_dominant",
     "label": "默认 · 日主主导",
-    "is_provisional": true,
+    "is_provisional": false,
     "is_inverted": false,
     "default_phase_was": "day_master_dominant",
     "confidence": "high",
     "decision_probability": 0.9
   },
   "phase_decision": {
-    "version": 8,
-    "candidates": [
-      {
-        "phase_id": "day_master_dominant",
-        "prior": 0.9,
-        "posterior": 0.9
-      },
-      {
-        "phase_id": "climate_inversion_dry_top",
-        "prior": 0.005882,
-        "posterior": 0.005882
-      },
-      {
-        "phase_id": "climate_inversion_wet_top",
-        "prior": 0.005882,
-        "posterior": 0.005882
-      },
-      {
-        "phase_id": "dominating_god_cai_zuo_zhu",
-        "prior": 0.005882,
-        "posterior": 0.005882
-      },
-      {
-        "phase_id": "dominating_god_guan_zuo_zhu",
-        "prior": 0.005882,
-        "posterior": 0.005882
-      }
-    ],
-    "prior_distribution": {
-      "climate_inversion_dry_top": 0.005882,
-      "climate_inversion_wet_top": 0.005882,
-      "day_master_dominant": 0.9,
-      "dominating_god_cai_zuo_zhu": 0.005882,
-      "dominating_god_guan_zuo_zhu": 0.005882,
-      "dominating_god_shishang_zuo_zhu": 0.005882,
-      "dominating_god_yin_zuo_zhu": 0.005882,
-      "floating_dms_to_cong_cai": 0.005882,
-      "floating_dms_to_cong_er": 0.005882,
-      "floating_dms_to_cong_sha": 0.005882,
-      "floating_dms_to_cong_yin": 0.005882,
-      "huaqi_to_土": 0.005882,
-      "huaqi_to_木": 0.005882,
-      "huaqi_to_水": 0.005882,
-      "huaqi_to_火": 0.005882,
-      "huaqi_to_金": 0.005882,
-      "pseudo_following": 0.005882,
-      "true_following": 0.005882
-    },
+    "version": 9,
+    "decision": "day_master_dominant",
+    "decision_probability": 0.9,
+    "phase_label": "默认 · 日主主导",
+    "confidence": "high",
+    "is_provisional": false,
     "posterior_distribution": {
       "climate_inversion_dry_top": 0.005882,
       "climate_inversion_wet_top": 0.005882,
@@ -929,11 +887,10 @@
       "pseudo_following": 0.005882,
       "true_following": 0.005882
     },
-    "decision": "day_master_dominant",
-    "decision_probability": 0.9,
-    "phase_label": "默认 · 日主主导",
-    "confidence": "high",
-    "is_provisional": true,
+    "answered_questions": [],
+    "n_answered": 0,
+    "elicitation_path": "adaptive_v9",
+    "stop_reason": "S0 fast-path (prior top1=0.900 ≥ 0.85)",
     "strength_after_phase": {
       "score": 12.0,
       "label": "中和",
@@ -958,8 +915,6 @@
         "地支": "巳+1.5+辰-2.0",
         "解读": "偏燥 · 干头主导 → 体感和性格按偏燥走，是真偏燥"
       }
-    },
-    "answered_questions": [],
-    "reason": "detectors: 无触发，走默认相位"
+    }
   }
 }

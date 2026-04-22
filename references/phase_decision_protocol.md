@@ -165,6 +165,139 @@ R1 用宽口径判别题选出 top phase 之后，R2 是**第二批独立证据*
 
 ---
 
+## §7.6 P0 派别中立的高置信度 rare phase prior 候选池（v9.2 · 取代 v9.1 月令格种子）
+
+### v9.1 → v9.2 的教训
+
+v9.1 曾经在 P0 引入 `_p0_yueling_geju_prior_seed`，把"月令为先"的子平派立场写进了
+prior 起点（给 `school == "ziping_zhenquan" AND dimension == "power"` 的月令格独占
+0.66-0.70 prior，并在 P7 给它一个"族内保护权重"防止被盲派 zuogong 压死）。这条修法
+被实测打回——它本质是**算法替用户做了学派仲裁**：
+
+- "月令为先"是子平正格派的核心立场，但盲派 / 渊海三命 / 化气从格 / 调候反向各有各
+  的优先级，没有"千年硬规则"
+- v9.1 的 P0 在用户答任何题之前就把 `yangren_ge` 推到 0.66+ 的高位，等于在 EIG
+  校验之前就内定了答案，剥夺了 R1 用户答题的判别空间
+- 同一份八字在派别选择上可能有合理分歧（譬如 6d0abb46 case：可以读作"子平阳刃格"
+  也可以读作"盲派阳刃驾杀"也可以读作"魁罡格"），算法不应替用户选派
+
+**算法的职责是「算清楚结构性证据 → 给出最可能的几个候选」，由 R1 adaptive_elicit
+(EIG) 用用户答题做 disambiguation**。
+
+### 修法：派别中立的高置信度 rare phase 候选池
+
+[`_bazi_core._p0_rare_phase_prior_seed`](../scripts/_bazi_core.py) 从 `rare_hits`
+里筛 `confidence >= 0.80` 的所有 hits（**不分 school、不分 dimension**），按
+confidence softmax 平等分配到 prior 候选池：
+
+```
+触发门槛: N >= 3 个 conf >= 0.80 hits
+  （≤ 2 hit 时原 v9 默认 prior 已能给合理判断 → P0 skip，保护 examples bit-for-bit）
+
+softmax: weight_i = exp(conf_i / τ) / Σ exp(conf / τ),  τ = 0.4
+
+份额分配:
+  p_hits_total = 0.45    # 所有高置信度 hits 共享，softmax 后单 hit 上限 ~0.15-0.16
+  p_dm         = 0.20    # day_master_dominant baseline（"无任何 rare 假设"基线）
+  p_other_total = 0.35   # 残余 phase 平分，保留 R3 EIG 把冷门 phase 翻上来的余地
+```
+
+### P7 撤销 protected_pids
+
+v9.1 引入的 `_p7_zuogong_aggregator(protected_pids=...)` 同步撤销——P0 已经派别中立，
+不再需要 P7 做"族内保护"那种派别仲裁逻辑。P7 仍按原算法把它收到的 zuogong 高置信度
+hit 推为 likelihood top（这是 P7 这个 detector 的本职：盲派 zuogong 视角下的最强证据），
+但它只是众多 detector 之一，会和 P1-P6 / P0 候选池一起做贝叶斯融合。
+
+### Bit-for-bit 安全
+
+触发门槛 N ≥ 3 同时保护两个 examples（guan_yin_xiang_sheng 1 hit / shang_guan_sheng_cai
+2 hits 都不触发 P0）。`tests/test_phase_decision_determinism.py` 的 4 个金标准 case
+（cong_cai_candidate / jobs_steve / einstein / guan_yin_xiang_sheng）100 次跑 hash
+完全一致，性别对称测试也全过（10/10 passed）。
+
+### 验证
+
+| case | rare hits ≥0.80 | decision | confidence | 评 |
+|---|---|---|---|---|
+| `guan_yin_xiang_sheng` | 1 | day_master_dominant | high (0.900) | < 3 hits → P0 skip，bit-for-bit 不变 |
+| `shang_guan_sheng_cai` | 2 | day_master_dominant | low | < 3 hits → P0 skip，bit-for-bit 不变 |
+| `6d0abb46` | 5 | **yang_ren_jia_sha** (阳刃驾杀) | mid (0.634) | P0 启用 → 5 hits 平摊候选；P7 把盲派 zuogong top 推上去；mangpai_conflict_alert 提示 yangren_ge / kuigang_ge / yangren_chong_cai 等其它高置信度候选；R1 EIG 接手做 disambiguation |
+
+`6d0abb46` case 在 v9.2 下不再被算法"内定" yangren_ge（v9.1 的子平派偏袒）也不再被
+默认 prior 压成 day_master_dominant（v9.0 的 bug）；algorithm 给出"最可能的结果"
+yang_ren_jia_sha（盲派 zuogong 视角的结构性证据），同时 mangpai_conflict_alert
+mid 提示其它候选也强，由 R1 EIG 用户答题来收敛。
+
+### 设计原则（v9.2 后必须遵守）
+
+1. **算法不替用户做学派仲裁**：不在 prior 起点写"月令为先 / 调候压格局 / 盲派优先 /
+   书房派优先"等任何派别立场
+2. **结构性证据平等竞争**：所有 conf ≥ 0.80 的 rare hits 在 P0 候选池里按 confidence
+   softmax 平等分配
+3. **EIG 用户答题主导 disambiguation**：让 R1 adaptive_elicit 在 top-k 候选间选判别力
+   最强的题，根据用户回答收敛 posterior
+4. **R3 fallback 兜底**：当 R1 后仍 confidence ∈ {low, reject} 或
+   `mangpai_conflict_alert.severity == "high"` 时，强制 R3 追问（见 §7.5）
+
+§7.5 alert（事后 surface 候选间冲突）+ §7.6 P0（事前候选池中立化）一起构成「**算清结构
+证据 + 用户答题校准**」的完整路径——algorithm 给出最可能的结果，用户用 EIG 校验校准。
+
+---
+
+## §7.5 盲派 / 子平正格冲突显式化（v9 · 修 6d0abb46 case bug）
+
+**问题源头**：原 `phase_posterior.py._suggest_round3` 只在 `confidence ∈ {low, reject}`
+（即 `decision_probability < 0.40`）时才检查 `rare_phase_detector` 的 zuogong rare hits。
+当 R1 给出 `mid` / `high` confidence 但其实**多个高置信度的盲派 / 子平正格**指向另一相位时，
+冲突被默默淹没——`day_master_dominant` 0.62 压住了 3 条 conf ≥ 0.80 的做功格 + 1 条
+conf=0.95 的子平阳刃格，LLM 在 analysis 里完全不知道算法内部存在这种张力。
+
+典型 case：丙戌 / 庚子 / 壬辰 / 丙午（女 · 2006）
+
+| 算法 | decision | conf |
+|---|---|---|
+| `decide_phase` | `day_master_dominant` | mid (0.621) |
+
+| rare_phase_detector hits（≥ 0.80） | school | conf |
+|---|---|---|
+| `yangren_ge`（阳刃格 · 月刃） | ziping_zhenquan | 0.95 |
+| `yang_ren_jia_sha`（阳刃驾杀） | mangpai | 0.85 |
+| `yangren_chong_cai`（刃冲财做功格） | mangpai_zuogong | 0.85 |
+| `qi_yin_xiang_sheng`（杀印相生） | mangpai_geju | 0.80 |
+
+**v9 修法**（不动 P7 聚合器权重 → 保 bit-for-bit）：
+
+1. [`_bazi_core.decide_phase`](../scripts/_bazi_core.py) 输出末尾新增 `mangpai_conflict_alert` 字段，
+   严重度三档：
+
+   | severity | 触发条件 |
+   |---|---|
+   | **high** | ≥ 3 条 `school startswith "mangpai"` 且 conf ≥ 0.80 的 rare hits 全部 ≠ decision |
+   | **mid**  | 1–2 条 mangpai 系 conf ≥ 0.80 ≠ decision，**或** 任一 `ziping_zhenquan` conf ≥ 0.85 ≠ decision |
+   | **low**  | 仅 conf 0.70–0.79 范围 |
+
+2. [`phase_posterior.update_posterior`](../scripts/phase_posterior.py) 在 R1 decision **任何**
+   confidence 档位都跑一次 alert 检查；当 `severity == high` 且 R1 confidence ∈ {mid, high} 时，
+   仍**强制建议 R3**（`rare_phase_fallback_suggestion.trigger_reason = "mangpai_conflict_alert_high"`），
+   把决策权交给用户在两个相位主张之间裁决。
+
+3. [`audit_mangpai_surface.py`](../scripts/audit_mangpai_surface.py) 新增 `--bazi` flag，
+   读 `phase_decision.mangpai_conflict_alert`，要求 alert.conflicting_hits 的每一条 `name_cn`
+   都在 analysis 文本中字面出现；severity=high 还要求叙事里出现「冲突 / 张力 / 承认 / 盲派 /
+   另一相位 / 另一种判读」之一。失败 exit 3。
+
+4. [`render_artifact.py`](../scripts/render_artifact.py) 默认把 `--bazi` 透传给 audit；
+   HTML 顶部渲染「盲派强冲突 · 必读」/「盲派冲突」/「盲派提示」三档警示卡。
+
+**设计原则**：v9 不修改 P7_zuogong_aggregator 的权重曲线（保 bit-for-bit 与现有 examples
+hash 一致）。盲派 zuogong 在算法层面仍是「附加证据通道」，不让它压制三派融合主框架；
+但当其结论与最终 decision 高置信度冲突时，**必须 surface 给 LLM 与 HTML，不能默默淹没**。
+这是「承认盲派的洞见」与「保留三派融合主框架」之间的折衷——把"是否信盲派"的最终裁决
+权交给用户（通过 R3 confirmation），而不是让算法独断。
+
+---
+
 ## §8 与旧 phase_inversion_protocol.md 的关系
 
 旧协议被本协议**全面替代**，但 [phase_inversion_loop.py](../scripts/phase_inversion_loop.py) 脚本保留可运行（避免破坏旧 confirmed_facts）。新流程下不再调用该脚本——它只剩"调试用手工分步"价值。

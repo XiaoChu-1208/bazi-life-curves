@@ -11,7 +11,9 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import datetime as _dt
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -40,6 +42,67 @@ from _engines import (
     solve_pillars as _engine_solve_pillars,
     compute_true_solar_time as _engine_true_solar_time,
 )
+
+
+def _resolve_today_year() -> int:
+    """v9 · 当前公历年份。
+
+    生产路径：取真实"今天"的公历年。
+    回归路径：环境变量 ``BAZI_FREEZE_TODAY="YYYY-MM-DD"`` → 用于 examples 端到端
+    bit-for-bit 自检（避免年份漂移导致 current_dayun 字段每年变）。
+    """
+    frozen = os.environ.get("BAZI_FREEZE_TODAY")
+    if frozen:
+        try:
+            return _dt.date.fromisoformat(frozen).year
+        except ValueError:
+            pass
+    return _dt.date.today().year
+
+
+def _detect_current_dayun(dayun: list, birth_year: int, today_year: int) -> dict | None:
+    """v9 · 基于今天日期 + 出生年 → 锁定当前所在大运段。
+
+    返回 dict：{ index, label, gan, zhi, age_range:[lo,hi], year_range:[lo,hi], years:[...] }
+    若 today 落在起运前（婴儿/幼童期 · 还没起大运）→ 返回 None。
+    若 today 超出 dayun 序列覆盖（>80 岁等）→ 返回末段并打 _out_of_range 标记。
+    """
+    if not dayun:
+        return None
+    current_age = today_year - birth_year
+    target = None
+    for d in dayun:
+        if d["start_age"] <= current_age <= d["end_age"]:
+            target = d
+            break
+    out_of_range = False
+    if target is None:
+        if current_age < dayun[0]["start_age"]:
+            return {
+                "is_pre_qiyun": True,
+                "today_year": today_year,
+                "today_age": current_age,
+                "qiyun_age": dayun[0]["start_age"],
+                "note": "今天落在起运岁之前 · 当前大运 = 未起运（虚岁未到）",
+            }
+        target = dayun[-1]
+        out_of_range = True
+    label = f"{target['gan']}{target['zhi']}"
+    info = {
+        "index": target["index"],
+        "label": label,
+        "gan": target["gan"],
+        "zhi": target["zhi"],
+        "age_range": [target["start_age"], target["end_age"]],
+        "year_range": [target["start_year"], target["end_year"]],
+        "years": list(range(target["start_year"], target["end_year"] + 1)),
+        "today_year": today_year,
+        "today_age": current_age,
+    }
+    if out_of_range:
+        info["_out_of_range"] = True
+        info["note"] = "今天已超出 dayun 序列覆盖范围 · 已 fallback 到末段"
+    return info
 
 
 def _apply_true_solar_time(
@@ -217,6 +280,15 @@ def solve(
         "liunian": liunian,
     }
 
+    today_year = _resolve_today_year()
+    current_dayun_info = _detect_current_dayun(dayun, by, today_year)
+    if current_dayun_info and not current_dayun_info.get("is_pre_qiyun"):
+        bazi_dict["current_dayun_label"] = current_dayun_info["label"]
+        bazi_dict["current_dayun_age_range"] = current_dayun_info["age_range"]
+        bazi_dict["current_dayun_year_range"] = current_dayun_info["year_range"]
+        bazi_dict["current_dayun_years"] = current_dayun_info["years"]
+    bazi_dict["current_dayun"] = current_dayun_info
+
     # v8 · 算 phase_decision（仅先验，is_provisional=True）
     # 用户答 handshake 题之后，phase_posterior.py 会用 user_answers 重算并把 is_provisional 设为 False
     try:
@@ -313,13 +385,22 @@ def main():
             cc_msg = f", ⚠️ 双引擎不一致（{len(cc.get('mismatch_positions', []))} 处分歧 · 见 engine_cross_check 字段）"
         elif cc.get("warning"):
             cc_msg = f", {cc['warning'][:60]}…"
+    cd_msg = ""
+    cd = data.get("current_dayun") or {}
+    if cd.get("label"):
+        cd_msg = (
+            f", 当前大运={cd['label']}（{cd['age_range'][0]}-{cd['age_range'][1]}岁 · "
+            f"{cd['year_range'][0]}-{cd['year_range'][1]}年）"
+        )
+    elif cd.get("is_pre_qiyun"):
+        cd_msg = f", 当前大运=未起运（{cd['today_age']}岁 · 起运{cd['qiyun_age']}岁）"
     print(f"[solve_bazi] wrote {args.out}: 八字={data['pillars_str']}, "
           f"日主={data['day_master']}({data['day_master_wuxing']}), "
           f"强弱={data['strength']['label']}, "
           f"用神={data['yongshen']['yongshen']}, "
           f"起运={data['qiyun_age']}岁（{data['qiyun_source']}）, "
           f"引擎={data['engine']}"
-          f"{tst_msg}{cc_msg}")
+          f"{tst_msg}{cc_msg}{cd_msg}")
 
 
 if __name__ == "__main__":

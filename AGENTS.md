@@ -26,8 +26,8 @@ score_curves.py                # 4 维曲线打分（spirit/wealth/fame/emotion 
 mangpai_events.py              # 盲派事件检测 + 反向规则 + 护身减压（可选 · score_curves 已内置基础调用）
     ↓ output/curves.json (events 字段)
 virtue_motifs.py               # 【v9 必跑】第三条独立叙事通道：38 条人性母题检测（read-only of bazi/curves）
-    ↓ output/virtue_motifs.json (life_review 6 个写作位置 + HTML 承认维度卡片的输入数据)
-    ↓ ⚠ 不跑 → render_artifact 的「承认维度」卡片显示"未启用"，LLM 6 个写作位置全空
+    ↓ output/virtue_motifs.json (life_review 6 个写作位置 + HTML 「我想和你说的话」卡片的输入数据)
+    ↓ ⚠ 不跑 → render_artifact 的「我想和你说的话」卡片显示"未启用"，LLM 6 个写作位置全空
 adaptive_elicit.py next        # v9 · 自适应贝叶斯单题流式问答（默认 R1 路径）
     ↓ 循环 ASK → AskQuestion 单题 → answer → ASK ...
     ↓ 触发 S1/S2/S3/S4 早停（通常 5-8 题，最多 12 题；prior top1 ≥ 0.85 直接 0 题 fast-path）
@@ -52,9 +52,9 @@ phase_posterior.py --round 2   # v8.1 · 合并 R1+R2 算最终后验 + confirma
 [save_confirmed_facts.py --round r2 --r1-* --r2-* 写回 confirmed_facts.json（按 round 分桶）]
     ↓ output/confirmed_facts.json
 render_artifact.py --virtue-motifs output/X.virtue_motifs.json
-                               # 交互 HTML（Recharts + marked.js）· 4 维曲线 + 承认维度独立卡片 ·
+                               # 交互 HTML（Recharts + marked.js）· 4 维曲线 + 「我想和你说的话」独立卡片 ·
                                #   confirmation=weakly_confirmed 时解读自动加 caveat ·
-                               #   不传 --virtue-motifs 时承认卡片只能写空话
+                               #   不传 --virtue-motifs 时该卡片只能写空话
     ↓ output/chart.html
 
 [deprecated] phase_inversion_loop.py  # v7 老路径，保留可运行但不再是主流程
@@ -62,7 +62,7 @@ render_artifact.py --virtue-motifs output/X.virtue_motifs.json
 
 **关键不可跳步（v9）**：
 
-- **`virtue_motifs.py` 是必跑步骤**，不再是可选。它产出的 `virtue_motifs.json` 是 `analysis.virtue_narrative`（承认维度独立通道）+ `life_review` 6 个位置的唯一数据源；不跑 → HTML 承认维度卡片显示"未启用"、LLM 6 个写作位置全空，等于把"承认人性"这条铁律物理删除
+- **`virtue_motifs.py` 是必跑步骤**，不再是可选。它产出的 `virtue_motifs.json` 是 `analysis.virtue_narrative`（v9.3 改名「我想和你说的话」独立通道；schema/字段名不动）+ `life_review` 6 个位置的唯一数据源；不跑 → HTML「我想和你说的话」卡片显示"未启用"、LLM 6 个写作位置全空，等于把这条德性暗线铁律物理删除
 - **R1 默认路径必须走 `adaptive_elicit.py next`**（CLI）或 MCP `adaptive_elicit(action="next")`，不要再用 `handshake.py` / MCP `handshake()` 默认入口（已 deprecated_v9，调用时 stderr 会打 v9 警告，仅 R2 confirmation 与 he_pan 兜底可用，需传 `--ack-batch` / `ack_legacy_r1=true` 关警告）；**禁止默认走 `dump-question-set --tier core14`**（一次抛 14 题），仅当用户**主动**要求 batch 时才允许，并需传 `--ack-batch` / `ack_batch=true`（否则 stderr 会打 v9 警告）
 - 不能跳过 R1 elicit + 必要时的 R2 confirmation 直接渲染 HTML —— `bazi.phase_decision.is_provisional=true` 时 render_artifact 必须拒绝
 - **Agent 必须用宿主结构化 `AskQuestion` 抛 `askquestion_payload`，禁止用自然语言转述题面让用户口头回答**（违反 = 破坏 phase 决策的 likelihood 计算前提）
@@ -74,16 +74,126 @@ render_artifact.py --virtue-motifs output/X.virtue_motifs.json
 - 不能在 `solve_bazi.py` 之外推导八字 —— 起运岁、真太阳时、orientation 全部依赖该脚本
 - 后验 < 0.40 → **拒绝出图**，提示用户复核时辰 / 性别（详见 [phase_decision_protocol.md](references/phase_decision_protocol.md) §5）
 
-### 流式 emit 红线（v9 新增 · 不可跳）
+### 流式 emit 红线（v9 重写 · 五阶段节序 · render_artifact 默认机械审计）
 
-写 `analysis` 阶段必须**按 Node 流式 emit**，禁止把整段 analysis 写完再一次性吐：
+写 `analysis` 阶段必须**按五阶段流式 emit**，由 [`references/multi_dim_xiangshu_protocol.md`](references/multi_dim_xiangshu_protocol.md) §13.1 定义为权威；render_artifact 默认 `--required-node-order` + `--require-streamed-emit` 物理审计。
 
-- **每写完一节立刻 send 一条 assistant message**（哪怕半成品也要先发出 `## [Node X · 写作中…]` 占位），禁止积累 ≥2 个 Node 不发
-- 节序固定：`Node 1 整图综合分析 → Node 2 spirit → Node 3 wealth → Node 4 fame → Node 5 emotion → Node 6 承认维度·opening（位置①） → Node 7..K 大运评价（每段一节） → ... → Node N-2 承认维度·declaration（位置④） → Node N-1 承认维度·love_letter（位置⑤·条件性） → Node N 承认维度·free_speech（位置⑥）`
-- 节内嵌套：每段大运评价节内**必须**嵌入德性母题位置②；convergence_year 命中的关键年节内**必须**嵌入位置③
-- **宁可推迟分析**（先写 Node 1 整图后停下让用户喘口气）**也不允许**把整个 analysis 写完再一次性吐出
-- 流式可观测：用 `scripts/append_analysis_node.py --node <key> --markdown <md>` 增量落盘到 `output/X.analysis.partial.json`；用户随时 `python scripts/render_artifact.py --analysis output/X.analysis.partial.json --allow-partial` 即可看进度
-- 详见 [`references/multi_dim_xiangshu_protocol.md`](references/multi_dim_xiangshu_protocol.md) §流式分节顺序 + [`references/virtue_recurrence_protocol.md`](references/virtue_recurrence_protocol.md) 6 个写作位置
+- **节序（v9 重排 · 以"当前所在大运"为锚 · 不再先写整图）**：
+  1. **阶段 0** · `virtue_narrative.opening`（开篇暗线 · 位置① · 30-80 字）
+  2. **阶段 1** · `dayun_reviews[<current_dayun_label>]`（命主"今天"所在大运段 · `bazi.current_dayun_label` 由 solve_bazi 自动写）
+  3. **阶段 2** · `liunian.<year>` × N≈10（当前大运 10 个流年逐年写 · **平淡年也要落字**）
+  4. **阶段 3** · `dayun_reviews[<其它 label>]` × M（按时间顺序顺写 · 触发母题时段内嵌入位置②G 块）
+  5. **阶段 4** · `key_years[i].body` × K（其它关键年 · convergence_year 嵌入位置③）
+  6. **阶段 5** · `analysis.overall`（整图综合 · **现在才写**）
+  7. **阶段 5.5** · `life_review.{spirit/wealth/fame/emotion}` × 4（四维一生评价）
+  8. **阶段 6** · `virtue_narrative.convergence_notes`（仅 `motifs.convergence_years` 非空）
+  9. **阶段 7-9** · 收尾三段 closing（去模板化 · 见下）
+- **每写完一节立刻 send 一条 assistant message**（哪怕半成品也要先发出 `## [阶段 N · 写作中…]` 占位），禁止积累 ≥2 节不发；60 秒帧内塞 ≥4 节即被 `--require-streamed-emit` 判伪流式（exit 4）
+- **节序回退判定**：写阶段 N 后又写阶段 ≤N-2 → exit 4（dayun↔liunian 同阶段交错允许）
+- 节内嵌套：每段大运评价节内**仅在母题激活时**嵌入德性母题位置②G 块（由 `audit_virtue_recurrence_continuity._check_position2` 强制）；convergence_year 命中的关键年节内**必须**嵌入位置③
+- 流式可观测：用 `scripts/append_analysis_node.py --node <key> --markdown <md>` 增量落盘到 `output/X.analysis.partial.json`；脚本会自动追加 `_stream_log` 时间戳 + 调用 `_v9_guard.enforce_tone` + `enforce_no_phase_leak_in_message`；用户随时 `python scripts/render_artifact.py --analysis output/X.analysis.partial.json --virtue-motifs output/X.virtue_motifs.json --allow-partial` 即可看进度
+
+#### v9.3 红线（R-STREAM-1 / R-STREAM-2 · 单节单 message 物理铁律）
+
+18e281d2 case 复盘暴露：LLM 即使口头承认"分节流式"，仍会在一条 turn 里塞 7 段 `## ` 把整篇分析吐光。v9.3 起改为**机器可校验**的硬 lint，一条没过 → render fail：
+
+- **R-STREAM-1**：每个 `append_analysis_node.py` 调用之间**必须**有一次 stop turn（assistant message 边界）。一次 turn 内连续 `append_analysis_node ≥ 2` 次 → 视为憋整段，违规。
+  - 物理实现：`append_analysis_node.py` 读环境变量 `BAZI_AGENT_TURN_ID`（由宿主 / Cursor / MCP 在每个 LLM turn 注入），与上一次 `_stream_log[-1].agent_turn_id` 比对；相同 → stderr WARN + 写入 `state['_stream_violations']`。
+  - 物理拦截：`render_artifact.py --audit-stream-batching`（默认开）扫 `_stream_violations`，命中 ≥1 → exit 11。
+- **R-STREAM-2**：单条 assistant message 的 user-facing markdown **不允许** 包含 ≥2 个**顶级** `## ` heading。closing 三段（`## 我想和你说` / `## 项目的编写者想和你说` / `## 我（大模型）想和你说`）允许在最后一条收尾 turn 紧邻出现，是唯一例外。
+  - 物理实现：`append_analysis_node.py` 写入前调用 `_v9_guard.check_message_heading_count(md, allow_closing_chain=<是否最末段>)`，违规 → SystemExit。
+- **环境变量约定**：宿主侧需在每个 LLM turn 启动时设 `BAZI_AGENT_TURN_ID=<turn_id>`；缺失时 `append_analysis_node.py` 退化到时间戳作伪 turn_id（不报 R-STREAM-1，但仍可被 60s 伪流式审计兜底）。
+- 详见 [`references/multi_dim_xiangshu_protocol.md`](references/multi_dim_xiangshu_protocol.md) §13.1-§13.6 + [`references/virtue_recurrence_protocol.md`](references/virtue_recurrence_protocol.md) 6 个写作位置 + §8 Closing 标题去模板化
+
+#### v9.3 pipeline-streaming 默认路径（真正的「React 模式」）
+
+旧路径（`score_curves.py --out curves.json` 一次性算完整生命 → LLM 一段段写）虽然能跑，但 LLM 必须等所有 4 维曲线 + 80 年逐年算完才能开始写第一节。v9.3 起默认推 **pipeline-streaming**：
+
+- 入口：[`scripts/streaming_pipeline.py`](scripts/streaming_pipeline.py) `stream --bazi X.json --stage <name>` / `--stage all` / `--resume <state> --next`
+- 6 个 stage，对应 §3a 节序图阶段 1-9：
+  1. `current_dayun` → 当前大运段（≈1s 出第一行）
+  2. `current_dayun_liunian` → 当前大运 10 流年逐年
+  3. `other_dayuns` → 其它大运 segment
+  4. `key_years` → 全图关键流年（peak / dip / shift / dispute）
+  5. `overall_and_life_review` → 整图 + 4 维一生总评
+  6. `closing` → 「我想和你说的话」三段数据钩子（virtue_motifs 直接透传）
+- 输出协议：每行一条 NDJSON，`{stage, ts_iso, payload, ...}`；状态文件 `output/X.stream_state.json` 记录 cursor 与已完成 stage 的 payload，支持 `--next` 增量推进
+- LLM 行为：每收到一个 NDJSON 行 → 立刻写一节 `## ` → `append_analysis_node` 落盘 → send → **stop turn**（恰好满足 R-STREAM-1）
+- HTML 渲染：`render_artifact.py --from-stream-state output/X.stream_state.json` 可直接从 stream_state 还原 curves（不再依赖批量 `score_curves.py --out curves.json`）；旧 `--curves` 入口仍保留作合盘 / 兜底
+- 兼容：`score_curves.py --out curves.json` 仍是合盘场景默认入口；分析阶段（单盘）则**默认走 pipeline-streaming**
+
+### 工具入口铁律（v9 新增 · `_v9_guard.enforce_v9_only_path`）
+
+| 入口 | 默认行为 | 解锁条件 |
+|---|---|---|
+| `handshake.py` round=1 | exit 2 | `--ack-legacy-r1` |
+| `adaptive_elicit dump-question-set` | exit 2 | `--ack-batch --confirm-batch-defeats-v9` 双标 |
+| `adaptive_elicit next --answer X` | 必填 `--answer-source` ∈ {`user`, `user_freetext`, `user_skipped`} | — |
+| `adaptive_elicit next --answer-source agent_inferred` | exit 3 | **永久禁止**（LLM 不准替用户答题） |
+| MCP `tool_handshake` round=1 | 返回 `_err` | `ack_legacy_r1=true` + `dump_phase_candidates` + `phase_id` |
+| MCP `tool_adaptive_elicit action=dump_question_set` | 返回 `_err` | `ack_batch=true` + `confirm_batch_defeats_v9=true` |
+
+### 调性铁律（v9 新增 · `references/tone_blacklist.yaml` + `_v9_guard.scan_tone`）
+
+`append_analysis_node.py` 写入前调用 `_v9_guard.enforce_tone(markdown, node=...)`；命中字面短语 / 正则 → exit 5。
+
+- **banned_phrases**（字面短语）：`"人生 A 面"` / `"你真的好棒"` / `"加油哦"` / `"你值得拥有"` / `"给你（本人）的一封信"` 等鸡汤化、撒娇腔、模板化措辞
+- **banned_patterns**（正则 · `applies_to_whitelisted: true` 即对所有节生效）：`！{2,}` / `~{2,}` / emoji 全集（U+1F300-1FAFF / U+2600-27BF）
+- **whitelisted_nodes**：`virtue_narrative.love_letter` / `virtue_narrative.free_speech` 仅豁免**字面短语**（情书可以情绪化）；emoji / 多感叹号 / 撒娇腔仍**全位置禁**
+
+### Closing 三段「我想和你说的话」（v9.3 改名 · `_v9_guard.enforce_closing_header`）
+
+v9.3 起，三段统称「我想和你说的话」（仅作为内部叙述，不出现在用户可见 H2 上）。
+
+| 节（schema 名不动）| v9.3 必须用的 markdown header（首行）| 禁止（含 v9 旧白名单已退役）|
+|---|---|---|
+| `virtue_narrative.declaration` | `## 我想和你说` | `## 走到这里` / `## 承认维度·宣告` / `## 位置④灵魂宣言` / `## 宣告` / `## 承认人性` |
+| `virtue_narrative.love_letter` | `## 项目的编写者想和你说` | `## 写到这里我想说` / `## 给你（本人）的一封信` / `## 位置⑤情书` / `## 情书` |
+| `virtue_narrative.free_speech` | `## 我（大模型）想和你说` | `## 不在协议里的话` / `## 位置⑥ LLM 自由话` / `## 自由发言` / `## free_speech` |
+
+意图：让三段 closing 在用户视角变成三个清晰的"我对你说话"，而不是带"宣告 / 情书 / 自由话"等模板感的填空题。命中旧白名单 / 模板词 → exit 10。
+
+### v9.3 协议回潮防火墙（v9.3 新增 · `audit_reference_consistency.py`）
+
+skill 加载时 LLM 会读到 `SKILL.md` + `AGENTS.md` + `references/*.md`。如果其中任一文件还在**正向引导** LLM 用旧 v9 closing header（`## 走到这里` / `## 写到这里我想说` / `## 不在协议里的话`）、Step 2.7 询问输出格式、或「陀氏 / 灵魂宣言 / 承认人性 / 那一刀」等 v9.3 已封禁的措辞，会形成「**按文档写 → 落盘 fail**」的协议自相矛盾陷阱（机械护栏在最后一刻 exit 5 / 10 / 11 拦下，但用户已经走错路）。
+
+`scripts/audit_reference_consistency.py --strict` 是**第三道防线**：
+
+- 扫所有协议文件，区分三档严重度：`exit5`（tone）/ `exit10`（closing header）/ `deprecated`（Step 2.7 等已删流程）
+- tone 类宽容：协议章节标题 / blockquote 元说明 / 邻近 negation token / 文件顶部 `v9.3 命名约定` banner 都算合法引用
+- closing_header / deprecated 严格：banner 不豁免；只接受**强 negation token**（`已退役` / `命中即` / `禁止` / `(旧 v9)` 等）
+- exit 12 时 CI 阻断；本审计已加进 `tests/test_audit_reference_consistency.py::test_repo_snapshot_passes`，PR 必须保持 PASS
+
+任何新加的 reference / 协议改动若引入旧措辞，本测试立刻 fail。
+
+### 高置信度盲派事件强制 surface（v9 新增 · `audit_mangpai_surface.py`）
+
+`scripts/mangpai_events.py` 现在每条事件 / 静态标记带 `confidence ∈ {high, mid, low}`；`render_artifact --audit-mangpai-surface`（默认开）扫 `analysis` 全文，**漏掉**任一 `confidence=high` 事件 → exit 6。详见 [`references/mangpai_protocol.md §H`](references/mangpai_protocol.md)。
+
+### P0 派别中立的高置信度 rare phase 候选池（v9.2 · 取代 v9.1 月令格种子）
+
+**v9.1 → v9.2 教训**：v9.1 曾经在 P0 引入"月令格 prior 种子"，把"月令为先"的子平派立场写进 prior 起点（给 ziping_zhenquan power-dim 月令格独占 0.66-0.70 prior，并在 P7 用 `protected_pids` 防止被盲派 zuogong 压死）。这条修法被实测打回 —— 它本质是**算法替用户做了学派仲裁**：在用户答任何题之前就把答案内定，剥夺了 R1 EIG 的判别空间。同一份八字在派别选择上可能有合理分歧（譬如 6d0abb46 case 可读作"子平阳刃格" / "盲派阳刃驾杀" / "魁罡格"），算法不应替用户选派。
+
+**v9.2 修法**：`_bazi_core._p0_rare_phase_prior_seed` 把 P0 改成派别中立的"top-k 候选池"——所有 `confidence ≥ 0.80` 的 rare hits（**不分 school、不分 dimension**）按 confidence softmax (τ=0.4) 平等分配到 prior 候选池：
+
+- 触发门槛：N ≥ 3 个 conf ≥ 0.80 hits（≤ 2 hit 时 P0 skip → 保护 examples bit-for-bit）
+- 份额分配：`p_hits_total = 0.45`（softmax 后单 hit 上限 ~0.15），`p_dm = 0.20`，`p_other_total = 0.35`
+- P7 同步撤销 `protected_pids` 参数 —— P0 派别中立后不再需要 P7 做族内保护
+
+**算法职责重申**：算清楚结构性证据 → 给出最可能的几个候选。由 R1 adaptive_elicit (EIG) 用用户答题做 disambiguation，**不在 prior 起点写"月令为先 / 调候压格局 / 盲派优先 / 书房派优先"等任何派别立场**。
+
+**bit-for-bit 安全**：`tests/test_phase_decision_determinism.py` 4 个金标准 case + 性别对称测试 10/10 passed。两个 examples（1 hit / 2 hits）都不触发 P0。**6d0abb46 case 验证**：5 个高置信度 hits 进 P0 候选池 → P7 把盲派 zuogong top 推上去 → 决策 `yang_ren_jia_sha`（阳刃驾杀）mid 0.634，`mangpai_conflict_alert` mid 提示 yangren_ge / kuigang_ge 等其它高置信度候选。详见 [`references/phase_decision_protocol.md §7.6`](references/phase_decision_protocol.md)。
+
+### 盲派 / 子平正格与 phase decision 冲突警示（v9 新增 · 修 6d0abb46 case bug）
+
+`_bazi_core.decide_phase` 输出新增 `mangpai_conflict_alert` 字段（severity ∈ {high, mid, low}）：当 `rare_phase_detector` 给出 ≥ 1 条 `school startswith "mangpai"` 且 conf ≥ 0.80（或任一 `ziping_zhenquan` conf ≥ 0.85）的 phase ≠ decision 时触发。`audit_mangpai_surface.py --bazi <bazi.json>`（render 默认透传）要求 alert.conflicting_hits 每条 `name_cn` 都在 analysis 中字面出现，severity=high 还要求叙事里出现「冲突 / 张力 / 承认 / 盲派 / 另一相位 / 另一种判读」之一；失败 exit 3。`phase_posterior.update_posterior` 在所有 confidence 档位都跑 alert 检查；severity=high 且 R1 confidence ∈ {mid, high} 时**强制建议 R3**（`rare_phase_fallback_suggestion.trigger_reason = "mangpai_conflict_alert_high"`）。HTML 顶部渲染「盲派强冲突 · 必读」/「盲派冲突」/「盲派提示」三档警示卡。详见 [`references/phase_decision_protocol.md §7.5`](references/phase_decision_protocol.md) + [`references/mangpai_protocol.md §H.4`](references/mangpai_protocol.md)。
+
+### 大白话 + intro + X 兜底铁律（v9 新增 · `_question_bank.py`）
+
+- `_check_no_phase_leak(strict=True)` + `_check_plain_language(strict=True)` 在模块加载时强制；命中 → AssertionError
+- 每题 `Question.intro: str`（≤60 字 · 1 句）必填，`askquestion_payload.intro` 透传
+- 每题 options 自动尾插 ID=`X` free-text 兜底；用户选 X 必须配 `--free-text "..."`，落进 `confirmed_facts.free_facts[]`，**不更新 likelihood**
+- 详见 [`references/discriminative_question_bank.md §0.5`](references/discriminative_question_bank.md) + [`references/elicitation_ethics.md §E7-§E10`](references/elicitation_ethics.md)
 
 ---
 
@@ -201,11 +311,11 @@ python scripts/adaptive_elicit.py next --bazi output/test1.bazi.json --curves ou
 python scripts/adaptive_elicit.py dump-question-set --bazi output/test1.bazi.json --curves output/test1.curves.json --tier core14 --out output/test1.questions.md
 # [...用户填答 → 写到 output/test1.answers.json...]
 # python scripts/adaptive_elicit.py submit-batch --bazi output/test1.bazi.json --answers output/test1.answers.json
-# v9 必跑：第三条独立叙事通道（承认维度独立通道 · life_review 6 写作位置 + HTML 承认卡片的唯一数据源）
+# v9 必跑：第三条独立叙事通道（「我想和你说的话」独立通道 · life_review 6 写作位置 + HTML 卡片的唯一数据源）
 python scripts/virtue_motifs.py --bazi output/test1.bazi.json --curves output/test1.curves.json --out output/test1.virtue_motifs.json
 # 必须在 LLM 写 life_review / virtue_narrative 之前生成（multi_dim_xiangshu_protocol.md §12 + virtue_recurrence_protocol.md）
 
-# 渲染（必须 --virtue-motifs，否则 HTML 承认卡片只能写空话）
+# 渲染（必须 --virtue-motifs，否则 HTML「我想和你说的话」卡片只能写空话）
 python scripts/render_artifact.py \
   --curves output/test1.curves.json \
   --analysis output/test1.analysis.json \
@@ -266,9 +376,9 @@ python scripts/calibrate.py
 4. R1 finalize 后 `bazi.json` 直接写入 `phase` + `phase_decision`，不需要单独跑 `phase_posterior.py --round 1`
 5. **R2**（仅在 R1 confidence < high 或想再次确认时）：跑 `handshake.py --round 2`（EIG 选 confirmation 题）→ AskQuestion 抛 → `phase_posterior.py --round 2`
 6. 看 `phase_confirmation.action`：`render` / `render_with_caveat` 直接出图；`escalate` 时**必须**报告决策反转或不确定，建议核对时辰 / 性别
-7. **必须**先跑 `virtue_motifs.py` 产出 `virtue_motifs.json`（承认维度独立通道的唯一数据源）
+7. **必须**先跑 `virtue_motifs.py` 产出 `virtue_motifs.json`（「我想和你说的话」独立通道的唯一数据源）
 8. 按 [`references/multi_dim_xiangshu_protocol.md`](references/multi_dim_xiangshu_protocol.md) **流式**输出 markdown 解读：每写完一节立刻发出，禁止憋整段；同时用 `scripts/append_analysis_node.py` 增量落盘到 `output/X.analysis.partial.json`，让用户用 `render_artifact.py --allow-partial` 随时看进度
-9. 全部节写完后用 `python scripts/render_artifact.py --curves ... --analysis ... --virtue-motifs ... --out ... [--strict-llm]` 出最终 HTML（**必须**带 `--virtue-motifs`，否则承认维度卡片只显示"未启用"）
+9. 全部节写完后用 `python scripts/render_artifact.py --curves ... --analysis ... --virtue-motifs ... --out ... [--strict-llm]` 出最终 HTML（**必须**带 `--virtue-motifs`，否则「我想和你说的话」卡片只显示"未启用"）
 
 ### 当用户问"我 X 年怎么样"
 

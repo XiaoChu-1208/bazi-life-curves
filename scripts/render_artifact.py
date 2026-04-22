@@ -261,9 +261,235 @@ def render(curves: dict,
     )
 
 
+def _run_v9_audits(args, analysis, virtue_motifs) -> None:
+    """v9 strict audit 串：任一 fail → SystemExit（exit code 与 audit 子脚本一致）。
+
+    所有 audit 都默认开；用户可通过 --no-<flag> 单独关掉。
+    """
+    import subprocess as _sp
+    scripts_dir = Path(__file__).resolve().parent
+    sys.path.insert(0, str(scripts_dir))
+
+    # 1) require-streamed-emit + required-node-order：扫 analysis._stream_log
+    if (args.require_streamed_emit or args.required_node_order) and analysis is not None:
+        log = analysis.get("_stream_log") or []
+        if args.require_streamed_emit:
+            _enforce_streamed_emit(log)
+        if args.required_node_order:
+            _enforce_node_order(log)
+
+    # 2) audit-closing-headers：扫 declaration / love_letter / free_speech 首行
+    if args.audit_closing_headers and analysis is not None:
+        try:
+            from _v9_guard import enforce_closing_header  # type: ignore
+        except ImportError as e:
+            raise SystemExit(f"[render_artifact] 找不到 _v9_guard: {e}")
+        vn = analysis.get("virtue_narrative") or {}
+        for node_key in ("declaration", "love_letter", "free_speech"):
+            md = vn.get(node_key) or ""
+            if md:
+                enforce_closing_header(node_key, md)
+
+    # 3) audit-virtue-continuity：调用子脚本
+    if args.audit_virtue_continuity and args.analysis and args.virtue_motifs:
+        rc = _sp.call([
+            sys.executable,
+            str(scripts_dir / "audit_virtue_recurrence_continuity.py"),
+            "--analysis", args.analysis,
+            "--virtue-motifs", args.virtue_motifs,
+        ])
+        if rc != 0:
+            raise SystemExit(rc)
+
+    # 4) audit-mangpai-surface：调用子脚本
+    if args.audit_mangpai_surface and args.analysis and args.mangpai:
+        cmd = [
+            sys.executable,
+            str(scripts_dir / "audit_mangpai_surface.py"),
+            "--mangpai", args.mangpai,
+            "--analysis", args.analysis,
+        ]
+        # v9 · 把 bazi 传过去，让 audit 同时检查 phase_decision.mangpai_conflict_alert
+        if args.bazi:
+            cmd += ["--bazi", args.bazi]
+        rc = _sp.call(cmd)
+        if rc != 0:
+            raise SystemExit(rc)
+
+    # 5) audit-no-premature-decision：调用子脚本（需要 --bazi）
+    if args.audit_no_premature_decision and args.bazi:
+        rc = _sp.call([
+            sys.executable,
+            str(scripts_dir / "audit_no_premature_decision.py"),
+            "--bazi", args.bazi,
+        ])
+        if rc != 0:
+            raise SystemExit(rc)
+
+    # 6) audit-stream-batching (v9.3 R-STREAM-1)：扫 analysis._stream_violations
+    if args.audit_stream_batching and analysis is not None:
+        violations = analysis.get("_stream_violations") or []
+        if isinstance(violations, list) and len(violations) > 0:
+            print(
+                f"[render_artifact] R-STREAM-1 违规：检测到 {len(violations)} 条同一 "
+                f"agent_turn_id 内连续 append（应每节 send 后 stop turn）：",
+                file=sys.stderr,
+            )
+            for v in violations[:10]:
+                if not isinstance(v, dict):
+                    continue
+                print(
+                    f"  · turn={v.get('agent_turn_id')!r}  prev={v.get('prev_node')!r}  "
+                    f"current={v.get('current_node')!r}  ts={v.get('ts_iso')}",
+                    file=sys.stderr,
+                )
+            print(
+                "  · v9.3 流式协议要求：写完一节立刻 send，stop turn，让下一条 turn 再写下一节。\n"
+                "  · 详见 AGENTS.md §v9 流式铁律 R-STREAM-1。",
+                file=sys.stderr,
+            )
+            raise SystemExit(11)
+
+
+def _enforce_streamed_emit(log: list) -> None:
+    """检测同一 60s 帧内塞 ≥4 节 → 伪流式（exit 4）。"""
+    if not isinstance(log, list) or len(log) < 4:
+        return
+    bucket: dict[int, int] = {}
+    for entry in log:
+        ts = entry.get("ts_unix") if isinstance(entry, dict) else None
+        if not isinstance(ts, int):
+            continue
+        slot = ts // 60
+        bucket[slot] = bucket.get(slot, 0) + 1
+    for slot, n in bucket.items():
+        if n >= 4:
+            print(
+                f"[render_artifact] 伪流式判定：60s 帧内塞了 {n} 个节 "
+                f"(ts_unix slot={slot * 60})——v9 流式铁律 exit 4。"
+                f" 请确实做到「写一节立刻 append_analysis_node 落盘」。",
+                file=sys.stderr,
+            )
+            raise SystemExit(4)
+
+
+_NODE_ORDER_GROUPS: list[tuple[str, tuple[str, ...]]] = [
+    ("opening",        ("virtue_narrative.opening",)),
+    ("dayun",          ("dayun_reviews.",)),
+    ("liunian",        ("liunian.",)),
+    ("key_years",      ("key_years.",)),
+    ("overall",        ("overall", "life_review.")),
+    ("closing",        ("virtue_narrative.declaration",
+                        "virtue_narrative.love_letter",
+                        "virtue_narrative.free_speech",
+                        "virtue_narrative.convergence_notes")),
+]
+
+
+def _classify_node(node: str) -> int:
+    for i, (_grp, prefixes) in enumerate(_NODE_ORDER_GROUPS):
+        for pref in prefixes:
+            if node == pref or node.startswith(pref):
+                return i
+    return -1
+
+
+def _enforce_node_order(log: list) -> None:
+    """五阶段节序铁律：
+
+      0 opening → 1 dayun → 2 liunian → 3 key_years → 4 overall/life_review → 5 closing
+
+    允许在同段内多次 append，也允许 dayun↔liunian 交错（同一大运段内
+    先写 dayun_review 再写其十年 liunian），但**不允许大跨度回退**。
+    """
+    if not isinstance(log, list) or not log:
+        return
+    seen_max = -1
+    violations: list[str] = []
+    for entry in log:
+        node = entry.get("node") if isinstance(entry, dict) else None
+        if not isinstance(node, str):
+            continue
+        idx = _classify_node(node)
+        if idx < 0:
+            continue
+        # 允许 dayun (1) ↔ liunian (2) 任意交错；其它阶段必须单调向前
+        if idx in (1, 2) and seen_max in (1, 2):
+            seen_max = max(seen_max, idx)
+            continue
+        if idx + 1 < seen_max:  # 大跨度回退（跳 ≥1 个阶段）
+            violations.append(
+                f"节序回退：写 {node!r}（阶段 {idx}） 但已经写到阶段 {seen_max}"
+            )
+        seen_max = max(seen_max, idx)
+
+    if violations:
+        print(
+            f"[render_artifact] 五阶段节序违规：{len(violations)} 条："
+            f"\n  - " + "\n  - ".join(violations) +
+            "\n  · 五阶段：opening → 当前大运+流年（1↔2 可交错）→ key_years → overall/life_review → closing。"
+            "\n  · 详见 references/multi_dim_xiangshu_protocol.md §13.1 节序铁律。",
+            file=sys.stderr,
+        )
+        raise SystemExit(4)
+
+
+def _curves_from_stream_state(state_path: Path) -> dict:
+    """v9.3 · 从 streaming_pipeline 的 stream_state.json 还原一份与 curves.json
+    等价的 dict，喂给 render_artifact 现有渲染管线。
+
+    state['stages']['overall_and_life_review'] / 'other_dayuns' / 'current_dayun' /
+    'current_dayun_liunian' / 'key_years' 各自携带必要片段；本函数把它们重新
+    拼成 curves.json schema（version / baseline / points / dayun_segments /
+    turning_points_future / disputes / phase 等）。
+    """
+    state = json.loads(state_path.read_text(encoding="utf-8"))
+    stages = state.get("stages") or {}
+
+    overall = stages.get("overall_and_life_review") or {}
+    other = stages.get("other_dayuns") or {}
+    cur = stages.get("current_dayun") or {}
+    cur_ln = stages.get("current_dayun_liunian") or {}
+    ky = stages.get("key_years") or {}
+
+    segments: list[dict] = []
+    if cur.get("segment"):
+        segments.append(cur["segment"])
+    for o in (other.get("segments") or []):
+        if o.get("segment"):
+            segments.append(o["segment"])
+    segments.sort(key=lambda s: s.get("start_age", 0))
+
+    points: list[dict] = list(cur_ln.get("yearly_points") or [])
+    points.sort(key=lambda p: p.get("year", 0))
+
+    return {
+        "version": 3,
+        "from_stream_state": True,
+        "stream_state_path": str(state_path),
+        "baseline": overall.get("baseline") or {"spirit": 50, "wealth": 50, "fame": 50, "emotion": 50},
+        "phase": overall.get("phase") or {"id": "day_master_dominant", "label": "默认 · 日主主导"},
+        "geju": overall.get("geju") or {},
+        "yongshen": overall.get("yongshen") or {},
+        "strength": overall.get("strength"),
+        "age_start": (overall.get("age_range") or [0, 80])[0],
+        "age_end": (overall.get("age_range") or [0, 80])[1],
+        "dayun_segments": segments,
+        "points": points,
+        "turning_points_future": ky.get("turning_points_future") or [],
+        "disputes": ky.get("disputes") or [],
+        "dispute_threshold": ky.get("dispute_threshold") or 20.0,
+        "pillars_str": "(from_stream_state)",
+    }
+
+
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--curves", required=True)
+    ap.add_argument("--curves", required=False, default=None,
+                    help="curves.json 路径（v9.3 起若提供 --from-stream-state 则可选）")
+    ap.add_argument("--from-stream-state", default=None,
+                    help="v9.3 · 从 streaming_pipeline 的 stream_state.json 还原 curves，"
+                         "无需依赖批量 score_curves.py 产物。与 --curves 二选一。")
     ap.add_argument("--analysis", default=None,
                     help="可选：analysis.json 路径（overall / life_review / turning_points / "
                          "disputes / key_years / dayun_review(s) / era_narratives / confirmed_facts）")
@@ -275,16 +501,58 @@ def main():
                     help="v9 · 可选：virtue_motifs.json 路径（scripts/virtue_motifs.py 产物）。"
                          "缺失时 HTML 上承认维度卡片会显示「未启用」提示，并禁用 love_letter 必填。")
     ap.add_argument("--out", default="chart.html")
-    ap.add_argument("--strict-llm", action="store_true",
-                    help="v9.1 · 当 analysis.json 里 LLM 应写未写时, raise LlmCoverageError "
-                         "(默认只在 stderr 打 [coverage] 警告)")
+    # v9 默认全部 strict；用户可显式 --no-* 关掉单项审计
+    ap.add_argument("--strict-llm", action=argparse.BooleanOptionalAction, default=True,
+                    help="v9 默认开：当 analysis.json 里 LLM 应写未写时，raise LlmCoverageError。"
+                         "--no-strict-llm 关掉降级为 stderr warning。")
     ap.add_argument("--allow-partial", action="store_true",
                     help="v9.2 · 流式渲染模式：缺字段时显示「⌛ 流式写作中」占位，不抛错也不算 fail。"
-                         "用于 agent 边写边刷 HTML 看进度（最终产物仍要去掉此 flag 跑覆盖率审计）。")
+                         "用于 agent 边写边刷 HTML 看进度（最终产物仍要去掉此 flag 跑覆盖率审计）。"
+                         "**partial 模式自动关掉所有下方 v9 strict 审计**。")
     ap.add_argument("--coverage-report", default=None,
                     help="v9.1 · 可选 · 把 LLM 字段覆盖度 JSON 写到该路径")
+
+    # v9 strict audits（默认全开；partial 模式自动跳过）
+    ap.add_argument("--require-streamed-emit",
+                    action=argparse.BooleanOptionalAction, default=True,
+                    help="v9 默认开：检查 analysis._stream_log，若同一帧（≤60s）内塞了 ≥4 个节，"
+                         "判定 LLM 在伪流式（一次跑完再切片重发），exit 4。")
+    ap.add_argument("--required-node-order",
+                    action=argparse.BooleanOptionalAction, default=True,
+                    help="v9 默认开：校验 _stream_log 里节序符合五阶段（opening → 当前大运 + liunian "
+                         "→ 其它大运 → key_years → overall/life_review → closing）。")
+    ap.add_argument("--audit-virtue-continuity",
+                    action=argparse.BooleanOptionalAction, default=True,
+                    help="v9 默认开：调用 scripts/audit_virtue_recurrence_continuity.py 阻断"
+                         "位置②G块缺失 / 位置④trace 不足 / silenced 泄漏 / 位置⑥首尾标记缺失。")
+    ap.add_argument("--audit-mangpai-surface",
+                    action=argparse.BooleanOptionalAction, default=True,
+                    help="v9 默认开：调用 scripts/audit_mangpai_surface.py 阻断"
+                         "high confidence 盲派事件未在叙事里 surface。")
+    ap.add_argument("--audit-closing-headers",
+                    action=argparse.BooleanOptionalAction, default=True,
+                    help="v9 默认开：declaration / love_letter / free_speech 三节标题必须去模板化"
+                         "（## 走到这里 / ## 写到这里我想说 / ## 不在协议里的话）。")
+    ap.add_argument("--audit-no-premature-decision",
+                    action=argparse.BooleanOptionalAction, default=True,
+                    help="v9 默认开：若给 --bazi，阻断 phase_decision.is_provisional=true / "
+                         "confidence=reject 进入产物。")
+    ap.add_argument("--audit-stream-batching",
+                    action=argparse.BooleanOptionalAction, default=True,
+                    help="v9.3 默认开：扫 analysis._stream_violations，若 R-STREAM-1 "
+                         "（同 agent_turn_id 内连续 append_analysis_node ≥ 2 节）≥ 1 → exit 11。"
+                         "用于物理拦截 LLM 在一个 turn 里塞多节、绕过 stop turn 的违规。")
+    ap.add_argument("--mangpai", default=None,
+                    help="v9 audit-mangpai-surface 用：output/X.mangpai.json 路径。")
     args = ap.parse_args()
-    curves = json.loads(Path(args.curves).read_text(encoding="utf-8"))
+    if args.from_stream_state:
+        curves = _curves_from_stream_state(Path(args.from_stream_state))
+    elif args.curves:
+        curves = json.loads(Path(args.curves).read_text(encoding="utf-8"))
+    else:
+        raise SystemExit(
+            "[render_artifact] 必须提供 --curves 或 --from-stream-state 之一。"
+        )
     analysis = None
     if args.analysis:
         analysis = json.loads(Path(args.analysis).read_text(encoding="utf-8"))
@@ -311,6 +579,10 @@ def main():
             f"{len(coverage['required'])} 项, 覆盖度 {coverage['coverage_pct']}%。"
             f" 缺失: {coverage['missing']}"
         )
+
+    # ─── v9 strict audits（partial 模式跳过）────────────────────────────
+    if not args.allow_partial:
+        _run_v9_audits(args, analysis, virtue_motifs)
 
     html = render(curves, analysis, zeitgeist, virtue_motifs, allow_partial=args.allow_partial)
     Path(args.out).write_text(html, encoding="utf-8")

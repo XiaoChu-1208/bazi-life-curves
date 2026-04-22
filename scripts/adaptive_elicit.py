@@ -252,15 +252,39 @@ def _new_state(bazi: Dict, prior: Dict[str, float], current_year: int) -> Dict:
 # §3 单题流式：next 子命令
 # ---------------------------------------------------------------------------
 
+_FREE_TEXT_OPTION_ID = "X"
+_FREE_TEXT_OPTION_LABEL = "上面没有贴近我的——让我用大白话讲（free text）"
+
+
 def _question_to_payload(q: Question) -> Dict:
-    """转成宿主 AskQuestion 工具的单题 payload（中性，无后验信息）。"""
+    """转成宿主 AskQuestion 工具的单题 payload（中性，无后验信息）。
+
+    v9：
+    - 在 options 末尾注入 X = free-text 兜底；
+    - 携带 q.intro（≤60 字 user-facing 解释）；
+    - free_text 字段提示 host 在选 X 时收一段原文。
+    """
+    options = [{"id": o.id, "label": o.label} for o in q.options]
+    options.append({
+        "id": _FREE_TEXT_OPTION_ID,
+        "label": _FREE_TEXT_OPTION_LABEL,
+    })
     return {
         "id": q.id,
         "prompt": q.prompt,
-        "options": [{"id": o.id, "label": o.label} for o in q.options],
+        "intro": getattr(q, "intro", "") or "",
+        "options": options,
         "allow_multiple": False,
+        "free_text": {
+            "trigger_option_id": _FREE_TEXT_OPTION_ID,
+            "instruction": (
+                "选 X 时请让用户用 1-3 句大白话写下情况；脚本会把它存进 "
+                "confirmed_facts.free_facts，不更新 likelihood，也不参与 EIG。"
+            ),
+        },
         "neutral_instruction": (
             "请按你最直觉的反应选；如不确定可挑最接近的一项。"
+            "实在没有贴近的选 X 用大白话告知。"
             "不要试图揣测题目背后想测什么。"
         ),
     }
@@ -269,12 +293,16 @@ def _question_to_payload(q: Question) -> Dict:
 def _question_to_cli_prompt(q: Question) -> str:
     lines = [
         f"[{q.id}] {q.prompt}",
-        "",
     ]
+    intro = getattr(q, "intro", "") or ""
+    if intro:
+        lines.append(f"  ({intro})")
+    lines.append("")
     for o in q.options:
         lines.append(f"  {o.id}) {o.label}")
+    lines.append(f"  {_FREE_TEXT_OPTION_ID}) {_FREE_TEXT_OPTION_LABEL}")
     lines.append("")
-    lines.append(f"请回复 {q.id}=<选项 id>")
+    lines.append(f"请回复 {q.id}=<选项 id>（X 时另传 --free-text \"...\"）")
     return "\n".join(lines)
 
 
@@ -391,6 +419,30 @@ def cmd_next(args: argparse.Namespace) -> int:
 
     # 处理上一题答案
     if args.answer:
+        # v9 铁律：--answer-source 必填；agent_inferred 直接 exit 3 阻断越权
+        ans_src = getattr(args, "answer_source", None)
+        if not ans_src:
+            print(
+                "[adaptive_elicit] v9: --answer-source 必填 ∈ {user, user_freetext, "
+                "user_skipped}；agent 不许替用户答题。",
+                file=sys.stderr,
+            )
+            return 2
+        if ans_src == "agent_inferred":
+            print(
+                "[adaptive_elicit] v9 越权阻断：禁止 agent_inferred。"
+                "如用户实在没贴近选项，请选 X 走 free-text，由用户写一段大白话。",
+                file=sys.stderr,
+            )
+            return 3
+        if ans_src not in {"user", "user_freetext", "user_skipped"}:
+            print(
+                f"[adaptive_elicit] --answer-source 取值非法：{ans_src!r}；"
+                "合法值 {user, user_freetext, user_skipped}",
+                file=sys.stderr,
+            )
+            return 2
+
         if ":" in args.answer:
             qid, opt = args.answer.split(":", 1)
         elif "=" in args.answer:
@@ -417,14 +469,47 @@ def cmd_next(args: argparse.Namespace) -> int:
             print(f"[adaptive_elicit] unknown question id: {qid!r}", file=sys.stderr)
             return 2
 
-        new_post = bayes_update(state["posterior"], q, opt)
-        state["posterior"] = {k: float(v) for k, v in new_post.items()}
-        state["answered"][qid] = opt
-        state["asked_history"].append({
-            "qid": qid,
-            "answered_opt": opt,
-        })
-        state["top1_history"].append(max(new_post.values()))
+        # v9 X 兜底：选 X → 不动 likelihood，写入 confirmed_facts.free_facts
+        if opt == _FREE_TEXT_OPTION_ID:
+            free_text = (getattr(args, "free_text", None) or "").strip()
+            if not free_text:
+                print(
+                    "[adaptive_elicit] 选 X（free-text）时必须同传 "
+                    "--free-text \"用户原话\"；不许空 X。",
+                    file=sys.stderr,
+                )
+                return 2
+            ff = state.setdefault("confirmed_facts", {}).setdefault("free_facts", [])
+            ff.append({
+                "qid": qid,
+                "prompt": q.prompt,
+                "intro": getattr(q, "intro", "") or "",
+                "user_text": free_text,
+                "answer_source": ans_src,
+            })
+            state["answered"][qid] = _FREE_TEXT_OPTION_ID
+            state["asked_history"].append({
+                "qid": qid,
+                "answered_opt": _FREE_TEXT_OPTION_ID,
+                "free_text_len": len(free_text),
+                "likelihood_updated": False,
+            })
+            # likelihood 不更新；top1_history 沿用上一帧
+            if state.get("top1_history"):
+                state["top1_history"].append(state["top1_history"][-1])
+            else:
+                state["top1_history"].append(max(state["posterior"].values()))
+        else:
+            new_post = bayes_update(state["posterior"], q, opt)
+            state["posterior"] = {k: float(v) for k, v in new_post.items()}
+            state["answered"][qid] = opt
+            state["asked_history"].append({
+                "qid": qid,
+                "answered_opt": opt,
+                "answer_source": ans_src,
+                "likelihood_updated": True,
+            })
+            state["top1_history"].append(max(new_post.values()))
 
     # 重新构造池子（D3 题需要按当前 top phase 重算）
     candidate_phase_ids = _top_phases(state["posterior"], 5)
@@ -580,17 +665,29 @@ def _format_question_md(q: Question, idx: int) -> str:
 
 
 def cmd_dump_question_set(args: argparse.Namespace) -> int:
-    # v9 守门 · stderr 警告：dump-question-set 不是默认 R1 路径，
-    # 默认应该走 `adaptive_elicit.py next` 一题一轮。Agent 不要以为"一次性 14 题
-    # 体验更顺"就默认走这里——那等于把 v9 自适应贝叶斯 EIG 流式问答物理消除。
-    if not getattr(args, "ack_batch", False):
-        print(
-            "[adaptive_elicit] ⚠ WARNING: dump-question-set 不是 v9 默认 R1 路径。\n"
-            "  默认请用 `adaptive_elicit.py next ...`（一题一轮 · EIG 选题 · 5-8 题早停）。\n"
-            "  仅当用户**主动**要求 batch 一次答完时才用本子命令。\n"
-            "  详见 AGENTS.md §二「关键不可跳步（v9）」 + handshake_protocol.md §0。\n"
-            "  传 --ack-batch 表示已确认是用户主动选 batch，本警告即可消失。\n",
-            file=sys.stderr,
+    # v9 硬阻断：dump-question-set 不是默认 R1 路径，必须用户**双重确认**
+    # 才允许走（默认应该走 `adaptive_elicit.py next` 一题一轮 EIG 流式）。
+    # 之前 --ack-batch 是 warning-only，本次升级为 hard exit，需要再加
+    # --confirm-batch-defeats-v9 二级确认才放行——这两个 flag 的组合等价于
+    # "我作为 agent 已经向用户解释 batch 模式会丢失 EIG 自适应选题，且用户主动
+    #  坚持要走 batch"。
+    from _v9_guard import enforce_v9_only_path
+    has_ack = getattr(args, "ack_batch", False)
+    has_confirm = getattr(args, "confirm_batch_defeats_v9", False)
+    if not (has_ack and has_confirm):
+        enforce_v9_only_path(
+            "adaptive_elicit dump-question-set",
+            ack_flag=False,
+            ack_flag_help="--ack-batch --confirm-batch-defeats-v9（双 flag）",
+            extra_hint=(
+                "推荐改用：\n"
+                f"  python scripts/adaptive_elicit.py next --bazi {args.bazi} "
+                f"--curves {args.curves or '<curves.json>'} "
+                "--state output/.elicit.state.json\n\n"
+                "若用户已**主动**坚持走 batch（注意：batch 会失去 EIG 自适应选题，confidence "
+                "默认上限 mid），同时传两个 flag：\n"
+                "  --ack-batch --confirm-batch-defeats-v9"
+            ),
         )
 
     bazi_path = Path(args.bazi)
@@ -795,6 +892,20 @@ def main() -> int:
                         help="state 文件路径（建议放 output/.elicit.state.json，点开头）")
     p_next.add_argument("--answer", required=False,
                         help="上一题答案，格式 'qid:opt' 或 'qid=opt'")
+    p_next.add_argument(
+        "--answer-source",
+        required=False,
+        choices=["user", "user_freetext", "user_skipped", "agent_inferred"],
+        help="v9 必填：标注答案来源。agent_inferred 直接 exit 3 阻断越权；"
+             "user_freetext 配合 X 选项 + --free-text 使用。",
+    )
+    p_next.add_argument(
+        "--free-text",
+        required=False,
+        default=None,
+        help="选 X 兜底时用户的大白话原文（≤300 字）；"
+             "脚本写入 confirmed_facts.free_facts，不更新 likelihood。",
+    )
     p_next.add_argument("--out", required=False, help="finalize 时写回的 bazi.json 路径（默认覆盖 --bazi）")
     p_next.add_argument("--current-year", type=int, default=None)
 
@@ -808,8 +919,15 @@ def main() -> int:
     p_dump.add_argument(
         "--ack-batch",
         action="store_true",
-        help="确认这是用户主动选 batch（非默认）。不传会在 stderr 打 v9 警告，"
-             "提醒 agent 默认应该走 `next` 子命令一题一轮。",
+        help="v9 一级确认：标记此次调用是用户主动选 batch。"
+             "v9 已升级为 hard exit，必须再加 --confirm-batch-defeats-v9 才放行。",
+    )
+    p_dump.add_argument(
+        "--confirm-batch-defeats-v9",
+        action="store_true",
+        help="v9 二级确认：你已向用户解释「batch 模式会失去 EIG 自适应选题，"
+             "confidence 默认上限 mid」，且用户在了解后**仍**坚持要走 batch。"
+             "必须与 --ack-batch 同时传，否则 exit 2。",
     )
 
     # submit-batch

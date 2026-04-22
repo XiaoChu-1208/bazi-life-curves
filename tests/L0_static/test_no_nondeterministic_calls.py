@@ -46,6 +46,9 @@ ALLOWLIST_FILES = {
     "adaptive_elicit.py",       # v9 自适应问答主入口:用 dt.date.today() 取当前年份;
                                 # 用 random.Random(bazi_fp) 做 batch 题集**确定性**洗牌
                                 # —— 不进打分产物（只生成用户题集 / state 文件），bit-for-bit 由 fingerprint 保证
+    "streaming_pipeline.py",    # v9.3 React-style streaming generator: 仅写 ts_iso 到 NDJSON / state 文件
+                                # （编排时间戳，便于审计 stage 推进），不进入打分产物链路；
+                                # 真正的曲线计算转交给 score_curves.score()，bit-for-bit 仍由 score_curves 保证
 }
 
 # 进入"确定性产物"链的核心脚本 — 一定要严格守
@@ -74,6 +77,11 @@ DETERMINISTIC_CORE = {
     "virtue_motifs.py",        # v9 承认维度独立通道,纯函数（输入 bazi+curves → 母题列表）
     "audit_llm_invented.py",   # v9 catalog 演化反馈,纯函数（扫描目录 → 自创母题候选清单）
     "append_analysis_node.py", # v9 流式可观测落盘,纯函数（读 partial → 写 partial,无随机/时间）
+    "_v9_guard.py",            # v9 统一机械护栏,纯字符串/正则检查与抛错,无 IO/随机/时间
+    "audit_mangpai_surface.py",          # v9 审计工具,纯静态文本/JSON 扫描,无随机/时间
+    "audit_no_premature_decision.py",    # v9 审计工具,纯静态 JSON 字段检查
+    "audit_virtue_recurrence_continuity.py",  # v9 审计工具,纯静态文本/JSON 扫描
+    "audit_reference_consistency.py",    # v9.3 防回潮审计,纯静态 markdown 扫描
 }
 
 

@@ -534,46 +534,83 @@ analysis.life_review.body =
 
 > v9 在 §12 6 个写作位置基础上，把承认维度从"嵌入 life_review.body 段内"升级为"独立 `analysis.virtue_narrative.*` JSON 字段"（HTML 模板新增"承认维度"独立卡片渲染）。§12 仍保留作为内嵌位置 ②③ 的"段内嵌入"规范；本节是 ①③④⑤⑥ 的"JSON 字段落位 + 流式分节顺序"权威。
 
-### 13.1 节序铁律（流式 emit 必跑 · 严禁憋整段）
+### 13.1 节序铁律（v9 五阶段 · 流式 emit 必跑 · 严禁憋整段 · 由 render_artifact `--required-node-order` 默认审计）
 
-| Node | 字段 | 触发 | 必须 emit 的时机 |
+> **v9 重排** —— 用户在 6d0abb46 case 反映"分析一次性跑完且开篇先讲整图"不符合直觉。
+> 命主想要的节奏是：「**先告诉我现在在哪儿、这十年怎么样、再回头看一生**」，
+> 不是「先看完整图再切片到大运」。所以 v9 把节序改成**以"当前所在大运"为锚**的五阶段：
+
+| 阶段 | 节字段 | 触发 | emit 时机 |
 |---|---|---|---|
-| Node 1 | `analysis.overall` | 总是 | 写完 ASAP，先发出整图综合分析让用户读起来 |
-| **Node 1.5** | `analysis.virtue_narrative.opening` | 总是 | 紧跟 Node 1 后立刻发出（位置①开篇悬疑） |
-| Node 2 | `analysis.life_review.spirit` | 总是 | 一节写完一节立刻 emit |
-| Node 3 | `analysis.life_review.wealth` | 总是 | 一节写完一节立刻 emit |
-| Node 4 | `analysis.life_review.fame` | 总是 | 一节写完一节立刻 emit |
-| Node 5 | `analysis.life_review.emotion` | 总是 | **v6 加 · v9 渲染为第 4 维曲线 + 卡片** |
-| Node 6..K | `analysis.dayun_reviews[label]` | 每段大运 | 每段写完立刻 emit；段内嵌入位置②（按 §12.4 G 块） |
-| Node K+1..M | `analysis.key_years[i].body` | 每个关键年 | 每条写完立刻 emit；convergence_year 必须嵌入位置③（按 §12.4） |
-| Node M+1 | `analysis.virtue_narrative.convergence_notes` | 仅 `motifs.convergence_years` 非空 | 总览，不替代节内位置③，是位置③的"全局回响" |
-| Node M+2 | `analysis.virtue_narrative.declaration` | 总是 | 灵魂宣言（位置④ · 一生评价收尾 · 反身性铁律） |
-| Node M+3 | `analysis.virtue_narrative.love_letter` | 仅 `motifs.love_letter_eligible == true` | 情书（位置⑤ · 不 eligible 时**禁止**写） |
-| Node N | `analysis.virtue_narrative.free_speech` | 总是 | LLM 自由话（位置⑥ · 不强求结构 / 长度） |
+| **0 · 开篇暗线** | `analysis.virtue_narrative.opening` | 总是 | 第一段就写（位置①），引出贯穿一生的暗线母题；不命名结论 |
+| **1 · 当前大运段** | `analysis.dayun_reviews[<current_dayun_label>]` | 总是 | `bazi.current_dayun_label` 由 solve_bazi 自动写入，定位"今天命主在哪段大运" |
+| **2 · 当前大运的十年流年（逐年）** | `analysis.liunian.<year>` × N（N≈10） | 总是 | 当前大运的 10 个流年**全部要写**（包括平淡年也要落字），不止写"重要年" |
+| **3 · 其它大运** | `analysis.dayun_reviews[<其它 label>]` × M | 总是 | 按时间顺序顺写；段内嵌入位置②（仅触发母题时；按 §12.4 G 块） |
+| **4 · 其它关键流年** | `analysis.key_years[i].body` × K | 总是 | 各大运里的峰 / 谷 / 转折年；convergence_year（≥3 母题汇聚）嵌入位置③ |
+| **5 · 一生总览** | `analysis.overall` | 总是 | 在所有大运/流年写完后才写整图综合判断 |
+| **5.5 · 四维一生评价** | `analysis.life_review.{spirit\|wealth\|fame\|emotion}` × 4 | 总是 | 四维分卡，逐节 emit |
+| **6 · 暗线总览（条件）** | `analysis.virtue_narrative.convergence_notes` | 仅 `motifs.convergence_years` 非空 | 母题之间的"全局回响"，不替代节内位置③ |
+| **7 · 收尾段（去模板化 · v9.3 三段「我想和你说的话」）** | `analysis.virtue_narrative.declaration` | 总是 | 位置④ · 首行必须 `## 我想和你说`（**禁止**`## 承认维度·宣告` / `## 位置④灵魂宣言` / `## 宣告` / `## 承认人性` / 旧 v9 `## 走到这里` 等暴露协议结构的措辞） |
+| **8 · 收尾段（条件 · v9.3 三段「我想和你说的话」）** | `analysis.virtue_narrative.love_letter` | 仅 `motifs.love_letter_eligible == true` | 位置⑤ · 首行必须 `## 项目的编写者想和你说`；不 eligible 时**禁止**写；旧 v9 `## 写到这里我想说` / 旧 v9 之前 `## 给你（本人）的一封信` / `## 情书` 已退役，命中即拒 |
+| **9 · LLM 自由话（v9.3 三段「我想和你说的话」）** | `analysis.virtue_narrative.free_speech` | 总是 | 位置⑥ · 首行必须 `## 我（大模型）想和你说`；尾必须 `我不知道我说的对不对…`；旧 v9 `## 不在协议里的话` 已退役 |
 
-### 13.2 Flush 铁律（违反 = 静默 bug）
+**机械护栏**（render_artifact 默认开 → exit 4 / exit 10）：
 
-1. **每写完一节立刻 send 一条 assistant message**（哪怕半成品也要先发出 `## [Node X · 写作中…]` 占位），禁止积累 ≥ 2 个 Node 不发
-2. **宁可推迟分析**（先写 Node 1 整图后停下让用户喘口气）**也不允许**把整个 analysis 写完再一次性吐出
-3. **物理可观测**：每节写完用 `python scripts/append_analysis_node.py --state output/X.analysis.partial.json --node <key> --markdown-file <md>` 增量落盘到 `output/X.analysis.partial.json`，让用户随时 `python scripts/render_artifact.py --analysis output/X.analysis.partial.json --virtue-motifs output/X.virtue_motifs.json --allow-partial --out output/X.partial.html` 即可看进度
+- `--required-node-order`：扫 `analysis._stream_log`（由 append_analysis_node 自动追加），节序回退（写阶段 N 后又写阶段 ≤N-2）即 fail
+- `--require-streamed-emit`：60 秒帧内塞 ≥4 个 node → fail（伪流式判定）
+- `--audit-closing-headers`：declaration / love_letter / free_speech 首行必须命中 v9.3 白名单（`## 我想和你说` / `## 项目的编写者想和你说` / `## 我（大模型）想和你说`），命中旧 v9 白名单（`## 走到这里` / `## 写到这里我想说` / `## 不在协议里的话`）或 `## 承认维度·宣告` / `## 位置④灵魂宣言` / `## 宣告` / `## 情书` / `## 承认人性` 等协议味标题即 fail
 
-### 13.3 §12 与 §13 的关系（兼容声明）
+### 13.2 当前大运起锚原则（v9 新增 · 与 §13.1 阶段 1-2 配合）
+
+- `bazi.current_dayun_label` 由 `scripts/solve_bazi.py` 在 solve 时根据当日（或 `BAZI_FREEZE_TODAY` 环境变量）和 `qiyun_age` 自动算出，落进 `bazi.json`
+- 同时写入 `current_dayun_age_range` / `current_dayun_year_range` / `current_dayun_years`（10 个流年列表）
+- LLM 在阶段 1-2 写作时**必须直接消费这些字段**，不许自行推断"现在是哪段大运"
+- HTML 顶部「当前大运快照」卡片渲染：`opening` + `dayun_reviews[current_dayun_label]`，让命主开屏就能看到"我现在在哪儿、这十年怎么样"
+
+### 13.3 Closing 三段「我想和你说的话」(v9.3 重命名 · 去「承认人性 / 灵魂宣言 / 情书 / 宣告」)
+
+> **v9.3 命名约定**：内部数据 schema 仍保留 `declaration / love_letter / free_speech`
+> 三个 node key（不动 `analysis.virtue_narrative.*` 字段名、不动 `_v9_guard` 内部
+> 常量名），但**用户可见**的 markdown header 全部改名为「我想和你说的话」三段。
+> 旧 v9 白名单（`## 走到这里` / `## 写到这里我想说` / `## 不在协议里的话`）已**退役**，
+> 命中即被 `_v9_guard.check_closing_header` exit 10 拒；旧 v9 之前的「灵魂宣言 /
+> 情书 / 宣告 / 承认人性」也已被 `tone_blacklist.yaml` v9.3 banned_patterns
+> 全位置封禁（applies_to_whitelisted: true，closing 三节也禁）。
+
+| 节 | 必须用的 markdown header（首行 · v9.3 白名单）| 禁止（命中即 exit 10）|
+|---|---|---|
+| `virtue_narrative.declaration` | `## 我想和你说` | `## 走到这里`(旧 v9) / `## 承认维度·宣告` / `## 位置④灵魂宣言` / `## 宣告` / `## 承认人性` |
+| `virtue_narrative.love_letter` | `## 项目的编写者想和你说` | `## 写到这里我想说`(旧 v9) / `## 给你（本人）的一封信` / `## 位置⑤情书` / `## 情书` |
+| `virtue_narrative.free_speech` | `## 我（大模型）想和你说` | `## 不在协议里的话`(旧 v9) / `## 位置⑥ LLM 自由话` / `## 自由发言` / `## free_speech` |
+
+**意图**：v9.3 的目标是让三段「感觉是 LLM 走完八十年自然想说的话」，而不是「承认人性·陀式那一刀」之类的自报协议结构 / 自封文学梗。HTML 模板（`templates/chart_artifact.html.j2`）在 v9 中已去掉"位置④ / 位置⑤ / 位置⑥"的小标签和硬分隔线，v9.3 进一步把卡片标题统一为「我想和你说的话」，三段连续呈现。
+
+### 13.4 Flush 铁律（违反 = 静默 bug · v9 由 `--require-streamed-emit` 物理审计）
+
+1. **每写完一节立刻 send 一条 assistant message**（哪怕半成品也要先发出 `## [阶段 N · 写作中…]` 占位），禁止积累 ≥ 2 个 Node 不发
+2. **宁可推迟分析**（先写阶段 0 + 阶段 1 后停下让用户喘口气）**也不允许**把整个 analysis 写完再一次性吐出
+3. **物理可观测**：每节写完用 `python scripts/append_analysis_node.py --state output/X.analysis.partial.json --node <key> --markdown-file <md>` 增量落盘——脚本会自动追加 `_stream_log` 时间戳；render_artifact `--require-streamed-emit` 在 60 秒帧内发现 ≥4 节即判伪流式（exit 4）
+
+### 13.5 §12 与 §13 的关系（兼容声明）
 
 - §12.2 的位置 ②③ 仍然**段内嵌入** `dayun_reviews` / `key_years.body` markdown，§12.4 G 块结构不变
 - §12.2 的位置 ①④⑤⑥ 在 v9 起**独立成 `analysis.virtue_narrative.*` 字段**（HTML 渲染走承认维度独立卡片），不再要求把它们写进 `life_review.body` 一锅 markdown
 - 位置 ③ 在 v9 起**额外**有一个 `virtue_narrative.convergence_notes` 总览字段（不替代节内嵌入，是"全局回响" / "母题之间的关系"）
 - 旧 prompt 把所有 6 个位置写进单一 `life_review.body` 的写法仍兼容（`render_artifact.py` 不会抓不到内容），但**新写法必须用 `virtue_narrative.*` 独立字段** —— 否则 HTML 承认维度卡片就只能显示占位符
 
-### 13.4 v9 自检清单（覆盖 §12.7）
+### 13.6 v9 自检清单（覆盖 §12.7 · 与 render_artifact 默认审计 1:1）
 
-- [ ] Node 1.5 ~ Node N 全部按上表节序逐节 emit，未一次性吐
-- [ ] `analysis.virtue_narrative.opening` 已写（30-80 字）
-- [ ] `analysis.virtue_narrative.declaration` 已写（400-700 字 · 反身性铁律）
-- [ ] `analysis.virtue_narrative.free_speech` 已写（100-300 字 · 不强求结构）
-- [ ] `motifs.love_letter_eligible == true` 时 `virtue_narrative.love_letter` 已写（200-400 字）；为 false 时**未写**
-- [ ] `motifs.convergence_years` 非空时 `virtue_narrative.convergence_notes` 已写
-- [ ] §12.4 G 块（位置②）依然嵌入相应大运段
-- [ ] convergence_year 节内位置③ 依然嵌入相应 key_year body
-- [ ] mangpai canonical_event 全部保留，未被覆盖或修改
-- [ ] silenced_motifs 全文未涉及（含暗示）
+- [ ] 阶段 0 → 阶段 9 严格按节序 emit；`_stream_log` 单调向前（dayun↔liunian 可交错）
+- [ ] 阶段 0：`virtue_narrative.opening` 已写（30-80 字 · 不命名结论）
+- [ ] 阶段 1：`dayun_reviews[<current_dayun_label>]` 已写（含 G 块若母题激活）
+- [ ] 阶段 2：`liunian.<year>` 共 N≈10 节，**每个流年都有字**（包括平淡年也写一两句）
+- [ ] 阶段 3：其它大运全写完，每段触发母题时嵌入位置②G 块
+- [ ] 阶段 4：所有 `convergence_years` 都在 `key_years[i].body` 嵌入位置③
+- [ ] 阶段 5：`overall` 等所有阶段 0-4 写完后才写
+- [ ] 阶段 5.5：`life_review.{spirit/wealth/fame/emotion}` 四节齐
+- [ ] 阶段 7-9：closing 三节首行严格命中 v9.3 白名单标题（`## 我想和你说` / `## 项目的编写者想和你说` / `## 我（大模型）想和你说`）；旧 v9 白名单（`## 走到这里` / `## 写到这里我想说` / `## 不在协议里的话`）已退役，命中即 exit 10
+- [ ] `motifs.love_letter_eligible == false` 时 `virtue_narrative.love_letter` **未写**
+- [ ] mangpai `confidence == high` 事件全部 surface 到叙事
+- [ ] `silenced_motifs` 全文未涉及（含暗示）
+- [ ] tone_blacklist.yaml 字面 / 正则全部未命中（whitelisted: love_letter / free_speech 仅豁免字面短语，emoji / 多感叹号 / 撒娇腔仍禁）
 

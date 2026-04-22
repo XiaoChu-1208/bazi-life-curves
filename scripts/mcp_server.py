@@ -383,11 +383,14 @@ def tool_mangpai_events(args: Dict[str, Any]) -> Dict[str, Any]:
 def tool_handshake(args: Dict[str, Any]) -> Dict[str, Any]:
     import datetime as dt
     import handshake as hs
+    # v9 硬阻断：默认 R1 路径已 deprecated；未显式 ack_legacy_r1 / dump_phase_candidates /
+    # phase_id（R2 confirmation 用）→ 直接 _err return（MCP 不能 sys.exit），等价 CLI exit 2。
     if not args.get("ack_legacy_r1") and not args.get("dump_phase_candidates") and not args.get("phase_id"):
-        sys.stderr.write(
-            "[mcp_server] ⚠ WARNING: handshake() v9 默认不再做 R1。\n"
-            "  R1 默认请走 `adaptive_elicit.py next` 一题一轮（EIG 选题 · 5-8 题早停）。\n"
-            "  仅 R2 confirmation / he_pan 兜底可继续用本 tool；传 ack_legacy_r1=true 关警告。\n"
+        return _err(
+            "BLOCKED · v9 默认入口已 deprecated。R1 请改用 adaptive_elicit(action='next')。"
+            "仅 R2 confirmation / he_pan 兜底 / dump_phase_candidates 可继续用本 tool；"
+            "若必须沿用 R1 deprecated，传 ack_legacy_r1=true。"
+            "详见 references/handshake_protocol.md §0 + AGENTS.md §二·v9 关键约束。"
         )
     bazi = _load_or_dict(args["bazi"], "bazi")
 
@@ -515,7 +518,14 @@ def tool_evaluate_handshake(args: Dict[str, Any]) -> Dict[str, Any]:
             "ack_batch": {
                 "type": "boolean",
                 "default": False,
-                "description": "确认是用户主动选 batch（非默认）。不传会 stderr 警告。",
+                "description": "v9 一级确认：本次调用是用户主动选 batch（非默认）。"
+                               "v9 已升级为 hard exit，必须再加 confirm_batch_defeats_v9=true。",
+            },
+            "confirm_batch_defeats_v9": {
+                "type": "boolean",
+                "default": False,
+                "description": "v9 二级确认：你已向用户解释 batch 模式会失去 EIG 自适应选题，"
+                               "且用户**仍**坚持要走 batch。必须与 ack_batch 同时传，否则 _err return。",
             },
             "answers": {
                 "oneOf": [{"type": "object"}, {"type": "string"}],
@@ -582,6 +592,15 @@ def tool_adaptive_elicit(args: Dict[str, Any]) -> Dict[str, Any]:
             tier = args.get("tier")
             if tier not in ("core14", "full28"):
                 return _err("dump_question_set requires tier='core14' or 'full28'")
+            # v9 硬阻断：未传双重确认 → 直接 _err return（等价 CLI exit 2）
+            if not (args.get("ack_batch") and args.get("confirm_batch_defeats_v9")):
+                return _err(
+                    "BLOCKED · adaptive_elicit dump_question_set 是 v9 deprecated 路径。"
+                    "默认请用 action='next' 一题一轮 EIG 流式。"
+                    "若用户**主动**坚持走 batch，同时传 ack_batch=true 与 "
+                    "confirm_batch_defeats_v9=true（双 flag 二级确认）。"
+                    "详见 references/handshake_protocol.md §0 + AGENTS.md §二·v9 关键约束。"
+                )
             ns = _ap.Namespace(
                 bazi=bazi_path,
                 curves=curves_path,
@@ -589,6 +608,7 @@ def tool_adaptive_elicit(args: Dict[str, Any]) -> Dict[str, Any]:
                 out=args.get("out"),
                 current_year=cy,
                 ack_batch=bool(args.get("ack_batch")),
+                confirm_batch_defeats_v9=bool(args.get("confirm_batch_defeats_v9")),
             )
             with contextlib.redirect_stdout(buf):
                 rc = ae.cmd_dump_question_set(ns)

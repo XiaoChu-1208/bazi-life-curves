@@ -1092,11 +1092,10 @@ def _make_convergence_years(motif_recurrence_map: Dict[str, List[Dict[str, Any]]
                             triggered_motifs: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     """convergence_year = 命主真实流年里"母题与应期叠现"的年份。
 
-    判定（按强度递减）：
-      A. 同年 ≥ 2 条 event-driven 母题应期 → 强 convergence（convergence_strength=high）
-      B. 同年 1 条 event-driven 母题应期 + 整体已触发母题 ≥ 4 → 弱 convergence
-         （convergence_strength=mid）—— 表示这一年某条真实拷问浮现，背后有一整张
-         拷问网络在响应。
+    v9 阈值统一（修复协议 ≥3 / 旧实现 ≥2 / HTML ≥3 三处不一致）：
+      A. 同年 ≥ 3 条 event-driven 母题应期 → 强 convergence（convergence_strength=high）
+      B. 同年 = 2 条 event-driven 母题应期 → 弱 convergence（convergence_strength=mid）
+      C. 同年 1 条 event-driven 母题应期 → 不计入 convergence_years（避免单条假聚合）
 
     持续音类 / 结构型母题的大运中点占位（source='structural'）一律不参与判定——
     否则同段大运所有结构型母题会在中点假性聚合，污染位置 ③。
@@ -1104,6 +1103,8 @@ def _make_convergence_years(motif_recurrence_map: Dict[str, List[Dict[str, Any]]
     每个 convergence_year 同时附带：
       - convergence_motifs：该年真实应期的 event-driven motif id 列表
       - background_motifs：当时仍活跃的全部其它已触发 motif（结构型 + 持续型）
+
+    与协议同步：references/virtue_recurrence_protocol.md §位置 ③ + chart_artifact.html.j2 注释
     """
     spec_by_id = {m["id"]: m for m in triggered_motifs}
     year_to_event_motifs: Dict[int, Set[str]] = defaultdict(set)
@@ -1115,12 +1116,11 @@ def _make_convergence_years(motif_recurrence_map: Dict[str, List[Dict[str, Any]]
                 year_to_event_motifs[ap["year"]].add(mid)
     out = []
     triggered_id_set = sorted(spec_by_id.keys())
-    total_triggered = len(triggered_id_set)
     for year in sorted(year_to_event_motifs.keys()):
         event_ids = sorted(year_to_event_motifs[year])
-        if len(event_ids) >= 2:
+        if len(event_ids) >= 3:
             strength = "high"
-        elif len(event_ids) == 1 and total_triggered >= 4:
+        elif len(event_ids) == 2:
             strength = "mid"
         else:
             continue

@@ -108,6 +108,57 @@ python scripts/score_curves.py --bazi bazi.json --out curves.json --age-end 60
 2. 把该事件的烈度修正在解读中"反向折扣"（例：盲派给该年精神 -8，但用户否认应事，则把这 8 分折回去当 0 解读）
 3. 把这条记入 caveats 让用户知道哪部分被打折
 
+## H. v9 高置信度铁律（机械护栏 · audit_mangpai_surface 实施）
+
+> **6d0abb46 case 暴露的 bug**：盲派给出 `confidence == high` 的事件（例：年财不归我 / 重烈度反吟 / 大运同向加成的禄被冲），LLM 在分析叙事里没有提到。
+> 命主明确反馈："你甚至没发现盲派那几个指标置信度其实是很高的。"
+
+### H.1 confidence 字段（v9 新增）
+
+`scripts/mangpai_events.py` 在每条事件 / 静态标记里写入 `confidence ∈ {high, mid, low}`：
+
+| confidence | 触发条件 |
+|---|---|
+| `high` | 重烈度 + 大运/原局结构同向加成（triple 印证）；或所有静态终生标记（例：`nian_cai_bu_gui_wo`） |
+| `mid` | 重烈度但只有 liunian 单点应期 / 中烈度 + 大运同向加成 |
+| `low` | 中烈度无加成 / 轻烈度 |
+
+### H.2 高置信度强制 surface 铁律
+
+| 铁律 | 说明 | 机械实施 |
+|---|---|---|
+| **每条 `confidence=high` 事件必须显式出现在叙事** | 显式 = 年份 + 干支 / canonical_event 关键短语在 `dayun_reviews` / `key_years` / `liunian` / `overall` 里能搜到 | `scripts/audit_mangpai_surface.py` |
+| **静态终生标记必须在 `overall` 或某段 `dayun_reviews` 显式提到** | 不能只放进 `mangpai.json` 数据里然后只字不提 | 同上 |
+| **render_artifact 默认 `--audit-mangpai-surface`** | 漏掉一条即 exit 6（除非 `--allow-partial`） | `scripts/render_artifact.py · _run_v9_audits()` |
+
+### H.3 与 §4 的关系
+
+§4 已经写过 "**必须**先列出该年所有 mangpai_events / **必须**用 canonical_event 作为应事的'骨'"——
+H 节是把这个铁律**机械化**：原先靠 LLM 自觉，v9 起由 `audit_mangpai_surface.py` 自动检查。
+
+漏掉中 / 低置信度事件 = 警告（不阻断）；漏掉**高**置信度事件 = exit 6 阻断渲染。
+
+### H.4 盲派 / 子平正格与 phase decision 的冲突警示（v9 · 修 6d0abb46 case bug）
+
+**bug 二**：盲派 _patterns / 格局_（不是 events，是 `rare_phase_detector.py` 输出的
+`yang_ren_jia_sha`、`qi_yin_xiang_sheng`、`yangren_chong_cai` 这一类）conf ≥ 0.80，
+但最终 `phase_decision.decision` 选了 `day_master_dominant`（mid），冲突被默默淹没。
+
+**修法**（详见 [phase_decision_protocol.md §7.5](phase_decision_protocol.md)）：
+
+1. `_bazi_core.decide_phase` 输出新增 `mangpai_conflict_alert` 字段（severity = high / mid / low）
+2. `phase_posterior.update_posterior` 在所有 confidence 档位都跑 alert 检查；
+   severity=high 时强制建议 R3（即使 R1 confidence ∈ {mid, high}）
+3. `audit_mangpai_surface.py --bazi <bazi.json>` 要求 alert.conflicting_hits 的每一条
+   `name_cn` 都在 analysis 文本中字面出现（severity=high 还要求叙事里出现承认冲突的关键词）；
+   失败 exit 3
+4. `render_artifact.py` 默认透传 `--bazi`；HTML 顶部渲染「盲派强冲突 · 必读」/
+   「盲派冲突」/「盲派提示」三档警示卡
+
+> **设计原则**：v9 不修改 `_p7_zuogong_aggregator` 的权重曲线（保 bit-for-bit）。
+> 盲派 zuogong 在算法层面仍是「附加证据通道」，但当其结论与最终 decision 高置信度
+> 冲突时，**必须 surface**（不能默默淹没）。最终裁决权交给用户的 R3 confirmation。
+
 ## 8. v2 路线图（暂不实现）
 
 - 引入更多盲派组合：金神格、魁罡格、十恶大败日、孤辰寡宿、华盖（盲派化）等

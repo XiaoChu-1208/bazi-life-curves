@@ -141,7 +141,105 @@ batch 模式（`dump-question-set` + `submit-batch`）让用户**一次看到所
 
 ---
 
-## 6 条约束的 enforcement 矩阵
+---
+
+## §E7 · 大白话铁律 + intro 字段（v9 新增 · 用户校验题"看不懂这是要选什么"修正）
+
+**约束**：题面对**用户**必须"完全听得懂"——0 命理词 + 0 单字泛词 + 1 句 intro 解释这道题问什么。
+
+**实现位点**（`scripts/_question_bank.py`）：
+
+1. `_check_no_phase_leak(strict=True)`（v9 默认 strict）—— prompt + 所有 option label 命中
+   `_PHASE_LEAK_TERMS`（"日主 / 从格 / 食伤 / 七杀 / 印旺 / 化气 / 用神 / 喜忌 / 真从 / 假从 …"）
+   即 `AssertionError`，模块加载失败
+2. `_check_plain_language(strict=True)`（v9 新增）—— 每个 option label
+   - 长度 `≥ _MIN_OPTION_LABEL_CHARS = 5`（汉字）
+   - 禁用单字 / 空泛 literal：`{"对", "不对", "是", "不是", "对/错", "部分", "其它", "其他"}`
+3. `Question.intro: str`（v9 新字段）—— 1 句、≤ 60 字，写法范式：
+   `"问的是 X — 不是 Y。"` / `"按 …… 选；…… 不算。"`
+   通过 `askquestion_payload.intro` 字段透传给前端 / LLM
+
+**反例**（v8 题 → v9 必须重写）：
+
+```
+× option B = "与你相仿"  (4 字 < 5)
+✓ option B = "和你年纪相仿（差 ≤3 岁）"
+
+× option = "对"
+✓ option = "对，确实经常这样" / "我觉得自己挺像这种"
+
+× prompt = "你日主是否偏弱？"           ← E5 + E7 双违反
+✓ prompt = "小时候你是不是经常觉得没力气、容易累？" + intro = "想了解你小时候的体感能量水平。"
+```
+
+---
+
+## §E8 · Free Text 兜底选项（v9 新增 · 用户答不上来"也算合法答案"）
+
+**约束**：每道题 askquestion_payload.options 必须**额外**含一条 ID = `"X"` 的 free-text 兜底选项：
+
+```
+{ "id": "X", "label": "上面没有贴近我的——让我用大白话讲（free text）" }
+```
+
+**实现位点**（`scripts/adaptive_elicit.py`）：
+
+1. `_question_to_payload(q)` 自动尾插 X 选项 + 输出 `free_text.trigger_option_id` / `instruction`
+2. `cmd_next --answer X --free-text "..."` 时：
+   - 追加 `state.confirmed_facts.free_facts[]`：`{qid, prompt, intro, user_text, answer_source}`
+   - **不更新 likelihood / posterior**（free-text 不参与 EIG）
+   - `asked_history` 标 `likelihood_updated: false`
+
+**意图**：保留用户"四个选项都不贴近"的合法兜底；同时**绝不**让 LLM 用 free-text 回灌 posterior（防 §E1 + §E2 漏洞）。
+
+---
+
+## §E9 · 禁止 LLM 替用户推断答案（v9 新增 · 模型越权阻断）
+
+**约束**：`adaptive_elicit next --answer <X>` 必须强制要求 `--answer-source` 之一：
+
+| value | 含义 |
+|---|---|
+| `user` | 用户在选项里选了 A/B/C/D/E |
+| `user_freetext` | 用户选了 X 并写了大白话 |
+| `user_skipped` | 用户主动跳过本题 |
+
+**禁止值**：`agent_inferred` —— 命中即 `exit 3`，禁止 LLM "替用户答题"。
+
+**实现位点**（`scripts/adaptive_elicit.py · cmd_next`）：
+
+```python
+if ans_src not in {"user", "user_freetext", "user_skipped"}:
+    return 2  # 必填
+if ans_src == "agent_inferred":
+    return 3  # 越权阻断
+```
+
+**反例**：
+
+```
+× LLM: "根据用户上文说的 '我从小爱哭'，我替他答 D2_Q3=C"   ← E9 越权
+✓ LLM: AskQuestion 把 D2_Q3 题目和选项原样抛给用户，等用户作答
+```
+
+---
+
+## §E10 · 工具入口仅 V9（v9 新增 · 阻断 R1 / batch 默认路径）
+
+**约束**：所有 elicitation 入口**默认走 V9 自适应**；使用 V8 / batch / R1 必须双重确认：
+
+| 入口 | 默认行为 | 解锁条件 |
+|---|---|---|
+| `handshake.py` round=1 | `exit 2` 阻断 | `--ack-legacy-r1` 显式声明已知 deprecated |
+| `adaptive_elicit dump-question-set` | `exit 2` 阻断 | `--ack-batch --confirm-batch-defeats-v9` 双标 |
+| `mcp_server.tool_handshake` round=1 | 返回 `_err` | `ack_legacy_r1=true` + `dump_phase_candidates` + `phase_id`（R2） |
+| `mcp_server.tool_adaptive_elicit action=dump_question_set` | 返回 `_err` | `ack_batch=true` + `confirm_batch_defeats_v9=true` |
+
+**实现位点**：`scripts/_v9_guard.py · enforce_v9_only_path()` 集中阻断逻辑。
+
+---
+
+## 10 条约束的 enforcement 矩阵
 
 | 约束 | 静态检查 | 运行时检查 | 文档约束 |
 |---|---|---|---|
@@ -149,8 +247,12 @@ batch 模式（`dump-question-set` + `submit-batch`）让用户**一次看到所
 | E2 不命名 phase | LLM prompt audit | `adaptive_elicit.py` agent_instructions | 本文 + `batch_elicitation_prompt.md` |
 | E3 不倒推进度 | — | — | 本文 + LLM rule |
 | E4 不揭示意图 | — | — | 本文 + LLM rule |
-| E5 题面无命理词 | `_check_no_phase_leak` (warn-only v9) | 模块加载日志 | `question_bank_audit.md` |
+| E5 题面无命理词 | `_check_no_phase_leak(strict=True)` | 模块加载 `AssertionError` | `question_bank_audit.md` |
 | E6 batch 缓解 | — | `_shuffle_dimensions_deterministic` + `_BATCH_CAVEAT` + `confidence_cap` | 本文 |
+| E7 大白话 + intro | `_check_plain_language(strict=True)` | 模块加载 `AssertionError` | `discriminative_question_bank.md §0.5` |
+| E8 X 兜底 | `audit_questions.py` payload schema scan | `_question_to_payload` 自动尾插 X | `discriminative_question_bank.md §0.5` |
+| E9 禁 LLM 推断 | — | `cmd_next` `--answer-source` 必填 + `agent_inferred` 直接 exit 3 | 本文 |
+| E10 V9 入口 | — | `_v9_guard.enforce_v9_only_path()` exit 2 | `handshake_protocol.md` |
 
 ---
 

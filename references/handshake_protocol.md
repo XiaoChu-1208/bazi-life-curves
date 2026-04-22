@@ -20,19 +20,35 @@
 
 ## §0 v9 自适应路径（默认 R1）
 
+> **v9 工具入口铁律**（`scripts/_v9_guard.py · enforce_v9_only_path()`）：
+>
+> | 入口 | 默认行为 | 解锁条件 |
+> |---|---|---|
+> | `handshake.py` round=1 | `exit 2` 阻断 | `--ack-legacy-r1` 显式声明已知 deprecated |
+> | `adaptive_elicit dump-question-set` | `exit 2` 阻断 | `--ack-batch --confirm-batch-defeats-v9` 双标 |
+> | `mcp_server.tool_handshake` round=1 | 返回 `_err` | `ack_legacy_r1=true` + `dump_phase_candidates` + `phase_id`（R2） |
+> | `mcp_server.tool_adaptive_elicit action=dump_question_set` | 返回 `_err` | `ack_batch=true` + `confirm_batch_defeats_v9=true` |
+>
+> **意图**：6d0abb46 case 中 LLM 一开始就误用 v8 入口（`handshake.py` round=1 / batch dump），
+> 完全跳过 v9 自适应路径。机械护栏强制：除非显式双重确认，否则只能走 `adaptive_elicit next`。
+
 ### §0.1 三个 CLI 子命令
 
 ```bash
 # 单题流式（默认路径）—— 首次调用初始化 state，循环至 finalize
+# v9 强制 --answer-source ∈ {user, user_freetext, user_skipped}；
+# agent_inferred 直接 exit 3
 python scripts/adaptive_elicit.py next \
     --bazi out/bazi.json --curves out/curves.json \
     --state out/.elicit.state.json \
-    [--answer 'D4_Q2_sleep:B']
+    [--answer 'D4_Q2_sleep:B' --answer-source user]
+    [--answer 'D4_Q2_sleep:X' --answer-source user_freetext --free-text "..."]
 
-# 一次性导出 batch 题集 markdown
+# 一次性导出 batch 题集 markdown（v9 默认阻断）
 python scripts/adaptive_elicit.py dump-question-set \
     --bazi out/bazi.json --curves out/curves.json \
     --tier core14|full28 \
+    --ack-batch --confirm-batch-defeats-v9 \
     --out out/question_set.md
 
 # 一次性提交 batch 答案

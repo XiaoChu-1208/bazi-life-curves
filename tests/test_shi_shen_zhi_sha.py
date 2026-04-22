@@ -124,7 +124,11 @@ def test_l5_shi_shen_zhi_sha_reversed_positive(bazi_raw):
 def score_comparison(bazi_raw):
     from score_curves import score, apply_phase_override  # type: ignore
 
+    # baseline 显式锁 day_master_dominant —— v9.2 起 P0 派别中立通道可能让默认
+    # phase 变成某个 zuogong 格，与本测试的"override 触发"比较失去基线意义。
     b0 = copy.deepcopy(bazi_raw)
+    b0.pop("phase", None)
+    apply_phase_override(b0, "day_master_dominant")
     out0 = score(b0, age_start=0, age_end=40)
     b1 = copy.deepcopy(bazi_raw)
     apply_phase_override(b1, "shi_shen_zhi_sha_geju")

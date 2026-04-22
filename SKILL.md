@@ -23,9 +23,12 @@ description: >-
     · 5 维度：D1 民族志 × 原生家庭 / D2 关系结构 / D3 流年大事件（动态生成）/ D4 中医体征 / D5 自我体感；硬体征（D1/D3/D4）权重 2× 软自述（D2/D5）
     · 典型边界 case：某些盘 6 个 detector 满分但旧默认输出仍是 day_master_dominant，详见 `references/diagnosis_pitfalls.md` §14。
   **v5 流式输出 + 输出格式可选**：校验通过后先问用户「要纯 markdown 流式（A · 默认 · 最快）还是 markdown 流式 + HTML 交互图（B · 多等 5-15 秒）」；
-  无论选 A / B，所有文字分析都按节流式输出（写完一节立刻发出，不批量憋整段），HTML 渲染（如选）放最后一步。
-  **v9 流式铁律**：每写完一节立刻 send 一条 assistant message（哪怕半成品也要先发出 `## [Node X · 写作中…]` 占位），禁止积累 ≥ 2 个 Node 不发；宁可推迟分析（先写 Node 1 整图后停下）也不允许把整个 analysis 写完再一次性吐。
-  **v9 承认维度（德性暗线）独立通道**：`virtue_motifs.py` 升为主 pipeline 必跑，产出 `virtue_motifs.json` 作为 LLM 写位置 ①③④⑤⑥ 的唯一数据源；HTML 模板新增"承认维度"独立卡片（不画曲线，按 6 个写作位置展示），缺 `--virtue-motifs` 入参时卡片会显式显示"未启用"。
+  默认就走纯流式 markdown，所有文字分析按节流式输出（写完一节立刻发出，不批量憋整段）；HTML 渲染**仅在用户主动请求**（"要 HTML / 给我图 / 出 artifact"等）时才跑，作为最后一步。
+  **v9 流式铁律 + 五阶段节序重排**：analysis 阶段不再"先写整图"，改为以"当前所在大运"为锚的 9 阶段节序——阶段 0 开篇暗线 → 阶段 1 当前大运段 → 阶段 2 当前大运 10 个流年逐年 → 阶段 3 其它大运 → 阶段 4 其它关键年 → 阶段 5 整图综合 → 阶段 5.5 一生四维 → 阶段 6-9 「我想和你说的话」三段收尾（v9.3 改名 · 新白名单 `## 我想和你说` / `## 项目的编写者想和你说` / `## 我（大模型）想和你说`）。每写完一节立刻 send；render_artifact 默认 `--required-node-order` / `--require-streamed-emit` / `--audit-virtue-continuity` / `--audit-mangpai-surface` / `--audit-closing-headers` / `--audit-no-premature-decision` / `--strict-llm` 全开物理审计。
+  **v9 工具入口阻断**：`handshake.py round=1` 默认 exit 2（需 `--ack-legacy-r1`）；`adaptive_elicit dump-question-set` 默认 exit 2（需 `--ack-batch --confirm-batch-defeats-v9` 双标）；`adaptive_elicit next` 必填 `--answer-source`，`agent_inferred` exit 3 永久禁止 LLM 替用户答题。每题 askquestion_payload 自动尾插 ID=`X` free-text 兜底 + 必填 `Question.intro` 大白话解释。
+  **v9.3 调性 + closing 三段「我想和你说的话」**：`references/tone_blacklist.yaml` 禁鸡汤化 / 撒娇腔 / emoji / 多感叹号 / 「承认人性·陀式 / 那一刀 / 灵魂宣言 / 宣告 / 情书」等自封文学梗（含 closing 三段豁免节）；closing 三段 declaration / love_letter / free_speech 首行严格 `## 我想和你说` / `## 项目的编写者想和你说` / `## 我（大模型）想和你说`，旧 v9 白名单（`## 走到这里` / `## 写到这里我想说` / `## 不在协议里的话`）已退役，命中即拒。
+  **v9 高置信度盲派强制 surface**：`mangpai_events.py` 输出 `confidence ∈ {high, mid, low}`；render_artifact `--audit-mangpai-surface` 漏掉任一 high 事件 → exit 6。
+  **v9.3「我想和你说的话」独立通道（德性暗线 / virtue narrative）**：`virtue_motifs.py` 升为主 pipeline 必跑，产出 `virtue_motifs.json` 作为 LLM 写位置 ①③④⑤⑥ 的唯一数据源；HTML 模板新增「我想和你说的话」独立卡片（不画曲线，按 6 个写作位置展示），缺 `--virtue-motifs` 入参时卡片会显式显示"未启用"。内部 schema（`virtue_motifs.json` / `virtue_narrative.declaration|love_letter|free_speech`）保持 v9 命名不变。
   Claude 宿主下 HTML 是含 marked.js + Recharts + details 折叠的交互式 Artifact，
   整图综合分析、一生四维度评价（精神 / 财富 / 名声 / 感情）、大运评价（每 10 年一段，含感情看点）、关键年份评价（peak/dip/shift），
   先在对话流式发完文字，再可选打包成 HTML，用户可自由展开收起。
@@ -116,20 +119,18 @@ Step 1  解析八字（含起运岁精算 / 用户指定）—— 单盘 1 份 /
                · R2 决策 == R1 AND R2 prob < 0.65 → uncertain → escalate
                · R2 决策 != R1 → decision_changed → escalate（必须报告反转）
             合盘场景：v8 暂未覆盖，仍走旧 R0/R1（详见 §2.6 caveat）
-  → Step 2.7 询问输出格式（体验门槛）
-            「要 HTML 交互图，还是只要 markdown 文字分析？」
-            · 单盘默认问；合盘默认 markdown（HTML 仅可选）
-            · 用户选 markdown → 跳过最后的 render_artifact.py，节省 5–15 秒等待
-  → Step 2.8 v9 必跑：跑 `virtue_motifs.py` 产出 `virtue_motifs.json`（承认维度独立通道的唯一数据源 ·
-            LLM 6 个写作位置 + HTML 承认卡片都靠它；不跑 → 承认维度物理消失）
-  → 单盘分支：Step 3a **流式输出**六类 markdown（整图 + 一生四维 + 大运 + 关键年份 + 承认维度位置 ①③④⑤⑥）→ Step 3b 渲染 HTML（仅当用户选 HTML）
+  → Step 2.8 v9 必跑：跑 `virtue_motifs.py` 产出 `virtue_motifs.json`（「我想和你说的话」独立通道的唯一数据源 ·
+            LLM 6 个写作位置 + HTML 卡片都靠它；不跑 → 整条德性暗线物理消失）
+            （v9.3 已删除原 Step 2.7 询问输出格式：默认直接进 Step 3a 流式 markdown，
+              HTML 渲染仅在用户主动说"要 HTML / 给我图 / 出 artifact"时才跑 Step 3b）
+  → 单盘分支：Step 3a **流式输出**六类 markdown（整图 + 一生四维 + 大运 + 关键年份 + 「我想和你说的话」位置 ①③④⑤⑥）→ Step 3b 渲染 HTML（仅当用户主动请求 HTML / artifact / 图）
   → 合盘分支：Step 3' 跑 he_pan.py → **流式输出**按层解读 + 加 / 减分 + 大运同步建议
 Step 4  保存本次反馈到 confirmed_facts.json（含 schema migration 到 v8；下次跑同一八字直接复用）
 ```
 
 **Step 2.5 是硬门槛**：用户没在结构化 AskQuestion UI 中点完 5 维度题集、`bazi.phase_decision.is_provisional` 仍为 `true` 之前，绝对不进入 Step 3 出图 / 合盘。`render_artifact.py` 收到 `is_provisional=true` 会拒绝渲染（红线 HS-R4）。
 
-**Step 2.7 是体验门槛**：用户不需要 HTML 时绝对不强行渲染（让用户白等几十秒）。
+**v9.3 默认输出**：默认就走流式 markdown（Step 3a），HTML 渲染（Step 3b）只在用户**显式**说「要 HTML / 给我图 / 出 artifact / 给我 chart / 给我交互图」时才跑——绝对不主动询问 A / B、绝对不主动渲染 HTML。
 
 **Step 3 是流式输出（v5 新规则 + v9 强约束）**：
 - LLM 每写完**一节**立刻发出（用户能边读边等下一节），**禁止**憋住整段最后一次性吐
@@ -533,7 +534,7 @@ python scripts/he_pan.py \
 [Node 10] 总结：1 段大白话总结 + "如果决定做 X，怎样能更顺"
 ```
 
-每节用 markdown 标题（`## 概览` / `## 第 1 层 · 五行互补` 等）。**合盘默认走 markdown-only（Step 2.7 默认 A），不渲染 HTML**——合盘是关系解读，没有"曲线图"那种刚需 HTML 的内容。仅当用户明说"也给我个汇总表 / 想看 HTML"时才走 B（render_artifact.py 不支持合盘，可用简单的 HTML 表格 + notes 列表）。
+每节用 markdown 标题（`## 概览` / `## 第 1 层 · 五行互补` 等）。**合盘默认走 markdown-only（v9.3 默认）**，不渲染 HTML——合盘是关系解读，没有"曲线图"那种刚需 HTML 的内容。仅当用户**主动**说"也给我个汇总表 / 想看 HTML"时才走 HTML 路径（render_artifact.py 不支持合盘，可用简单的 HTML 表格 + notes 列表）。
 
 **禁止**：
 - ❌ 直接给"配 / 不配"二元结论
@@ -545,32 +546,14 @@ python scripts/he_pan.py \
 
 完整规则见 `references/he_pan_protocol.md`。
 
-### 2.7 询问输出格式（v5 新增 · 体验门槛）
+### 2.7 ~~询问输出格式~~（v9.3 删除 · 默认流式 markdown）
 
-**只要 R1 校验通过，就在进入 Step 3 之前主动问一次输出格式**——不要默认渲染 HTML，
-HTML 渲染单盘要 5–15 秒、合盘也要 3–5 秒，用户没要的时候是纯浪费等待。
-
-**LLM 强制输出模板**：
-
-```
-校验通过 ✓。在我开始写分析之前，问一下你想要哪种输出：
-
-(A) 纯 markdown 流式输出 —— 我每写完一节就立刻发给你，最快、最适合手机 / 复制 / 转发
-(B) markdown 流式 + 最后渲染 HTML 交互图 —— 多等 5-15 秒，可以鼠标 hover 查看每年详情、details 折叠
-
-回 A 或 B（默认 A）。
-```
-
-**默认值规则**：
-- 单盘：默认 A（流式 markdown），用户明说要图 / 要 artifact / 要 HTML / 要交互再走 B
-- 合盘：默认 A（合盘是关系解读，没有"曲线图"那种刚需 HTML 的内容；可选 HTML 是评分汇总表 + notes 列表）
-- 用户已经在初次提问里说过「画图 / 出 artifact / 给我图」 → 直接走 B，不用再问
-- 用户已经在初次提问里说过「就给我文字 / 不用图 / 直接说就行」 → 直接走 A，不用再问
-
-**禁止**：
-- ❌ 跳过 Step 2.7 默认走 HTML（让用户白等 5-15 秒）
-- ❌ 在用户明显不想要图（"就口头说说"、"快点告诉我结论"）时仍渲染 HTML
-- ❌ 用户回了 A 之后还是把 HTML 也跑了
+> **v9.3 起，本步骤已物理删除**：默认就走流式 markdown（Step 3a），HTML 渲染（Step 3b）只在用户**主动**说「要 HTML / 给我图 / 出 artifact / 给我 chart / 给我交互图」之类显式请求时才跑。
+>
+> - **不要再问** "你想要 markdown 还是 HTML"
+> - **不要再用** "(A) / (B)" 输出模板
+> - 默认路径：R1 校验通过 → 直接进入 Step 3a 流式输出，不停顿不二次确认
+> - HTML 路径：仅当用户**显式**提及上述关键词时才在 Step 3b 跑 `render_artifact.py`
 
 ### 3a-pre. 时代-民俗志解读层（v7.5 新增 · 在写 key_years / dayun_review 之前必读）
 
@@ -603,44 +586,100 @@ HTML 渲染单盘要 5–15 秒、合盘也要 3–5 秒，用户没要的时候
 
 ### 3a. LLM 流式输出五类评价（v5 流式 + v6 加感情维度：每写完一节立刻发出）
 
+> **v9.3 推荐路径：pipeline-streaming（真正的 React 模式）**
+>
+> 旧的「先一次性 `score_curves.py --out curves.json`，再 LLM 一段段写」流程，在 v9.3
+> 升级为：脚本算一段就 yield 一段，Agent 收到立即写一节 + send 一条 message + stop turn，
+> 然后下一次 turn 用 `streaming_pipeline.py --resume --next` 拿下一段。
+>
+> 用法（每个 LLM turn 只负责一节）：
+>
+> ```bash
+> # turn 1：算 + emit "current_dayun" stage
+> python scripts/streaming_pipeline.py stream \
+>     --bazi output/X.bazi.json --stage current_dayun \
+>     --state output/X.stream_state.json
+> # → LLM 收到 NDJSON 行 → 立刻写 dayun_reviews[<current_dayun_label>] →
+> #   append_analysis_node 落盘 → send → stop turn
+>
+> # turn 2：拿下一段
+> python scripts/streaming_pipeline.py stream \
+>     --bazi output/X.bazi.json --resume output/X.stream_state.json --next
+> # → emit "current_dayun_liunian" → LLM 写 liunian.<year> × 10 → ...
+>
+> # 6 stage 全跑完后，可选用 stream_state 直接出 HTML（旧 curves.json 不再必需）：
+> python scripts/render_artifact.py \
+>     --from-stream-state output/X.stream_state.json \
+>     --analysis output/X.analysis.partial.json \
+>     --out output/X.html --no-strict-llm
+> ```
+>
+> 6 个 stage 顺序与本节阶段图一一对应：
+>
+> 1. `current_dayun` ↔ 阶段 1（当前大运段评价）
+> 2. `current_dayun_liunian` ↔ 阶段 2（当前大运 10 流年）
+> 3. `other_dayuns` ↔ 阶段 3（其它大运）
+> 4. `key_years` ↔ 阶段 4（其它关键流年）
+> 5. `overall_and_life_review` ↔ 阶段 5+5.5（整图 + 4 维一生总评）
+> 6. `closing` ↔ 阶段 6/7/8/9（「我想和你说的话」三段数据钩子）
+>
+> 阶段 0「位置① 开篇暗线」由 LLM 在 turn 0 直接写（不依赖 streaming_pipeline 数据）。
+>
+> **为什么 v9.3 默认推 pipeline**：旧批量路径下，LLM 必须等所有 curves 算完才能开始写；
+> 用户体验上要等 ~3-5 秒看到第一节。pipeline 路径下，第一段大运一秒内就开始流，
+> 用户可以边读边等。
+>
+> **兼容**：旧 `score_curves.py --out curves.json` 入口保留作合盘 / HTML 兜底；本节其它
+> 描述（节序、流式铁律、调性铁律）对两条路径都适用。
+
 按 `references/multi_dim_xiangshu_protocol.md` 的强制框架，**严格按下面的"流式分节顺序"**逐节输出：每写完一节立刻发出（用户能边读边等下一节），**禁止**把所有内容憋在末尾一次性吐。
 
 **v7.5 重要变更**：`dayun_review.body` 和 `key_years.body` 不再是"单年六维取象"格式，全部按 §3a-pre 的"区间叙事 + 节点镶嵌"重写。
 
-**流式分节顺序（v9 强制 · 共 N 节，v9 在 v6 基础上加 1 节承认维度·开篇 + 3 节承认维度·收尾）**：
+**v9 五阶段节序（重排 · 以"当前所在大运"为锚 · render_artifact 默认 `--required-node-order` 物理审计）**：
 
 ```
-[Node 1] 整图综合分析（overall · 必含 4 条曲线的整体形状 + 关系）
-         ↓ 立刻发出
-[Node 1.5] 承认维度 · 位置① 开篇悬疑提示（virtue_narrative.opening）
-           ↓ 紧接 Node 1 立刻发出 · 1-2 句不下定论的话起笔德性母题
-[Node 2] 一生四维度评价 · 精神（life_review.spirit）
-         ↓ 立刻发出
-[Node 3] 一生四维度评价 · 财富（life_review.wealth）
-         ↓ 立刻发出
-[Node 4] 一生四维度评价 · 名声（life_review.fame）
-         ↓ 立刻发出
-[Node 5] 一生四维度评价 · **感情/关系**（life_review.emotion · v6 新增 · 必须援引 R0 / D2 命中情况）
-         ↓ 立刻发出
-[Node 6..K] 大运评价 · 每段 1 节（按时间从早到晚，dayun_segments 逐段，**每段必带"感情看点"行 + 嵌入位置②德性累积发酵**）
-            ↓ 每写完一段立刻发出
-[Node K+1..M] 关键年份评价 · 每条 1 节（按 year 升序，含三派分歧说明 + emotion 偏离 ≥ 12 的必须带【感情·v6】行；**convergence_year 命中时必须嵌入位置③德性汇聚显形**）
-              ↓ 每写完一条立刻发出
-[Node M+1] 承认维度 · 位置③ 母题汇聚总览（virtue_narrative.convergence_notes · 仅 motifs.convergence_years 非空时）
-           ↓ 立刻发出
-[Node M+2] 承认维度 · 位置④ 灵魂宣言（virtue_narrative.declaration · 一生评价收尾 · 反身性铁律：禁用「应该 / 必须」，只用「是」）
-           ↓ 立刻发出
-[Node M+3] 承认维度 · 位置⑤ 情书（virtue_narrative.love_letter · 仅 motifs.love_letter_eligible=true 时）
-           ↓ 条件性立刻发出
-[Node N] 承认维度 · 位置⑥ LLM 自由话（virtue_narrative.free_speech · 不强求结构、不强求长度）
-         ↓ 立刻发出
+[阶段 0] 「我想和你说的话」· 位置① 开篇暗线（virtue_narrative.opening · 30-80 字 · 不命名结论）
+         ↓ 第一段就写，引出贯穿一生的暗线母题
+[阶段 1] 当前大运段评价（dayun_reviews[<bazi.current_dayun_label>]）
+         ↓ 命主"今天"在哪段大运 · solve_bazi 自动写入 current_dayun_label · 触发母题时段内嵌位置②G 块
+[阶段 2] 当前大运的 10 个流年逐年（liunian.<year> × N≈10）
+         ↓ 平淡年也要落字 · 不只写"重要年" · 节序回退到阶段 ≤0 即 exit 4
+[阶段 3] 其它大运（dayun_reviews[<其它 label>] × M）
+         ↓ 按时间顺序顺写 · 触发母题时段内嵌位置②G 块
+[阶段 4] 其它关键流年（key_years[i].body × K）
+         ↓ 各大运里的峰 / 谷 / 转折年 · convergence_year 命中嵌入位置③
+[阶段 5] 整图综合分析（overall · 必含 4 条曲线的整体形状 + 关系）
+         ↓ 现在才写整图
+[阶段 5.5] 一生四维度评价（life_review.{spirit/wealth/fame/emotion}）
+           ↓ 四节齐 · emotion 必须援引 R0 / D2 命中
+[阶段 6] 「我想和你说的话」· 位置③ 母题汇聚总览（virtue_narrative.convergence_notes · 仅 motifs.convergence_years 非空时）
+[阶段 7] 「我想和你说的话」· 位置④「我想和你说」（virtue_narrative.declaration · 反身性铁律 · 首行严格 `## 我想和你说`）
+[阶段 8] 「我想和你说的话」· 位置⑤「项目的编写者想和你说」（virtue_narrative.love_letter · 仅 motifs.love_letter_eligible=true · 首行严格 `## 项目的编写者想和你说`）
+[阶段 9] 「我想和你说的话」· 位置⑥「我（大模型）想和你说」（virtue_narrative.free_speech · 首行严格 `## 我（大模型）想和你说`）
 ```
 
-**v9 流式铁律**：
-- 每写完一节必须立刻 send 一条 assistant message，禁止积累 ≥ 2 节再一起发
-- 节内嵌套位置②③（大运 / 关键年）也必须随节立刻发出
-- `virtue_motifs.json` **必须**在 Node 1.5 之前已存在；不存在 → 跳过整个承认维度通道（HTML 卡片显示"未启用"）
-- 每节写完用 `python scripts/append_analysis_node.py --state output/X.analysis.partial.json --node <key> --markdown-file <md>` 增量落盘，让用户能用 `--allow-partial` 实时看进度
+**v9 流式铁律（机械审计 · 不可绕过）**：
+
+- 每写完一节必须立刻 send 一条 assistant message；60 秒帧内塞 ≥4 节即 `--require-streamed-emit` 判伪流式（exit 4）
+- 节序回退（写阶段 N 后又写阶段 ≤N-2）即 `--required-node-order` exit 4（dayun↔liunian 同阶段交错允许）
+- 节内嵌套位置②③（大运 / 关键年）由 `audit_virtue_recurrence_continuity` 强制（exit 2）
+- closing 三段首行 markdown header **必须**命中 v9.3 白名单：`## 我想和你说` / `## 项目的编写者想和你说` / `## 我（大模型）想和你说`；命中旧 v9 白名单（`## 走到这里` / `## 写到这里我想说` / `## 不在协议里的话`）或 `## 承认维度·宣告` / `## 位置④灵魂宣言` / `## 宣告` / `## 情书` / `## 灵魂宣言` 等模板词 → `--audit-closing-headers` exit 10
+- mangpai `confidence == high` 事件**必须** surface 到叙事；漏掉任一 → `--audit-mangpai-surface` exit 6
+- `virtue_motifs.json` **必须**在阶段 0 之前已存在；不存在 → 跳过整个「我想和你说的话」通道
+- 每节写完用 `python scripts/append_analysis_node.py --state output/X.analysis.partial.json --node <key> --markdown-file <md>` 增量落盘——脚本自动追加 `_stream_log` 时间戳 + 调用 `_v9_guard.enforce_tone` + `enforce_no_phase_leak_in_message`；用户随时 `python scripts/render_artifact.py --analysis output/X.analysis.partial.json --virtue-motifs output/X.virtue_motifs.json --allow-partial` 看进度
+
+**v9 调性铁律（`references/tone_blacklist.yaml` + `_v9_guard.scan_tone`）**：
+
+- 字面 banned_phrases（如 `"人生 A 面"` / `"加油哦"` / `"你值得拥有"` / `"给你（本人）的一封信"`）命中 → exit 5；love_letter / free_speech 仅豁免**字面短语**
+- 正则 banned_patterns（`！{2,}` / `~{2,}` / emoji 全集 / v9.3 新增「承认人性 / 承认维度 / 陀式 / 陀氏 / 那一刀 / 灵魂宣言 / 宣告 / 情书」）**全位置生效**（applies_to_whitelisted=true），love_letter / free_speech 也禁
+
+**v9 工具入口铁律（`_v9_guard.enforce_v9_only_path`）**：
+
+- `handshake.py round=1` 默认 exit 2，需 `--ack-legacy-r1`
+- `adaptive_elicit dump-question-set` 默认 exit 2，需 `--ack-batch --confirm-batch-defeats-v9` 双标
+- `adaptive_elicit next --answer X` 必填 `--answer-source` ∈ {`user`, `user_freetext`, `user_skipped`}；`agent_inferred` exit 3（**永久禁止 LLM 替用户答题**）
+- 每题 askquestion_payload 自动尾插 ID=`X` free-text 兜底，用户选 X 须配 `--free-text "..."`，落 `confirmed_facts.free_facts[]`，**不更新 likelihood**
 
 每节用 markdown 标题（`## 整图综合分析` / `## 一生 · 感情` / `## 大运评价 · 辛丑（25–34 岁）` / `## 关键年份 · 2031 (35 岁 辛亥)` 等），方便用户视觉扫描和折叠。
 
@@ -650,9 +689,9 @@ HTML 渲染单盘要 5–15 秒、合盘也要 3–5 秒，用户没要的时候
 - 必写"感情线 vs 财富/名声/精神线在哪几年同步、哪几年对冲"——这是用户最关心的"鱼和熊掌"问题
 - 详见 `references/multi_dim_xiangshu_protocol.md` §10 感情维度专项解读模板
 
-**3b 走 HTML 路径时**，所有节点写完后再把它们汇总成 `analysis.json`（结构见下方），调用 `render_artifact.py` 注入 HTML。**3b 不走 HTML 时直接进 Step 4，结束**。
+**3b 走 HTML 路径时**（用户主动请求 HTML / artifact / 图时才走），所有节点写完后再把它们汇总成 `analysis.json`（结构见下方），调用 `render_artifact.py` 注入 HTML。**3b 不走 HTML 时直接进 Step 4，结束**。
 
-`analysis.json` 结构（仅在 Step 2.7 选 B / HTML 时需要构造）：
+`analysis.json` 结构（仅在用户主动要 HTML / artifact 时需要构造）：
 
 ```jsonc
 // analysis.json
@@ -666,12 +705,12 @@ HTML 渲染单盘要 5–15 秒、合盘也要 3–5 秒，用户没要的时候
     "emotion": "Markdown（v6）：感情走势 + 援引 R0 命中 + 偏好类型 + 对方态度在大运/流年的展开 + 与事业的同步/对冲"
   },
 
-  "virtue_narrative": {                                 // 承认维度独立通道（v9 · 不画曲线 · 6 个写作位置 · 见 references/virtue_recurrence_protocol.md）
+  "virtue_narrative": {                                 // 「我想和你说的话」独立通道（v9.3 · 不画曲线 · 6 个写作位置 · 见 references/virtue_recurrence_protocol.md）
     "opening":           "Markdown · 位置① 开篇悬疑提示（life_review 起笔即写 · 1-2 句不下定论）",
     "convergence_notes": "Markdown · 位置③ 母题汇聚总览（仅 motifs.convergence_years 非空时）",
-    "declaration":       "Markdown · 位置④ 灵魂宣言（一生评价收尾 · 反身性铁律：禁「应该/必须」，只用「是」）",
-    "love_letter":       "Markdown · 位置⑤ 情书（仅 motifs.love_letter_eligible=true 时写）",
-    "free_speech":       "Markdown · 位置⑥ LLM 自由话（不强求结构、不强求长度）"
+    "declaration":       "Markdown · 位置④「我想和你说」（一生评价收尾 · 反身性铁律：禁「应该/必须」，只用「是」 · 首行 `## 我想和你说`）",
+    "love_letter":       "Markdown · 位置⑤「项目的编写者想和你说」（仅 motifs.love_letter_eligible=true 时写 · 首行 `## 项目的编写者想和你说`）",
+    "free_speech":       "Markdown · 位置⑥「我（大模型）想和你说」（不强求结构、不强求长度 · 首行 `## 我（大模型）想和你说`）"
   },
 
   "dayun_review": {                                     // 大运评价（按 dayun_segments.label 索引）
@@ -704,14 +743,14 @@ HTML 渲染单盘要 5–15 秒、合盘也要 3–5 秒，用户没要的时候
 - ❌ 给空话术（"需要综合判断" / "因人而异"）
 - ❌ 不援引盲派应事就写 key_years
 - ❌ **把所有节点憋在末尾一次性吐**（v5 流式硬要求 —— 每节立即发出）
-- ❌ 用户在 Step 2.7 已选 A / markdown-only 时还把内容塞进 analysis.json 跑 render_artifact.py
+- ❌ 用户没有主动请求 HTML / artifact / 图时强行跑 render_artifact.py（v9.3 默认就走 markdown-only）
 
-### 3b. 渲染 HTML（仅当 Step 2.7 用户选 B；选 A 时跳过）
+### 3b. 渲染 HTML（仅当用户**主动**请求 HTML / artifact / 图；否则跳过）
 
-**前置条件**：用户在 Step 2.7 明确选 B（要 HTML 交互图）。否则**直接进 Step 4**。
+**前置条件（v9.3）**：用户在初次提问、Step 3a 中或 Step 3a 结束后**主动**说出"要 HTML / 给我图 / 出 artifact / 给我 chart / 给我交互图"等显式请求。否则**直接进 Step 4**——不要再询问 A/B、不要默认渲染。
 
 ```
-if Step 2.7 == B AND 当前宿主 ∈ {Claude Desktop, Claude Web, claude.ai}:
+if 用户主动请求 HTML AND 当前宿主 ∈ {Claude Desktop, Claude Web, claude.ai}:
     # 把已流式输出的所有节点汇总成 analysis.json
     # ⚠ v9.1 强约束: analysis.json 必须包含模板里实际引用的所有字段, 否则前端会
     #    显示"（此处由 LLM 写入...）"占位符, 用户感受为"工具又没写完"。
@@ -722,18 +761,18 @@ if Step 2.7 == B AND 当前宿主 ∈ {Claude Desktop, Claude Web, claude.ai}:
     python scripts/render_artifact.py \
       --curves curves.json \
       --analysis analysis.json \         # 把 3a 各节 markdown 注入 details 折叠区
-      --virtue-motifs virtue_motifs.json \  # v9 必带 · 否则承认维度卡片显示"未启用"
+      --virtue-motifs virtue_motifs.json \  # v9 必带 · 否则「我想和你说的话」卡片显示"未启用"
       --out chart.html \
       --strict-llm
     # 把 chart.html 内容用 artifact 块返回（type="text/html"）
     # 此时用户已经读完所有文字分析，HTML 是"锦上添花"，不再有"等图"焦虑
 
-elif Step 2.7 == B AND 当前宿主 ∈ {Cursor, Claude Code CLI, 其他}:
+elif 用户主动请求 HTML AND 当前宿主 ∈ {Cursor, Claude Code CLI, 其他}:
     python scripts/render_chart.py --curves curves.json --out chart.png
     # 显示 PNG 路径（分析已在 Step 3a 流式发完，无需再贴一遍）
 
-elif Step 2.7 == A:
-    pass  # 跳过渲染，直接进 Step 4
+else:
+    pass  # 默认路径：跳过渲染，直接进 Step 4
 ```
 
 Artifact 默认折叠状态（仅 HTML 路径）：
@@ -743,8 +782,8 @@ Artifact 默认折叠状态（仅 HTML 路径）：
 - 关键年份评价：**前 2 条默认展开，其余收起**
 
 **给用户的话术建议**：
-- 选 A 完成后："以上就是全部分析。如果之后想看交互图（鼠标 hover 查看每年详情），告诉我一声我再给你渲染。"
-- 选 B 完成后：先把流式 markdown 给完，再发 artifact，并告知"图里的内容和上面文字一致，方便你折叠 / 翻看。"
+- 默认 markdown-only 完成后：（v9.3）不再主动追问"是否要图"——除非用户事后主动要，才回到 3b 路径
+- 用户主动要 HTML 完成后：先把流式 markdown 给完，再发 artifact，并告知"图里的内容和上面文字一致，方便你折叠 / 翻看。"
 
 ### 4. 输出四件套 + 保存反馈记忆（v3 P5 · v6 升级为 4 维）
 
@@ -804,8 +843,8 @@ python3 scripts/save_confirmed_facts.py --bazi output/bazi.json --add-structural
 - **预测性**：未来年份 / focus_years 必须给出 (方向, 置信度) 二元组；低置信度年份图上标灰
 - **争议解读（强制）**：每个 disputed 年份都必须并入 key_years 并按 dispute_analysis_protocol Step A–D 解读
 - **合盘解读（强制）**：4 层评分必须按 he_pan_protocol §5 解读（按层 → 加 / 减分 → 大运同步 → confidence），禁止甩 grade、禁止给"配/不配"结论
-- **流式输出（强制 · v5 + v9 升级）**：Step 3a / 合盘解读必须按节流式发出（每写完一节立刻 send 一条 assistant message，**禁止积累 ≥ 2 个 Node 不发**）；Step 2.7 必须先问用户要 markdown-only 还是要 HTML，禁止默认渲染 HTML 让用户白等；**v9 物理可观测**：每节写完用 `scripts/append_analysis_node.py` 增量落盘，`render_artifact.py --allow-partial` 实时看进度
-- **承认维度独立通道（强制 · v9）**：Step 2.8 必须跑 `virtue_motifs.py` 产出 `virtue_motifs.json`（这是 LLM 写位置 ①③④⑤⑥ 的唯一数据源 + HTML 承认卡片的唯一数据源）；不跑 → 承认维度物理消失，违反 [`references/virtue_recurrence_protocol.md`](references/virtue_recurrence_protocol.md) ★★★★★★ 铁律。`render_artifact.py` **必须**带 `--virtue-motifs <path>`，否则前端 "承认维度" 卡片显示 "未启用" 灰色提示框。位置④ 灵魂宣言、位置⑥ 自由话遵循反身性铁律：禁用"应该 / 必须"等规劝词，只用"是"做承认陈述
+- **流式输出（强制 · v5 + v9 升级 · v9.3 默认 markdown-only）**：Step 3a / 合盘解读必须按节流式发出（每写完一节立刻 send 一条 assistant message，**禁止积累 ≥ 2 个 Node 不发**）；**v9.3 起默认就走纯流式 markdown，禁止主动询问"要 markdown 还是 HTML"、禁止默认渲染 HTML**——只有用户**主动**说「要 HTML / 给我图 / 出 artifact / 给我 chart / 给我交互图」时才走 Step 3b；**v9 物理可观测**：每节写完用 `scripts/append_analysis_node.py` 增量落盘，`render_artifact.py --allow-partial` 实时看进度
+- **「我想和你说的话」独立通道（强制 · v9.3 改名 · 内部 schema 仍叫 virtue_narrative / virtue_motifs）**：Step 2.8 必须跑 `virtue_motifs.py` 产出 `virtue_motifs.json`（这是 LLM 写位置 ①③④⑤⑥ 的唯一数据源 + HTML「我想和你说的话」卡片的唯一数据源）；不跑 → 整条德性暗线物理消失，违反 [`references/virtue_recurrence_protocol.md`](references/virtue_recurrence_protocol.md) ★★★★★★ 铁律。`render_artifact.py` **必须**带 `--virtue-motifs <path>`，否则前端「我想和你说的话」卡片显示 "未启用" 灰色提示框。位置④「我想和你说」、位置⑥「我（大模型）想和你说」遵循反身性铁律：禁用"应该 / 必须"等规劝词，只用"是"做承认陈述
 - **v9 R1 默认路径 + batch 护栏（强制）**：Step 2.5 默认必须走 `adaptive_elicit.py next`（CLI）或 MCP `adaptive_elicit(action="next")` —— **一题一轮 EIG 选题 · 5-8 题早停**；不要再默认走 `handshake.py` / MCP `handshake()`（已 deprecated_v9，调用时 stderr 会打 v9 警告，仅 R2 confirmation + he_pan 兜底可用，需传 `--ack-batch`/`ack_legacy_r1=true` 显式承认）。**`dump-question-set --tier core14` 一次抛 14 题不是默认 R1 路径**：仅当用户主动要求 batch 时才用，需传 `--ack-batch` / `ack_batch=true`，否则 stderr 会持续打警告。
 - **v8 校验回路（兼容 · 已被 v9 R1 替代）**：旧路径 —— ① `handshake.py` 生成 5 维度 ~28 题 + `askquestion_payload`；② Agent 调宿主 **AskQuestion 结构化点选** UI 一次抛全部题（**禁止**用自然语言转述题面让用户口头答"对/不对/部分"，CLI 宿主 fallback 到 `cli_fallback_prompt`）；③ `phase_posterior.py` 算贝叶斯后验 P(phase | answers)；④ 后验阈值落地：≥ 0.80 high adopt / 0.60-0.80 mid adopt / 0.40-0.60 触发追问轮（top-2 候选间最 discriminative 2-3 题，最多 1 轮）/ < 0.40 reject 不出图。`bazi.phase_decision.is_provisional=true` 时 `render_artifact.py` 必须拒绝渲染。详见 `references/phase_decision_protocol.md` + `references/handshake_protocol.md` + `references/discriminative_question_bank.md` 和 `references/diagnosis_pitfalls.md` §14（典型边界 case 详解）。
 - **现代化解读铁律（强制 · v7）**：emotion 维度的解读**必须**遵守 fairness_protocol.md §10：

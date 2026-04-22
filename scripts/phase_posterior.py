@@ -69,11 +69,25 @@ def update_posterior(
     dynamic_questions = _extract_dynamic_questions(handshake)
     pd = decide_phase(bazi, user_answers=user_answers, dynamic_questions=dynamic_questions)
 
-    # v9 L4 · R3 降级建议
+    # v9 L4 · R3 降级建议 —— 两条触发路径：
+    #   1. confidence ∈ {low, reject}：原有逻辑（弱后验 + 强 zuogong rare hit）
+    #   2. confidence ∈ {mid, high} 但 mangpai_conflict_alert.severity == 'high'：
+    #      decision 算够强，但 ≥3 个盲派系 high-conf hits 都指向另一相位 →
+    #      不能默默淹没，强制建议 R3（修 6d0abb46 case bug）
     action = _check_threshold(pd)
-    if action in ("reject", "ask_more"):
+    alert = pd.get("mangpai_conflict_alert") or {}
+    high_conflict = alert.get("severity") == "high"
+    if action in ("reject", "ask_more") or high_conflict:
         suggestion = _suggest_round3(bazi, pd)
         if suggestion is not None:
+            if high_conflict and action not in ("reject", "ask_more"):
+                suggestion["trigger_reason"] = "mangpai_conflict_alert_high"
+                suggestion["override_note"] = (
+                    f"R1 决策 {pd['decision']}({pd['confidence']}, "
+                    f"{pd['decision_probability']:.3f}) 表面足够强，但盲派 / 子平正格 "
+                    f"通道有 {alert.get('n_mangpai_high', 0)} 条 conf≥0.80 与之冲突，"
+                    "强制建议 R3 让用户在两条相位主张之间做最终裁决。"
+                )
             pd["rare_phase_fallback_suggestion"] = suggestion
 
     new_bazi = dict(bazi)

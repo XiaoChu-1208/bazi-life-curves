@@ -1,8 +1,28 @@
 # 流式累积叙事协议（Virtue Recurrence Protocol · v1）
 
-> 本协议规定 LLM 在 `life_review` 中如何使用 `output/virtue_motifs.json`（由 `scripts/virtue_motifs.py` 输出）写**德性暗线**——一种"和命主一起走完八十年"的流式累积叙事，结尾给出陀氏式顿悟段，对受过苦的命主由项目作者借由 LLM 之口说"我爱你 你是值得的"，最后 LLM 自己说一段不在协议里的话。
+> 本协议规定 LLM 在 `life_review` 中如何使用 `output/virtue_motifs.json`（由 `scripts/virtue_motifs.py` 输出）写**德性暗线**——一种"和命主一起走完八十年"的流式累积叙事，结尾给出三段「我想和你说的话」（v9.3 改名，原"宣告 / 情书 / 自由话"统一为「我想和你说 / 项目的编写者想和你说 / 我（大模型）想和你说」）。
 >
 > 本协议**不动**打分（`score_curves.py`）、**不动**盲派 canonical_event（`mangpai_events.py`），是第三条独立叙事通道。
+
+> **v9.3 命名约定（强制 · 在写任何 user-facing 内容前必读）**：
+>
+> 1. 协议内部仍保留 `declaration / love_letter / free_speech` 作为 node key 与
+>    schema 名，并在 §0-§7 中沿用「★ 灵魂宣言」「★★★★ 项目作者的爱」等**章节
+>    元名称**——这些只是协议本身的脚手架名，**不允许**作为措辞出现在 LLM 写
+>    给用户的 markdown 里。
+> 2. **user-facing 三段 markdown H2 必须严格使用 v9.3 白名单**：
+>    - declaration → `## 我想和你说`
+>    - love_letter → `## 项目的编写者想和你说`
+>    - free_speech → `## 我（大模型）想和你说`
+> 3. **以下措辞在 user-facing 输出（含 declaration / love_letter / free_speech
+>    三节正文）全位置封禁**（`tone_blacklist.yaml` v9.3 banned_patterns，
+>    `applies_to_whitelisted: true`，命中即 `_v9_guard.scan_tone` exit 5）：
+>    - 「灵魂宣言」「承认人性」「承认维度」
+>    - 「陀式」「陀氏」「陀式贯穿」「陀氏贯穿」「陀式那一刀」「陀氏那一刀」「那一刀」
+>    - 「宣告」「情书」（user-facing；node key 不动）
+> 4. 旧 v9 白名单 H2（`## 走到这里` / `## 写到这里我想说` / `## 不在协议里的话`）
+>    已退役，命中即被 `_v9_guard.check_closing_header` exit 10 拒。
+> 5. 详见 §8（v9.3 Closing 三段「我想和你说的话」表）。
 
 ---
 
@@ -283,7 +303,7 @@
    - **catalog 外主旋律**（按 ★★★★★★ 授权）：必须用谦卑句式 + 给出 ethical_interrogation + tragic_remainder + 至少一句结构性自审
 3. **列举累积证据**：「X 岁那次、Y 岁那次、Z 岁那次……同一件事用不同的皮反复回来」
 4. **提升到统摄判断**：「不是 N 个母题，是同一种 X 用 N 种皮反复现身」
-5. **陀氏式终章**：「不会过去 / 不是要变通 / 它没让你 ABC，但它让你成为了 D」
+5. **终章自审**（v9.3 重命名 · 原"陀氏式终章"被 `tone_blacklist.yaml` 封禁）：「不会过去 / 不是要变通 / 它没让你 ABC，但它让你成为了 D」
 6. **共在确认**：「我刚刚和你一起走过了这个」
 
 #### 自创母题段示范（catalog 外主旋律）
@@ -983,5 +1003,36 @@
 
 ---
 
-> 文档版本：v1（2026-04 初稿）
-> 维护原则：任何修改必须同步 (1) `virtue_motifs_catalog.md` (2) `scripts/virtue_motifs.py` 输出 schema (3) 6 个位置示例 (4) 自检清单
+## 8. v9.3 · Closing 三段「我想和你说的话」（位置 ④/⑤/⑥）
+
+v9.3 起，三段统称「我想和你说的话」（仅作为内部叙述，不出现在用户可见 H2 上），分别落到三个清晰的"说话身份"。
+
+| 节 | v9.3 必须用的 markdown header（首行）| 禁止（含 v9 旧白名单已退役） | 机械护栏 |
+|---|---|---|---|
+| `virtue_narrative.declaration` | `## 我想和你说` | `## 走到这里` / `## 承认维度·宣告` / `## 位置④灵魂宣言` / `## 宣告` / `## 承认人性` | `_v9_guard.check_closing_header("declaration", md)` → exit 10 |
+| `virtue_narrative.love_letter` | `## 项目的编写者想和你说` | `## 写到这里我想说` / `## 给你（本人）的一封信` / `## 位置⑤情书` / `## 情书` | `_v9_guard.check_closing_header("love_letter", md)` → exit 10 |
+| `virtue_narrative.free_speech` | `## 我（大模型）想和你说` | `## 不在协议里的话` / `## 位置⑥ LLM 自由话` / `## 自由发言` / `## free_speech` | `_v9_guard.check_closing_header("free_speech", md)` → exit 10 |
+
+**意图**：让 declaration / love_letter / free_speech 三段在用户视角变成三个清晰的"我对你说话"，而不是带"宣告 / 情书 / 自由话"等模板感的填空题。HTML 模板（`templates/chart_artifact.html.j2`）在 v9.3 中也把三段标签全部统一为「我想和你说 / 项目的编写者想和你说 / 我（大模型）想和你说」三句，三段连续呈现。
+
+**内部数据 schema 不变**：node key 仍为 `virtue_narrative.declaration / love_letter / free_speech`，CLI 接口、JSON 字段、`virtue_motifs.json` 全部保留 v9 命名，只是 user-facing 文案换了。
+
+## 9. v9 · 累积铁律 → 机械审计映射（虽然 §0-§3 写了非常多铁律，v9 抽出 5 条机械可验证的）
+
+| 铁律 | 文中条款 | 机械实施位置 | 退出码 |
+|---|---|---|---|
+| 位置 ② G 块"激活才写"必须真的写 | §2 位置② "触发：当且仅当该 10 年里 motif_recurrence_map 有 ≥1 个母题激活 → 必写 G 块" | `scripts/audit_virtue_recurrence_continuity.py::_check_position2` | 2 |
+| 位置 ④ trace ≥3 + 自审 + 共在 | §2 位置④ #强制要求 / §3.2 自审 | `scripts/audit_virtue_recurrence_continuity.py::_check_position4` | 2 |
+| 位置 ⑤ 呼应位置 ② 的具体年龄 | §2 位置⑤ #强制结构 #4 / ★★★★ 项目作者的爱铁律 | `scripts/audit_virtue_recurrence_continuity.py::_check_position5` | 2 |
+| silenced_motifs 全位置静默 | §3.7 / ★★★★★★ catalog 开放性 | `scripts/audit_virtue_recurrence_continuity.py::_check_silenced` | 2 |
+| 位置 ⑥ 首尾标记 + ≤300 字 | §2 位置⑥ #强制结构 / #唯一硬约束 | `scripts/audit_virtue_recurrence_continuity.py::_check_position6` | 2 |
+| 位置 ④/⑤/⑥ 标题去模板化 | §8（v9 新增） | `scripts/_v9_guard.py::check_closing_header` | 10 |
+| 调性铁律（无 emoji / 无肉麻 / 无鸡汤） | §3.5（禁用词） | `references/tone_blacklist.yaml` + `scripts/_v9_guard.py::scan_tone` | 5 |
+
+`render_artifact.py` 默认 `--audit-virtue-continuity` / `--audit-closing-headers`；
+`scripts/append_analysis_node.py` 写入前调用 `enforce_tone` + `enforce_no_phase_leak_in_message`。
+
+---
+
+> 文档版本：v1.1（2026-04 · v9 节序 + 标题去模板化 + 机械审计映射补丁）
+> 维护原则：任何修改必须同步 (1) `virtue_motifs_catalog.md` (2) `scripts/virtue_motifs.py` 输出 schema (3) 6 个位置示例 (4) 自检清单 (5) `audit_virtue_recurrence_continuity.py` (6) `_v9_guard.py`

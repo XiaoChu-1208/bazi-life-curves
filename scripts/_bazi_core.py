@@ -1655,7 +1655,10 @@ def _compute_prior_distribution(detection_details: List[Dict]) -> Dict[str, floa
 # v9 · rare phase 接入先验（做功维度）
 # ============================================================================
 
-def _p7_zuogong_aggregator(rare_hits: List[Dict], all_phase_ids: Tuple[str, ...]) -> Optional[Dict]:
+def _p7_zuogong_aggregator(
+    rare_hits: List[Dict],
+    all_phase_ids: Tuple[str, ...],
+) -> Optional[Dict]:
     """把 rare_phase_detector 的 zuogong-dimension hits 聚合成单个 P7 证据 detector dict。
 
     设计要点：
@@ -1663,6 +1666,12 @@ def _p7_zuogong_aggregator(rare_hits: List[Dict], all_phase_ids: Tuple[str, ...]
       - 多个 zuogong hit 通过 softmax 合并（避免两三个小 hit 压垮 P1-P6）
       - 输出 phase_likelihoods 在 all_phase_ids 全集上分布（大头给 suggested_phase）
       - 若没有 zuogong hit → 返回 None（detect_all_phase_candidates 不追加）
+
+    v9.2 · 撤销 v9.1 的 `protected_pids` 参数：
+      原 v9.1 引入 protected_pids 是为了让 P0 月令格种子推出的子平派 phase 不被
+      P7 盲派 zuogong likelihood 压死——这本质是给"子平 vs 盲派"做派别仲裁，违背
+      "算法只算结构性证据，让 EIG 用户校验做 disambiguation"的中立原则。v9.2
+      把 P0 改造成派别中立的"高置信度 rare phase 候选池"，不再需要 P7 做派别保护。
     """
     import math
 
@@ -1702,7 +1711,7 @@ def _p7_zuogong_aggregator(rare_hits: List[Dict], all_phase_ids: Tuple[str, ...]
 
     used = {top_pid, "day_master_dominant"} | zuogong_pids
     n_other_zuogong = len([p for p in zuogong_pids if p != top_pid])
-    n_outside = n_all - len(used | {top_pid})
+    n_outside = n_all - len(used)
     consumed = w_top + w_other_zuogong * n_other_zuogong + w_dm
     w_outside = max((1.0 - consumed) / max(n_outside, 1), 0.005)
 
@@ -1736,6 +1745,89 @@ def _p7_zuogong_aggregator(rare_hits: List[Dict], all_phase_ids: Tuple[str, ...]
     }
 
 
+def _p0_rare_phase_prior_seed(
+    rare_hits: Optional[List[Dict]],
+    phase_ids: Tuple[str, ...],
+    *,
+    conf_threshold: float = 0.80,
+    min_hits: int = 3,
+) -> Optional[Dict[str, float]]:
+    """v9.2 · 派别中立的高置信度 rare phase prior 候选池（取代 v9.1 月令格种子）。
+
+    设计原则（v9.1 学到的教训）：
+      算法的职责是「算清楚结构性证据 → 给出最可能的几个候选」，不是替任何一派
+      （子平正格 / 盲派做功 / 渊海三命 / 化气从格 …）做学派仲裁。v9.1 的
+      `_p0_yueling_geju_prior_seed` 把"月令为先"这种学派立场写进了 prior 起点
+      （给 ziping_zhenquan 月令格独占 0.66-0.70 prior），等于在 EIG 校验之前
+      就内定了答案。
+
+    v9.2 改造为派别中立通道：
+      - 不分 school、不分 dimension：所有 conf ≥ 0.80 的 rare hits 平等竞争
+      - 触发门槛 N ≥ 3 个高置信度 hits（"top-k 多候选并立"才需要候选池化；
+        ≤ 2 hit 时原 v9 默认 prior 已能给出合理判断 → 保护 examples bit-for-bit）
+      - 各 hit 按 conf softmax (τ=0.4) 分配候选份额
+      - p_dm = 0.20（保留 day_master_dominant baseline，作为"无任何 rare 假设"基线）
+      - p_hits_total = 0.45（候选池总份额，softmax 后单 hit 上限 ~0.15-0.16）
+      - p_other_total = 0.35（残余 phase 平分，保留 R3 EIG 把冷门 phase 翻上来的余地）
+
+    后续流程：
+      - decide_phase(provisional, no answers) 看到 prior top ≤ 0.20-0.25 →
+        confidence ∈ {low, reject} → 自动触发 R1 adaptive_elicit
+      - R1 EIG 在 top-k 候选间选判别力最强的题 → 用户答 → posterior 收敛
+      - R3 fallback 如有需要由 phase_posterior._suggest_round3 触发
+    """
+    if not rare_hits:
+        return None
+    high_hits = [
+        h for h in rare_hits
+        if float(h.get("confidence", 0.0)) >= conf_threshold
+        and h.get("id") in phase_ids
+        and h.get("id") != "day_master_dominant"
+    ]
+    if len(high_hits) < min_hits:
+        return None
+
+    import math
+    confs = [float(h["confidence"]) for h in high_hits]
+    tau = 0.4
+    exps = [math.exp(c / tau) for c in confs]
+    total_exp = sum(exps) or 1.0
+    weights = [e / total_exp for e in exps]
+
+    p_hits_total = 0.45
+    p_dm = 0.20
+    p_other_total = 1.0 - p_hits_total - p_dm  # 0.35
+
+    hit_pids = {h["id"] for h in high_hits}
+    n_all = len(phase_ids)
+    n_other = max(n_all - len(hit_pids) - 1, 1)
+    p_other = max(p_other_total / n_other, 0.001)
+
+    hit_prior = {h["id"]: w * p_hits_total for h, w in zip(high_hits, weights)}
+
+    prior = {}
+    for pid in phase_ids:
+        if pid == "day_master_dominant":
+            prior[pid] = p_dm
+        elif pid in hit_prior:
+            prior[pid] = hit_prior[pid]
+        else:
+            prior[pid] = p_other
+    return _normalize_distribution(prior)
+
+
+def _p0_yueling_geju_prior_seed(
+    rare_hits: Optional[List[Dict]],
+    phase_ids: Tuple[str, ...],
+) -> Optional[Dict[str, float]]:
+    """[v9.1 deprecated] 月令格 prior 种子 —— 已被 _p0_rare_phase_prior_seed 取代。
+
+    保留函数签名仅作向后兼容（外部如有引用不会立即崩）。新代码请用派别中立的
+    `_p0_rare_phase_prior_seed`。
+    """
+    return _p0_rare_phase_prior_seed(rare_hits, phase_ids)
+
+
 def _compute_prior_distribution_v9(
     detection_details: List[Dict],
     rare_hits: Optional[List[Dict]] = None,
@@ -1745,10 +1837,18 @@ def _compute_prior_distribution_v9(
     候选池扩展到 _phase_registry.all_ids()（~54 phase），允许 rare phase 成为 top-1。
     rare_hits 为 None 时行为等同 v8 _compute_prior_distribution。
 
+    v9.2 · P0 派别中立的高置信度 rare phase 候选池（_p0_rare_phase_prior_seed）：
+      当 rare_hits 里存在 ≥ 3 个 conf ≥ 0.80 的高置信度 hit 时（不分 school /
+      dimension），把它们按 confidence softmax 平等分配到 prior 候选池，配合
+      day_master_dominant 0.20 baseline 形成"top-k 多候选并立"的 prior 起点，
+      让 R1 adaptive_elicit (EIG) 接手 disambiguation —— 算法不替任何一派
+      做学派仲裁，由用户答题来校准。
+
     bit-for-bit 保护：
       - 本函数是**新增**函数，不改写 v8 旧函数
       - score_curves.py 不调用本函数（只读 bazi.json 固化字段）
       - 仅 phase_posterior.py / handshake.py 在新增路径调用
+      - N < 3 个 conf ≥ 0.80 hits 时 P0 直接 skip → 旧 examples 行为不变
     """
     try:
         from _phase_registry import all_ids as reg_all_ids
@@ -1759,12 +1859,32 @@ def _compute_prior_distribution_v9(
     n = len(phase_ids)
     triggered = [d for d in detection_details if d.get("triggered", False)]
 
-    # P7: rare zuogong 聚合追加到 triggered
+    # P0: 派别中立的高置信度 rare phase prior 候选池（v9.2 新增；取代 v9.1 月令格种子）
+    p0_seed = _p0_rare_phase_prior_seed(rare_hits, phase_ids)
+
+    # P7: rare zuogong 聚合追加到 triggered（v9.2 撤销 protected_pids，不再做派别保护）
     if rare_hits:
         p7 = _p7_zuogong_aggregator(rare_hits, phase_ids)
         if p7 is not None:
             triggered = triggered + [p7]
 
+    if p0_seed is not None:
+        # P0 候选池通道：用 P0 种子做 prior 起点。后续 P1-P7 detector 在此基础上做
+        # likelihood multiply，但 P0 已让 prior 形成 top-k 并立 → 单个 detector 难以
+        # 把任一候选推到 confidence=high → 强制 R1 EIG 接手。
+        prior = dict(p0_seed)
+        for det in triggered:
+            likelihoods = det.get("phase_likelihoods") or _phase_likelihoods_from_detector(det)
+            for pid in phase_ids:
+                if pid not in likelihoods:
+                    likelihoods[pid] = 1.0 / n
+            for pid in prior:
+                prior[pid] *= max(likelihoods.get(pid, 1e-6), 1e-6)
+            prior = _normalize_distribution(prior)
+        prior["day_master_dominant"] = max(prior["day_master_dominant"], 0.03)
+        return _normalize_distribution(prior)
+
+    # 原 v9 路径（无月令格 P0 命中 → 走 detector 默认 prior）
     if not triggered:
         prior: Dict[str, float] = {pid: 0.10 / (n - 1) for pid in phase_ids}
         prior["day_master_dominant"] = 0.90
@@ -1911,14 +2031,22 @@ def _phase_five_tuple(phase_id: str, bazi_dict: Dict) -> Dict:
             "phase_label": f"化气格 · 化{huashen}",
         }
 
-    # 兜底
+    # 兜底 · v9.1 用 _phase_registry.name_cn 解 phase_label（不再裸吐英文 id）
+    label = phase_id
+    try:
+        from _phase_registry import _REGISTRY  # type: ignore
+        meta = _REGISTRY.get(phase_id)
+        if meta is not None and getattr(meta, "name_cn", ""):
+            label = meta.name_cn
+    except Exception:
+        pass
     return {
         "strength": default_strength,
         "yongshen": default_yongshen,
         "xishen": _WUXING_INV_SHENG.get(default_yongshen, ""),
         "jishen": _WUXING_INV_KE.get(default_yongshen, ""),
         "climate": bazi_dict.get("yongshen", {}).get("climate", {}),
-        "phase_label": phase_id,
+        "phase_label": label,
     }
 
 
@@ -1931,6 +2059,104 @@ def _confidence_label(top_prob: float) -> str:
     if top_prob >= 0.40:
         return "low"
     return "reject"
+
+
+def _compute_mangpai_conflict_alert(
+    rare_hits: List[Dict],
+    decision_phase: str,
+    decision_confidence: str,
+) -> Optional[Dict]:
+    """v9 · 检测 "高置信度盲派 / 子平正格 与最终 phase decision 冲突" 的情况。
+
+    设计意图（修 6d0abb46 case bug）：
+      原算法只在 confidence ∈ {low, reject} 时才检查 zuogong rare hits（_suggest_round3）。
+      当 decision 给出 mid/high confidence（最常见情况），即使有 3 个 conf=0.85 的盲派
+      做功格 / 子平正格指向另一个相位，也被默默淹没——LLM 写 analysis 时根本不知道"算法
+      内部其实算到过这些高置信度的另一相位"。
+
+    本函数不改 P7 权重（保 bit-for-bit），但显式 surface 冲突给：
+      - LLM（在 phase_decision JSON 里看见，必须在叙事中提及）
+      - audit_mangpai_surface（强制 surface 检查）
+      - HTML（顶部冲突警示卡）
+
+    冲突判定：
+      - 三档 severity:
+        - high: ≥3 个 mangpai 系（school startswith "mangpai"）conf≥0.80 的 hits 全 ≠ decision
+        - mid:  1-2 个 mangpai 系 conf≥0.80 ≠ decision，或任一 ziping_zhenquan conf≥0.85 ≠ decision
+        - low:  仅 conf 0.70-0.79 的 hits ≠ decision
+      - 若没有冲突 → 返回 None
+    """
+    if not rare_hits:
+        return None
+
+    def _is_mangpai(h: Dict) -> bool:
+        return str(h.get("school", "")).startswith("mangpai")
+
+    def _is_ziping_zhenge(h: Dict) -> bool:
+        return str(h.get("school", "")) == "ziping_zhenquan"
+
+    mangpai_high = [
+        h for h in rare_hits
+        if _is_mangpai(h)
+        and float(h.get("confidence", 0.0)) >= 0.80
+        and h.get("id") != decision_phase
+    ]
+    zhenge_high = [
+        h for h in rare_hits
+        if _is_ziping_zhenge(h)
+        and float(h.get("confidence", 0.0)) >= 0.85
+        and h.get("id") != decision_phase
+    ]
+    other_mid = [
+        h for h in rare_hits
+        if (_is_mangpai(h) or _is_ziping_zhenge(h))
+        and 0.70 <= float(h.get("confidence", 0.0)) < 0.80
+        and h.get("id") != decision_phase
+    ]
+
+    conflicts = mangpai_high + zhenge_high
+    if not conflicts and not other_mid:
+        return None
+
+    if len(mangpai_high) >= 3:
+        severity = "high"
+    elif len(conflicts) >= 1:
+        severity = "mid"
+    elif other_mid:
+        severity = "low"
+    else:
+        return None
+
+    sorted_conflicts = sorted(
+        conflicts + other_mid,
+        key=lambda h: (-float(h.get("confidence", 0.0)), h.get("id", ""))
+    )
+
+    return {
+        "severity": severity,
+        "decision_phase": decision_phase,
+        "decision_confidence": decision_confidence,
+        "n_mangpai_high": len(mangpai_high),
+        "n_ziping_zhenge_high": len(zhenge_high),
+        "n_other_mid": len(other_mid),
+        "conflicting_hits": [
+            {
+                "id": h["id"],
+                "name_cn": h.get("name_cn", h["id"]),
+                "school": h.get("school", ""),
+                "dimension": h.get("dimension", ""),
+                "confidence": round(float(h.get("confidence", 0.0)), 4),
+                "evidence": h.get("evidence", ""),
+            }
+            for h in sorted_conflicts
+        ],
+        "advisory": (
+            f"决策相位 {decision_phase}（{decision_confidence}）与 "
+            f"{len(conflicts) + len(other_mid)} 个高置信度的盲派/子平正格指向不一致。"
+            f"严重度={severity}。LLM 在分析中必须显式承认这种张力，"
+            f"不得只采纳 decision_phase 而忽略上述冲突 hits。"
+        ),
+    }
 
 
 def decide_phase(
@@ -2015,7 +2241,11 @@ def decide_phase(
         for pid, _ in sorted_phases[:5]
     ]
 
-    return {
+    mangpai_conflict_alert = _compute_mangpai_conflict_alert(
+        rare_hits, top_phase, confidence
+    )
+
+    out = {
         "version": 8,
         "candidates": candidates,
         "prior_distribution": {k: round(v, 6) for k, v in sorted(prior.items())},
@@ -2033,6 +2263,9 @@ def decide_phase(
         "answered_questions": sorted(answered_ids),
         "reason": "; ".join(reason_parts),
     }
+    if mangpai_conflict_alert is not None:
+        out["mangpai_conflict_alert"] = mangpai_conflict_alert
+    return out
 
 
 class _DynamicQuestionShim:

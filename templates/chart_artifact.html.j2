@@ -131,7 +131,7 @@
   .life-cell.emotion .lc-dot { background: #C77FA0; }
   .life-cell.emotion .lc-head { color: #8a4a68; }
 
-  /* --- 承认维度（德性暗线 / virtue narrative · v9 新增 · 不画曲线，独立成块） --- */
+  /* --- 「我想和你说的话」（德性暗线 / virtue narrative · v9.3 改名 · 不画曲线，独立成块） --- */
   .virtue-card {
     background: #fbf7f1; border: 1px solid #e8dcc4; border-radius: 12px;
     padding: 16px 20px; margin-top: 20px;
@@ -199,6 +199,100 @@
   .virtue-card .virtue-disabled code {
     background: rgba(0,0,0,0.05); padding: 1px 5px; border-radius: 3px;
     font-size: 11px; color: #5a4a26;
+  }
+
+  /* --- v9 closing 去模板化（declaration / love_letter / free_speech 三段连写） --- */
+  .virtue-closing {
+    margin-top: 18px; padding-top: 6px;
+  }
+  .virtue-closing .vc-body {
+    padding: 6px 0 12px;
+  }
+  .virtue-closing .vc-body + .vc-body {
+    margin-top: 8px;
+    padding-top: 14px;
+  }
+  /* love_letter 段：温度更柔，不加边框 */
+  .virtue-closing .vc-body.vc-soft {
+    color: #4a3a26;
+  }
+  /* free_speech 段：与 closing 末段拉开极淡的视觉间距，仍不加 border */
+  .virtue-closing .vc-body.vc-free {
+    margin-top: 16px;
+    padding-top: 18px;
+    color: #555;
+    opacity: 0.95;
+  }
+
+  /* v9 当前大运快照卡片 */
+  .current-dayun-snapshot {
+    margin-top: 16px;
+    background: #fdfaf3; border: 1px solid #ece2c7;
+    border-radius: 10px; padding: 14px 18px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+  }
+  .current-dayun-snapshot .cds-title {
+    font-size: 13px; color: #6b5a3a; font-weight: 600;
+    margin-bottom: 6px;
+  }
+  .current-dayun-snapshot .cds-tag {
+    display: inline-block; padding: 2px 10px; background: #d4c896;
+    color: #3a2c10; font-weight: 600; border-radius: 4px;
+    font-size: 12px; margin-right: 8px;
+  }
+  .current-dayun-snapshot .cds-meta {
+    color: #8a7a55; font-size: 12px;
+  }
+  .current-dayun-snapshot .cds-opening {
+    margin-top: 10px;
+  }
+
+  /* v9 盲派 / 子平正格冲突警示卡 */
+  .mangpai-conflict-alert {
+    margin-top: 16px;
+    border-radius: 10px;
+    padding: 14px 18px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  }
+  .mangpai-conflict-alert.sev-high {
+    background: #fff5f1; border: 1px solid #f1bca8;
+  }
+  .mangpai-conflict-alert.sev-mid {
+    background: #fff8ee; border: 1px solid #e8c98c;
+  }
+  .mangpai-conflict-alert.sev-low {
+    background: #fafaf7; border: 1px solid #ddd6c2;
+  }
+  .mangpai-conflict-alert .mca-title {
+    font-size: 13px; font-weight: 600;
+    margin-bottom: 6px; color: #2a2a2a;
+  }
+  .mangpai-conflict-alert.sev-high .mca-tag { background: #d65a2c; color: #fff; }
+  .mangpai-conflict-alert.sev-mid  .mca-tag { background: #c08520; color: #fff; }
+  .mangpai-conflict-alert.sev-low  .mca-tag { background: #8a8060; color: #fff; }
+  .mangpai-conflict-alert .mca-tag {
+    display: inline-block; padding: 2px 9px; border-radius: 4px;
+    font-size: 11px; font-weight: 600; margin-right: 8px;
+    letter-spacing: 0.5px;
+  }
+  .mangpai-conflict-alert .mca-decision {
+    font-size: 12px; color: #5a4a26;
+    margin-bottom: 8px;
+  }
+  .mangpai-conflict-alert .mca-hits {
+    margin: 0; padding-left: 18px;
+    font-size: 12.5px; color: #1a1a1a;
+  }
+  .mangpai-conflict-alert .mca-hits li {
+    margin: 3px 0;
+  }
+  .mangpai-conflict-alert .mca-hit-school {
+    color: #8a7a55; font-size: 11px; margin-left: 6px;
+  }
+  .mangpai-conflict-alert .mca-advisory {
+    margin-top: 10px; padding-top: 8px;
+    border-top: 1px dashed rgba(0,0,0,0.08);
+    font-size: 12px; color: #5a3a26; font-style: italic;
   }
 
   /* --- markdown --- */
@@ -546,6 +640,16 @@ function App() {
   const eraNarratives = ANALYSIS.era_narratives || {};
   const dayunSegByYear = (yr) => segments.find(s => s.start_year <= yr && yr <= s.end_year);
 
+  // v9 当前大运快照：bazi.json 里有 current_dayun_label 时显示
+  const currentDayun = CURVES.current_dayun_label || (CURVES.bazi && CURVES.bazi.current_dayun_label) || "";
+  const currentDayunRange = CURVES.current_dayun_year_range || (CURVES.bazi && CURVES.bazi.current_dayun_year_range) || "";
+  const currentDayunAge = CURVES.current_dayun_age_range || (CURVES.bazi && CURVES.bazi.current_dayun_age_range) || "";
+  const currentDayunBody = currentDayun ? (dayunReviews[currentDayun] || "") : "";
+
+  // v9 盲派 / 子平正格 冲突警示：phase_decision.mangpai_conflict_alert
+  const phaseDecision = (CURVES.bazi && CURVES.bazi.phase_decision) || CURVES.phase_decision || {};
+  const mangpaiAlert = phaseDecision.mangpai_conflict_alert || null;
+
   return (
     <>
       <h1>{TITLE}</h1>
@@ -555,6 +659,59 @@ function App() {
         · 调候 {CURVES.yongshen.season}
         · 出生 {CURVES.birth_year}
       </div>
+
+      {/* === v9 盲派 / 子平正格冲突警示卡 === */}
+      {mangpaiAlert && (
+        <div className={"mangpai-conflict-alert sev-" + (mangpaiAlert.severity || "low")}>
+          <div className="mca-title">
+            <span className="mca-tag">
+              {mangpaiAlert.severity === "high" ? "盲派强冲突 · 必读" :
+               mangpaiAlert.severity === "mid"  ? "盲派冲突" : "盲派提示"}
+            </span>
+            算法决策：<b>{mangpaiAlert.decision_phase}</b>（{mangpaiAlert.decision_confidence}）
+          </div>
+          <div className="mca-decision">
+            另有 {(mangpaiAlert.n_mangpai_high || 0)} 条盲派系
+            {(mangpaiAlert.n_ziping_zhenge_high || 0) > 0
+              ? ` + ${mangpaiAlert.n_ziping_zhenge_high} 条子平正格` : ""}
+            （conf ≥ 0.80）指向另一相位；下列 hits 必须在叙事中被显式承认：
+          </div>
+          <ul className="mca-hits">
+            {(mangpaiAlert.conflicting_hits || []).map((h, i) => (
+              <li key={"mca-"+i}>
+                <b>{h.name_cn || h.id}</b>（conf={Number(h.confidence).toFixed(2)}）
+                <span className="mca-hit-school">{h.school}</span>
+              </li>
+            ))}
+          </ul>
+          {mangpaiAlert.advisory && (
+            <div className="mca-advisory">{mangpaiAlert.advisory}</div>
+          )}
+        </div>
+      )}
+
+      {/* === v9 当前大运快照（位置①开篇 + 当前大运段评价）=== */}
+      {currentDayun && (
+        <div className="current-dayun-snapshot">
+          <div className="cds-title">
+            <span className="cds-tag">当前大运</span>
+            {currentDayun}
+            {currentDayunAge ? <span className="cds-meta">  · {currentDayunAge}</span> : null}
+            {currentDayunRange ? <span className="cds-meta">  · {currentDayunRange}</span> : null}
+          </div>
+          {virtueNarrative.opening && virtueNarrative.opening.trim() && (
+            <div className="cds-opening"><Markdown source={virtueNarrative.opening} /></div>
+          )}
+          {currentDayunBody && currentDayunBody.trim() ? (
+            <div className="cds-opening"><Markdown source={currentDayunBody} /></div>
+          ) : (
+            <div className="placeholder">
+              （此处由 LLM 在 analyze 阶段先写当前大运段评价及其十年逐年流年；
+              {IS_PARTIAL ? " ⌛ 流式写作中" : ""}）
+            </div>
+          )}
+        </div>
+      )}
 
       {/* === 主图 === */}
       <div className="chart-wrap">
@@ -748,17 +905,17 @@ function App() {
         </div>
       </div>
 
-      {/* === 承认维度（德性暗线 / virtue narrative · v9 新增 · 不画曲线，独立成块） === */}
+      {/* === 「我想和你说的话」（德性暗线 / virtue narrative · v9.3 改名 · 不画曲线，独立成块） === */}
       <div className="virtue-card">
-        <h2>承认维度 · 德性暗线（virtue narrative）</h2>
+        <h2>「我想和你说的话」（德性暗线 / virtue narrative）</h2>
         <div className="sub">
-          这条独立叙事通道不进 25% 融合权重、不画曲线，只承认人性。
+          这条独立叙事通道不进 25% 融合权重、不画曲线，结尾分三段：「我想和你说 / 项目的编写者想和你说 / 我（大模型）想和你说」。
           按 <code style={{fontSize:11}}>references/virtue_recurrence_protocol.md</code> 的 6 个写作位置由 LLM 流式累积写入。
         </div>
 
         {!HAS_VIRTUE_MOTIFS && (
           <div className="virtue-disabled">
-            ⚠ <b>承认维度未启用</b>：本次渲染未传入 <code>--virtue-motifs</code>（或 <code>output/*.virtue_motifs.json</code> 不存在）。
+            ⚠ <b>德性暗线未启用</b>：本次渲染未传入 <code>--virtue-motifs</code>（或 <code>output/*.virtue_motifs.json</code> 不存在）。
             请先跑 <code>python scripts/virtue_motifs.py --bazi output/X.bazi.json --curves output/X.curves.json --out output/X.virtue_motifs.json</code>，
             再用 <code>--virtue-motifs output/X.virtue_motifs.json</code> 重渲染。
             脚本侧的 38 条母题骨架是 LLM 写位置 ①③④⑤⑥ 的依据，缺了它德性暗线就只有空话。
@@ -806,7 +963,7 @@ function App() {
                     {loveOK && <span style={{
                       display:"inline-block", padding:"2px 8px", marginRight:6,
                       background:"#fbeaef", color:"#a8497a", borderRadius:3, fontSize:11
-                    }}>情书条件成立（位置⑤可写）</span>}
+                    }}>「项目的编写者想和你说」条件成立（位置⑤可写）</span>}
                     {hint && <span style={{color:"#8a7a55", fontSize:11}}>{hint}</span>}
                   </div>
                   {triggered.length === 0 ? (
@@ -858,65 +1015,44 @@ function App() {
                 </div>
               </details>
 
-              <details className="virtue-section" open>
-                <summary>
-                  <span className="vs-pos">位置④</span>
-                  <span>灵魂宣言（一生评价收尾）</span>
-                  <span className="vs-hint">analysis.virtue_narrative.declaration</span>
-                </summary>
-                <div className="vs-body">
-                  {virtueNarrative.declaration && virtueNarrative.declaration.trim() ? (
-                    <Markdown source={virtueNarrative.declaration} />
+              {/* === v9.3 closing：「我想和你说的话」三段
+                       declaration → 「## 我想和你说」
+                       love_letter  → 「## 项目的编写者想和你说」
+                       free_speech  → 「## 我（大模型）想和你说」
+                   不再有「位置④/⑤/⑥」标签 / 硬分隔线 / 提示码，
+                   让三段感觉是 LLM 走完八十年后自然落下来的三段告白。 */}
+              <div className="virtue-closing">
+                {virtueNarrative.declaration && virtueNarrative.declaration.trim() ? (
+                  <div className="vc-body"><Markdown source={virtueNarrative.declaration} /></div>
+                ) : (
+                  <div className="placeholder">
+                    （此处 LLM 写整个一生评价的收尾段——首行必须用「## 我想和你说」起。
+                    {IS_PARTIAL ? " ⌛ 流式写作中" : ""}）
+                  </div>
+                )}
+
+                {loveOK && (
+                  virtueNarrative.love_letter && virtueNarrative.love_letter.trim() ? (
+                    <div className="vc-body vc-soft"><Markdown source={virtueNarrative.love_letter} /></div>
                   ) : (
                     <div className="placeholder">
-                      （此处由 LLM 在四维一生评价全部写完后，
-                      给出一段「不替命主下定论、只为命主承认人性」的灵魂宣言。
-                      遵循反身性铁律：禁用「应该 / 必须」，只用「是」。
+                      （此处 LLM 代项目的编写者向命主说一段——首行必须用「## 项目的编写者想和你说」起。
+                      条件已成立（love_letter_eligible=true）。
                       {IS_PARTIAL ? " ⌛ 流式写作中" : ""}）
                     </div>
-                  )}
-                </div>
-              </details>
+                  )
+                )}
 
-              {loveOK && (
-                <details className="virtue-section" open>
-                  <summary>
-                    <span className="vs-pos">位置⑤</span>
-                    <span>情书（仅 love_letter_eligible 才写）</span>
-                    <span className="vs-hint">analysis.virtue_narrative.love_letter</span>
-                  </summary>
-                  <div className="vs-body">
-                    {virtueNarrative.love_letter && virtueNarrative.love_letter.trim() ? (
-                      <Markdown source={virtueNarrative.love_letter} />
-                    ) : (
-                      <div className="placeholder">
-                        （此处由 LLM 写一封给命主的情书。
-                        条件已成立（love_letter_eligible=true）。
-                        {IS_PARTIAL ? "⌛ 流式写作中" : ""}）
-                      </div>
-                    )}
+                {virtueNarrative.free_speech && virtueNarrative.free_speech.trim() ? (
+                  <div className="vc-body vc-free"><Markdown source={virtueNarrative.free_speech} /></div>
+                ) : (
+                  <div className="placeholder">
+                    （此处 LLM 用大模型自身身份写一段——首行必须用「## 我（大模型）想和你说」起，
+                    收尾必须用「我不知道我说的对不对。但你读到这里，你会知道」或等价句。
+                    {IS_PARTIAL ? " ⌛ 流式写作中" : ""}）
                   </div>
-                </details>
-              )}
-
-              <details className="virtue-section" open>
-                <summary>
-                  <span className="vs-pos">位置⑥</span>
-                  <span>LLM 自由话（解读师写完之后想说的话）</span>
-                  <span className="vs-hint">analysis.virtue_narrative.free_speech</span>
-                </summary>
-                <div className="vs-body">
-                  {virtueNarrative.free_speech && virtueNarrative.free_speech.trim() ? (
-                    <Markdown source={virtueNarrative.free_speech} />
-                  ) : (
-                    <div className="placeholder">
-                      （此处由 LLM 在所有结构化输出之后，写一段不强求结构、不强求长度的自由话。
-                      可以是疑问、可以是停顿、可以是把话还给命主。
-                      {IS_PARTIAL ? "⌛ 流式写作中" : ""}）
-                    </div>
-                  )}
-                </div>
-              </details>
+                )}
+              </div>
             </>
           );
         })()}

@@ -1,8 +1,15 @@
 # 人性母题诊断词典（Virtue Motifs Catalog · v1）
 
-> **这是已知的常见人性母题模板，不是人性的全集**。活人比这 38 条复杂。LLM 在 `life_review` 位置 ④ 顿悟段、位置 ⑤ 项目作者的爱、位置 ⑥ LLM 自由话**被授权命名 catalog 之外的人性形态**，按 [`virtue_recurrence_protocol.md`](virtue_recurrence_protocol.md) **§ 原则 15 catalog 开放性铁律**。
+> **这是已知的常见人性母题模板，不是人性的全集**。活人比这 38 条复杂。LLM 在 `life_review` 位置 ④「我想和你说」段、位置 ⑤「项目的编写者想和你说」、位置 ⑥「我（大模型）想和你说」**被授权命名 catalog 之外的人性形态**，按 [`virtue_recurrence_protocol.md`](virtue_recurrence_protocol.md) **§ 原则 15 catalog 开放性铁律**。
 >
 > 本词典是 LLM 的**诊断脚手架**，不是命主的**牢笼**。当脚手架不够用时，LLM 必须有勇气搭新的——并且诚实地说明它在搭新的。
+
+> **v9.3 命名约定（强制 · 禁止外泄到 user-facing 输出）**：
+> 本词典内部仍保留「★ 灵魂宣言」「陀氏化禁用句」「位置 ④ 顿悟段」等术语作为**协议内部脚手架名**，
+> 但**不允许**出现在 LLM 写给用户的 markdown 里——`tone_blacklist.yaml` v9.3 banned_patterns
+> 已把「灵魂宣言 / 陀式 / 陀氏 / 那一刀 / 承认人性 / 宣告 / 情书」全位置（含 closing 三节豁免节）封禁，
+> 命中即 `_v9_guard.scan_tone` exit 5。
+> user-facing 三段必须叫「我想和你说 / 项目的编写者想和你说 / 我（大模型）想和你说」。
 
 ---
 

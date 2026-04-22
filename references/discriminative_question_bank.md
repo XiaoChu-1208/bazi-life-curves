@@ -1,8 +1,39 @@
-# Discriminative Question Bank · v8
+# Discriminative Question Bank · v9
 
-> 5 维度共 ≥ 28 题的题库源文件。每题有 `id` / `dimension` / `prompt` / `options` / `likelihood_table` / `weight_class` / `discrimination_power` / 古籍出处。
+> 5 维度共 25 题的题库源文件。每题有 `id` / `dimension` / `prompt` / `options` / `likelihood_table` / `weight_class` / `discrimination_power` / 古籍出处 / **`intro`（v9 新增）**。
 >
 > 本文件是 [`scripts/_question_bank.py`](../scripts/_question_bank.py) 的"人类可读源"。Python 端 dataclass 与本文件 1:1 对齐——改一边必须同步改另一边，calibrate.py 会做一致性检查。
+
+---
+
+## §0.5 v9 · 大白话铁律 + intro 字段（新增 / 强制）
+
+**问题**：v8 题面中部分选项词太短或过于"二选一抽象"（如「对/不对」「与你相仿」），用户在 R1/R2 校验时反复表示"看不懂这是要选什么"。
+
+**v9 机械护栏**（`scripts/_question_bank.py`）：
+
+1. **`_check_no_phase_leak(strict=True)`**：扫描 prompt + 所有 option label，命中 `_PHASE_LEAK_TERMS`（"日主 / 从格 / 食伤 / 七杀 / 印旺 / 化气 / 用神 / 喜忌 / 真从 / 假从…"）即 `AssertionError`，模块加载失败。
+2. **`_check_plain_language(strict=True)`**：
+   - 每个 option label 长度 `≥ _MIN_OPTION_LABEL_CHARS = 5`（汉字）；
+   - 禁用单字 / 空泛 literal：`{"对", "不对", "是", "不是", "对/错", "部分", "其它", "其他"}`；
+   - 命中即模块加载 raise。
+3. **`Question.intro: str`**（新字段，默认空串，但 v9 后所有静态题必填）：
+   - 1 句、≤ 60 字，给用户解释"这道题问的是 _什么_、不是 _什么_"；
+   - 在 `adaptive_elicit next` 输出的 `askquestion_payload.intro` 字段里随题面一起送给前端 / LLM；
+   - 写法范式：`"问的是 X — 不是 Y。"`、`"按 …… 选；…… 不算。"`。
+
+**示例**：
+- D1_Q2 父亲在场度 `intro='问的是父亲在你婴幼期家里的"分量感"，不是好坏评价。'`
+- D5_Q1 默认应激策略 `intro='问的是"压力来了第一反应"——别想"应该怎样"，想"实际怎样"。'`
+
+如新增题缺 intro 或措辞过短，calibrate / audit_questions 端到端会拒收（exit 2）。
+
+**v9 配套 ethics 铁律**（详见 [elicitation_ethics.md](elicitation_ethics.md) §E7-§E10）：
+
+- **§E7 大白话 + intro**：本节核心；`_check_no_phase_leak(strict=True)` + `_check_plain_language(strict=True)` 是机械实施。
+- **§E8 X 兜底**：`_question_to_payload()` 自动尾插 ID=`X` 选项 `"上面没有贴近我的——让我用大白话讲（free text）"`；用户选 X 时 `--free-text "..."` 落进 `confirmed_facts.free_facts[]`，**不更新 likelihood / posterior**。
+- **§E9 禁 LLM 替用户答**：`adaptive_elicit next --answer-source` 必填；`agent_inferred` 直接 exit 3。LLM 必须把题面原样抛 AskQuestion，等用户作答。
+- **§E10 入口仅 V9**：`handshake.py round=1` 默认 exit 2（除非 `--ack-legacy-r1`）；`adaptive_elicit dump-question-set` 默认 exit 2（除非 `--ack-batch --confirm-batch-defeats-v9`）。
 
 ---
 

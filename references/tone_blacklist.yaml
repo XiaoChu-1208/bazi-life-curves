@@ -1,0 +1,157 @@
+# tone_blacklist.yaml — v9 调性铁律
+#
+# append_analysis_node.py 在写入任一 markdown 节前调用 scripts/_v9_guard.py
+# 的 _check_tone(text, node)。命中 banned_phrases 或 banned_patterns 任一条
+# 即 SystemExit(5)，禁止落盘——逼 LLM 改稿到合格。
+#
+# whitelisted_nodes 内的节走例外（这些位置允许更柔/更亲昵的语气）：
+#   - virtue_narrative.love_letter   位置⑤项目作者的爱
+#   - virtue_narrative.free_speech   位置⑥ LLM 自由话
+# 但即便豁免节，emoji / 多个感叹号 / 多个波浪号 也不放行（hard ban，全位置）。
+
+version: 1
+
+whitelisted_nodes:
+  - virtue_narrative.love_letter
+  - virtue_narrative.free_speech
+
+# ── 黑名单 1 / 字面短语（substring 匹配，全文扫描）─────────────────────────
+banned_phrases:
+
+  # ─── 6d0abb46 case 直接踩雷词 ───
+  - "人生 A 面"
+  - "人生B面"
+  - "人生 B 面"
+  - "你真的好棒"
+  - "你太厉害了"
+  - "为你点赞"
+  - "你值得拥有"
+  - "你完全可以"
+  - "加油哦"
+  - "加油呀"
+  - "加油啦"
+  - "宝贝"
+  - "亲爱的"
+  - "亲爱的你"
+
+  # ─── 给「你（本人）」的一封信 / 滥情情书句式 ───
+  - "给你（本人）的一封信"
+  - "给你（本人）的信"
+  - "亲爱的本人"
+  - "我亲爱的命主"
+
+  # ─── 心灵鸡汤标签 ───
+  - "走出舒适圈"
+  - "拥抱不完美"
+  - "做最好的自己"
+  - "活出真实的自己"
+  - "遇见更好的自己"
+  - "你只管努力"
+  - "时间会证明"
+  - "时间会给你答案"
+
+  # ─── virtue_recurrence_protocol §3.5 已禁用词，本表镜像 ───
+  - "塑造了你"
+  - "一切有意义"
+  - "苦难成就"
+  - "苦难让你"
+  - "你比自己想的更坚强"
+  - "命运把你推到这里是为了"
+  - "这是命运给你的礼物"
+  - "苦难是化了妆的祝福"
+
+  # ─── 越权 / 替用户决断 ───
+  - "你应该走"
+  - "你必须放下"
+  - "建议你立刻"
+  - "你应当尽快"
+  - "请你务必"
+  - "我建议你做"
+
+  # ─── 自我神化 / 自封大师 ───
+  - "我作为大师"
+  - "本系统断言"
+  - "本命书断言"
+  - "我可以非常确定地告诉你"
+
+# 注：v9.3 新增的「协议词 / 蠢萌作家梗」黑名单全部走 banned_patterns 段
+# （applies_to_whitelisted: true），以便对 love_letter / free_speech 等 whitelisted
+# 节同样生效——这些词被用户判为「太蠢」，必须从 user-facing 输出物理消失，无豁免。
+
+# ── 黑名单 2 / 正则模式 ──────────────────────────────────────────────────
+# 正则用 Python re 语法；写法上要避免 false positive。
+banned_patterns:
+
+  # 多个感叹号连用（≥2 个）—— 全文位置都禁
+  - pattern: "！{2,}"
+    reason: "多个感叹号连用 → 廉价煽情。"
+    applies_to_whitelisted: true
+
+  - pattern: "!{2,}"
+    reason: "多个 ASCII 感叹号连用 → 廉价煽情。"
+    applies_to_whitelisted: true
+
+  # 多个波浪号 / 拖音 ~ ~~（撒娇腔）
+  - pattern: "[~～]{2,}"
+    reason: "拖音波浪号 → 撒娇腔，不严肃。"
+    applies_to_whitelisted: true
+
+  # emoji（绝大多数 emoji 落在这些 unicode 段内）
+  - pattern: "[\U0001F300-\U0001FAFF\U00002600-\U000027BF\u2700-\u27BF]"
+    reason: "emoji → 不严肃；本系统坚持纯文字。"
+    applies_to_whitelisted: true
+
+  # 心 / 笑脸字符
+  - pattern: "[\u2764\u2665\u263A\u263B]"
+    reason: "心 / 笑脸符号 → 不严肃。"
+    applies_to_whitelisted: true
+
+  # "宝宝 / 哥哥 / 姐姐" 称呼用户
+  - pattern: "(?:^|[^一-龥A-Za-z])宝宝(?=[^一-龥A-Za-z]|$)"
+    reason: "把命主叫"宝宝" → 越界亲昵。"
+    applies_to_whitelisted: false
+
+  - pattern: "命主小[一-龥A-Za-z]"
+    reason: "「命主小 X」之类亲昵昵称 → 失去严肃性。"
+    applies_to_whitelisted: false
+
+  # ─── v9.3 新增：协议词 / 蠢萌作家梗一律下架（含 closing 三段豁免节）─────
+  # 这些短语命中即 exit 5；不分节、不分位置——逼 LLM 不再用「承认人性 / 陀式 /
+  # 灵魂宣言 / 情书 / 宣告」这种自报协议结构 / 自封文学梗的措辞。
+  # node key（virtue_narrative.declaration / love_letter / free_speech）不动，仅文案禁。
+  - pattern: "承认人性"
+    reason: "v9.3：『承认人性』作 user-facing 措辞被判太蠢；node key 仍保留 declaration。"
+    applies_to_whitelisted: true
+  - pattern: "承认维度"
+    reason: "v9.3：『承认维度』暴露协议结构；改用『我想和你说的话』叙述。"
+    applies_to_whitelisted: true
+  - pattern: "陀式贯穿"
+    reason: "v9.3：『陀式贯穿』太蠢；不要给自己的写作自封文学流派。"
+    applies_to_whitelisted: true
+  - pattern: "陀氏贯穿"
+    reason: "v9.3：『陀氏贯穿』太蠢；同上。"
+    applies_to_whitelisted: true
+  - pattern: "陀式那一刀"
+    reason: "v9.3：『陀式那一刀』太蠢；句式根因。"
+    applies_to_whitelisted: true
+  - pattern: "陀氏那一刀"
+    reason: "v9.3：『陀氏那一刀』太蠢；同上。"
+    applies_to_whitelisted: true
+  - pattern: "那一刀"
+    reason: "v9.3：『那一刀』作为修辞被滥用；句式根因，禁。"
+    applies_to_whitelisted: true
+  - pattern: "陀式"
+    reason: "v9.3：自封文学流派『陀式』禁用。"
+    applies_to_whitelisted: true
+  - pattern: "陀氏"
+    reason: "v9.3：自封文学流派『陀氏』禁用；可改为具体作品意象。"
+    applies_to_whitelisted: true
+  - pattern: "灵魂宣言"
+    reason: "v9.3：『灵魂宣言』暴露协议结构；user-facing 改为『我想和你说』。"
+    applies_to_whitelisted: true
+  - pattern: "宣告"
+    reason: "v9.3：『宣告』暴露协议结构；user-facing 改为『我想和你说』。"
+    applies_to_whitelisted: true
+  - pattern: "情书"
+    reason: "v9.3：『情书』暴露协议结构 + 廉价；user-facing 改为『项目的编写者想和你说』。"
+    applies_to_whitelisted: true

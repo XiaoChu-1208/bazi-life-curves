@@ -595,7 +595,11 @@ def main():
     ap.add_argument("--confirm-top-k", type=int, default=6,
                     help="（round=2）confirmation 静态题数量上限（默认 6）")
     ap.add_argument("--strict-v9", action="store_true",
-                    help="round=1 时硬错出（推荐 CI 开启 · 强制走 adaptive_elicit）")
+                    help="[v9 已默认开] round=1 时硬错出（强制走 adaptive_elicit）。保留兼容老脚本。")
+    ap.add_argument("--ack-legacy-r1", action="store_true",
+                    help="v9 · 显式承认要走 R1 deprecated 一次性题集路径。"
+                         "未传此 flag 时 round=1 默认 exit 2（v9 硬切换）。"
+                         "仅 he_pan_orchestrator / mcp_server 兜底 / 旧 examples 才允许使用。")
     args = ap.parse_args()
 
     bazi = json.loads(Path(args.bazi).read_text(encoding="utf-8"))
@@ -639,15 +643,19 @@ def main():
         return
 
     # round = 1（deprecated 兼容入口）
-    if args.strict_v9:
-        print(
-            "[handshake R1] STRICT v9: 硬切到 adaptive_elicit.py。请改用：\n"
+    # v9 硬切换：默认 exit 2；显式 --ack-legacy-r1 才放行；--strict-v9 兼容老 CI
+    from _v9_guard import enforce_v9_only_path
+    enforce_v9_only_path(
+        "handshake.py R1",
+        ack_flag=(args.ack_legacy_r1 and not args.strict_v9),
+        ack_flag_help="--ack-legacy-r1",
+        extra_hint=(
+            "推荐改用：\n"
             f"  python scripts/adaptive_elicit.py next --bazi {args.bazi} "
             f"--curves {args.curves or '<curves.json>'} "
-            "--state output/.elicit.state.json",
-            file=sys.stderr,
-        )
-        sys.exit(2)
+            "--state output/.elicit.state.json"
+        ),
+    )
 
     out = build(
         bazi=bazi,

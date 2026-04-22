@@ -296,10 +296,14 @@ def test_strict_mode_raises_on_missing(tmp_path, monkeypatch, capsys):
 
 
 # ---------------------------------------------------------------------------
-# T7 · 默认非 strict 不 raise, 只警告
+# T7 · `--no-strict-llm` 显式降级路径：不 raise，只警告
+#
+# v9.3 起，`--strict-llm` 默认 True（与 `--require-streamed-emit` 等其它 v9 strict 审计统一），
+# 用户需显式 `--no-strict-llm` 才能降级到只 stderr 警告。
+# 老的"默认就是非 strict"语义已经在 v9.3 升级中废弃，本测试相应改名 + 改实现。
 # ---------------------------------------------------------------------------
 
-def test_default_mode_only_warns_no_raise(tmp_path, monkeypatch, capfd):
+def test_no_strict_llm_only_warns_no_raise(tmp_path, monkeypatch, capfd):
     import render_artifact as ra
 
     curves_path = tmp_path / "curves.json"
@@ -310,6 +314,7 @@ def test_default_mode_only_warns_no_raise(tmp_path, monkeypatch, capfd):
         "render_artifact.py",
         "--curves", str(curves_path),
         "--out", str(out_path),
+        "--no-strict-llm",
     ])
     ra.main()  # 不应 raise
     assert out_path.exists()

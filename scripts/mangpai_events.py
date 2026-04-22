@@ -136,6 +136,27 @@ def _evt(year: int, age: int, ganzhi: str, dayun: str, key: str, name: str,
             reversal_meta = {"applied": False, "error": str(_e)}
 
     amplifier = {dim: INTENSITY_AMPLIFIER[intensity] * sign for dim, sign in dims}
+
+    # v9 · 置信度档（high / mid / low）：用于 audit_mangpai_surface 判定
+    # "高置信度盲派事件必须显式出现在分析叙事里"。规则：
+    #   high: 重烈度 + 大运/原局结构同向加成（triple 印证）
+    #   mid : 中烈度，或重烈度但只有 liunian 单点应期
+    #   low : 轻烈度 / 静态背景 / 只有薄弱条件
+    if intensity == "静态":
+        confidence = "low"
+    elif intensity == "重":
+        if "（大运同向加成：" in evidence or "原局" in evidence:
+            confidence = "high"
+        else:
+            confidence = "mid"
+    elif intensity == "中":
+        if "（大运同向加成：" in evidence:
+            confidence = "mid"
+        else:
+            confidence = "low"
+    else:  # 轻
+        confidence = "low"
+
     out = {
         "year": year,
         "age": age,
@@ -147,6 +168,7 @@ def _evt(year: int, age: int, ganzhi: str, dayun: str, key: str, name: str,
         "canonical_event": canonical,
         "dimensions": [{"dim": d, "sign": s} for d, s in dims],
         "intensity": intensity,
+        "confidence": confidence,
         "amplifier": amplifier,
         "evidence": evidence,
         "reference": reference,
@@ -454,6 +476,7 @@ def detect_static_markers(day_gan: str, natal: List[Pillar]) -> List[Dict]:
                 "canonical_event": "原生家庭 / 长辈层面的财在你之外，不直接归你掌控；你需要自己另起炉灶",
                 "dimensions": [{"dim": "wealth", "sign": 0}],
                 "intensity": "静态",
+                "confidence": "high",
                 "amplifier": {},
                 "evidence": f"年柱={year_p.gan}{year_p.zhi}，{year_gan_ss}/{year_zhi_ss}，且年支与日/月支无六合无三合",
                 "reference": "盲派民间口诀（段建业《盲派命理》收录）",
