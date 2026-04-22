@@ -1017,6 +1017,33 @@ v9.3 起，三段统称「我想和你说的话」（仅作为内部叙述，不
 
 **内部数据 schema 不变**：node key 仍为 `virtue_narrative.declaration / love_letter / free_speech`，CLI 接口、JSON 字段、`virtue_motifs.json` 全部保留 v9 命名，只是 user-facing 文案换了。
 
+### 8.1 合盘场景下的 closing 三段（v9.3 he_pan v2）
+
+合盘里每个人都独立跑一次 `virtue_motifs.py`，因此每人各自拥有完整的 declaration / love_letter / free_speech 三段。
+`he_pan_orchestrator.py --mode finalize` 会把它们集体写到 `output/hepan/p<i>.virtue_motifs.json`，
+然后 `he_pan.py` 在 13 节流式输出（详见 `he_pan_protocol.md` v2）的 Node 11–13 拼接：
+
+| 合盘节 | 必须用的 markdown header（首行 · v9.3 白名单）| 数据源 |
+|---|---|---|
+| Node 11 | `## 我想和你说 · <name1>` | 第 1 人三段（declaration / love_letter / free_speech 同序拼接，不另起 H2） |
+| Node 12 | `## 我想和你说 · <name2>` | 第 2 人三段 |
+| Node 13 | `## 共振 motif` | `set(p1.motif_ids) ∩ set(p2.motif_ids)`，由 `virtue_motifs.intersect_motifs(*virtue_jsons)` 计算 |
+
+**Motif 取交集规则**：
+- 仅对 `virtue_motifs[i].confidence == "high"` 的 motif 进入交集集合
+- 交集 ≥ 1 → Node 13 必须援引每个共振 motif 的 `motif_id` 字面值（如 `loyalty_under_pressure`）+ 1-2 行人话解释为何共振
+- 交集 == 0 → Node 13 必须显式输出「两位的人性主题不重叠」一句作为开头，再给一段解释（合盘评分仍可继续，但 confidence_note 中需提示"无人性母题共振，仅看结构性 4 层"）
+- **禁止**：合盘场景下凭"感觉"造一个 catalog 外母题塞进 Node 13；catalog 外母题命名权仅在每人单独的位置 ④⑤⑥ 内合法（§3.8）
+
+**机械护栏**（`_v9_guard.check_closing_header_he_pan(node_key, md, person_name)`）：
+- Node 11/12 header 必须严格匹配 `^## 我想和你说 · <person_name>$`，否则 exit 10
+- Node 13 header 必须严格匹配 `^## 共振 motif$`，否则 exit 10
+- Node 11/12 内段落仍各自经 `_v9_guard.check_closing_header("declaration"/"love_letter"/"free_speech", body_segment)` 校验，违 v9.3 白名单或 tone_blacklist 即 exit 10
+
+**`love_letter_eligible == false` 处理**（合盘特有）：
+- 任一人 `motifs.love_letter_eligible == false` 时，该人 Node 11/12 中段（love_letter）跳过实际段落，但保留分隔位「（此处保持沉默）」一行占位，避免破坏三段叙事节律
+- 此情况在 Node 1 概览节的 `confidence_note` 中提示一次「<name> 的 love_letter 通道未激活，详见其位置 ⑤ 触发条件」
+
 ## 9. v9 · 累积铁律 → 机械审计映射（虽然 §0-§3 写了非常多铁律，v9 抽出 5 条机械可验证的）
 
 | 铁律 | 文中条款 | 机械实施位置 | 退出码 |

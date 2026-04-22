@@ -139,6 +139,21 @@ LLM 在第一次抛单题前必须按 [batch_elicitation_prompt.md](batch_elicit
 - `phase_decision.stop_reason`: 人类可读停止原因
 - `phase_decision.confidence_cap_applied`: batch 模式下若触发上限则填档位
 
+### §0.6 合盘多人 elicit state 命名（v9.3）
+
+合盘场景下每位成员独立维护一份 state，由 `he_pan_orchestrator.py` 统一管理：
+
+| 文件 | 内容 | 谁写 |
+|---|---|---|
+| `<out-dir>/p<i>.elicit.state.json` | 第 i 个人的 v9 自适应 state（schema 与单盘一致） | `adaptive_elicit.py next` |
+| `<out-dir>/p<i>.bazi.json` | 第 i 个人 finalize 后的 bazi.json（含 `phase` / `phase_decision`） | `adaptive_elicit.py next`（终态） |
+| `<out-dir>/p<i>.virtue_motifs.json` | 第 i 个人的 virtue narrative（`he_pan.py --require-virtue-motifs` 必检） | `virtue_motifs.py` |
+| `<out-dir>/hepan.plan.json` | 编排状态：每人 `status ∈ {pending, in_progress, finalized}`、当前轮到谁 | `he_pan_orchestrator.py` |
+
+**他人 confidence cap**：合盘整体 `confidence` 取 `min(p_i.phase.confidence_label_score)`。
+若任一人停在 `mid` 档（`0.60 ≤ top1 < 0.80`），合盘 confidence 也只能为 `mid`，必须在 `## 概览` 节里明示双方各自档位。
+任一人 `is_provisional=true` 或 `confidence < 0.60` → `he_pan.py` 入口 exit 7（`--ack-batch` / `BAZI_HEPAN_BYPASS_V8_GATE=1` 兜底，但 schema 强制写 `confidence_cap_applied`）。
+
 ---
 
 ## §1 设计变化总览
@@ -418,7 +433,7 @@ phase_posterior.py R1 → bazi.json
 
 ## §8 旧 R0/R1/R2/R3 的迁移
 
-- 旧 R1（健康三问）→ D4 维度题库（扩展到 6 题）
+- 旧 R1（健康三问 · v8 已退役）→ D4 维度题库（扩展到 6 题）
 - 旧 R0（感情画像）→ D2 维度题库（升级为多选）
 - 旧 R2（本性 + 历史锚点）→ 拆分到 D5（本性）+ D3（历史锚点改为流年题）
 - 旧 R3（family / folkways）→ D1 维度题库（结合 era_windows_skeleton）

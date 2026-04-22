@@ -482,6 +482,132 @@ def check_message_heading_count(
     )
 
 
+# ============================================================================
+# §6 · open_phase anchor 收集 · 反编造约束守卫（v9.3.1 新增）
+# ============================================================================
+#
+# 触发动因（2026-04-22 incident）：
+#   agent 在 open_phase 抛"补事件年份"UI 时自加 "请补 ≥ 2 个你 25 岁前真实
+#   经历过的事件年份" —— `25 岁前` 在 references/ + scripts/ 全表 0 命中，
+#   是 agent 凭空编的硬约束。结果用户输近年事件（2023 / 2024）全被静默
+#   filter 成 "已识别 0 个有效年份"，循环卡死。
+#
+# 本守卫扫 agent 即将渲染给用户的 anchor 收集 prompt / askquestion_payload
+# /UI label，命中 §2 任一红线 → exit 12。
+#
+# 详见 references/open_phase_anchor_protocol.md。
+
+# 红线模式：覆盖年龄段 / 类型 / 强度 / 地理 / 身份 五类自创 filter
+# 注意：这些模式只在「open_phase anchor 收集场景」生效，
+# 普通叙事里出现 "25 岁那次" / "成年前" 不算违规（属于 LLM 写作）。
+#
+# imperative 动词集合（agent 抛题时常用）：
+#   请 / 必须 / 只 / 仅 + 补 / 提供 / 输入 / 给 / 收（"只收" / "仅收"）
+_ANCHOR_IMPERATIVE = (
+    r"(?:请|必须|只|仅)\s*(?:补|提供|输入|给|收|要|限定?|限于|限制为)"
+)
+
+_FABRICATED_ANCHOR_PATTERNS: tuple[tuple[str, str], ...] = (
+    # 年龄段约束（imperative + 年龄段）
+    (
+        rf"{_ANCHOR_IMPERATIVE}.{{0,12}}"
+        r"(?:\d+\s*岁(?:前|后|以前|以后)|成年(?:前|后)|"
+        r"童年期?|少年期?|青年期?|中年期?|本命大运(?:前|后))",
+        "年龄段硬约束 (协议未规定 anchor 必须落在某年龄段)",
+    ),
+    # 年龄段约束（UI label 形式：X 岁前的事件 / 成年前真实经历过的年份）
+    # 必须有「的」紧邻在事件/年份/锚点之前 —— 这是 attributive UI label 标志，
+    # 普通叙事「成年前你大概率经历过 X 类事件」不命中（没有 "的事件"）。
+    (
+        r"(?:\d+\s*岁前|\d+\s*岁以前|成年前|童年期|少年期).{0,12}"
+        r"(?:真实)?(?:经历(?:过)?)?的(?:事件|年份|锚点)",
+        "年龄段硬约束 (UI label 形式)",
+    ),
+    # 事件类型 filter（imperative + 类型词 + 可选 类/事件/年份）
+    (
+        rf"{_ANCHOR_IMPERATIVE}.{{0,8}}"
+        r"(?:学业|事业|感情|健康|家庭|婚姻|工作)(?:类)?(?:事件|年份|锚点)?",
+        "事件类型 filter (协议接受任意类型的真实事件)",
+    ),
+    # 强度阈值 filter（imperative + 强度词；强度词本身已含"事件"或单独成词）
+    (
+        rf"{_ANCHOR_IMPERATIVE}.{{0,8}}"
+        r"(?:大事件|改变人生(?:轨迹)?|标志性|重大|关键性|里程碑式?)(?:的)?"
+        r"(?:事件|年份|锚点)?",
+        "强度阈值 filter (中事 / 小事在命局上同样有判别力)",
+    ),
+    # 地理 / 身份 / 关系状态（imperative + 限定词）
+    (
+        rf"{_ANCHOR_IMPERATIVE}.{{0,12}}"
+        r"(?:国内|出生地|本地|海外|已婚(?:后)?|已工作(?:后)?|结婚后|"
+        r"成家后|参加工作后)(?:的)?(?:事件|年份|锚点)?",
+        "地理 / 身份 / 关系状态 filter (违反 fairness §4 盲化原则)",
+    ),
+)
+
+
+@dataclass(frozen=True)
+class FabricatedAnchorHit:
+    pattern: str
+    reason: str
+    snippet: str
+
+
+class FabricatedAnchorError(SystemExit):
+    """agent 在 open_phase anchor 收集 UI 里自加协议未规定的硬约束 → exit 12。"""
+
+    def __init__(self, hits: list[FabricatedAnchorHit]):
+        super().__init__(12)
+        self.hits = hits
+
+    def render(self) -> str:
+        lines = [
+            "[_v9_guard] FABRICATED ANCHOR CONSTRAINT · "
+            "agent 在 open_phase anchor 收集 UI 里自加了协议未规定的硬约束："
+        ]
+        for h in self.hits:
+            lines.append(f"  · {h.reason}")
+            lines.append(f"    snippet: '{h.snippet}'")
+            lines.append(f"    pattern: {h.pattern}")
+        lines.append(
+            "  · 协议（multi_school_vote.py::_generate_must_be_true）"
+            "只要求 '具体年份 + 事件类型 + 强度'，不限年龄段 / 类型 / 强度 / 地理。"
+        )
+        lines.append("  · 修法：把 UI 文案改成 '请补 ≥ 2 个你能确认的具体公历年 + 事件描述'，")
+        lines.append("        不要加 25 岁前 / 只收事业 / 只收大事件 等任何 filter。")
+        lines.append("  · 详见 references/open_phase_anchor_protocol.md §2 红线表")
+        return "\n".join(lines)
+
+
+def scan_fabricated_anchor_constraint(text: str) -> list[FabricatedAnchorHit]:
+    """扫 agent 即将渲染给用户的 anchor 收集 UI 文本 / askquestion_payload。
+
+    返回所有命中（不抛错）。空文本返回空列表。
+    """
+    hits: list[FabricatedAnchorHit] = []
+    if not text:
+        return hits
+    for pattern, reason in _FABRICATED_ANCHOR_PATTERNS:
+        for m in re.finditer(pattern, text):
+            snippet = text[max(0, m.start() - 8): m.end() + 8].replace("\n", " ")
+            hits.append(FabricatedAnchorHit(
+                pattern=pattern, reason=reason, snippet=snippet,
+            ))
+    return hits
+
+
+def enforce_no_fabricated_anchor_constraint(
+    text: str, *, raise_on_hit: bool = True,
+) -> list[FabricatedAnchorHit]:
+    """扫并抛错。调用方可设 raise_on_hit=False 自行处理。"""
+    hits = scan_fabricated_anchor_constraint(text)
+    if hits and raise_on_hit:
+        err = FabricatedAnchorError(hits)
+        print(err.render(), file=sys.stderr)
+        raise err
+    return hits
+
+
 __all__ = [
     "enforce_v9_only_path",
     "V9PathBlocked",
@@ -499,4 +625,8 @@ __all__ = [
     "count_top_headings",
     "check_message_heading_count",
     "HeadingCountViolation",
+    "scan_fabricated_anchor_constraint",
+    "enforce_no_fabricated_anchor_constraint",
+    "FabricatedAnchorHit",
+    "FabricatedAnchorError",
 ]

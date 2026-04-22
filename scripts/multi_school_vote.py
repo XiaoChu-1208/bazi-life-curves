@@ -210,11 +210,41 @@ def _phase_implication(phase_id: str) -> str:
 
 
 def _generate_must_be_true(decision: str, composition: List[Dict]) -> List[Dict]:
-    """5.2 phase-必然预测: 给 adopt phase 列出 must_be_true / must_be_false 钩子."""
+    """5.2 phase-必然预测: 给 adopt phase 列出 must_be_true / must_be_false 钩子.
+
+    open_phase 分支同时下发 anchor 收集规则（v9.3.1 新增, 防 agent 编造 UI 约束）:
+      - 任何年龄段 / 类型 / 强度的硬约束都不得由 agent 自加
+      - 所有用户能确认的具体公历年 + 事件描述都必须接受
+      - 详见 references/open_phase_anchor_protocol.md
+    """
     if decision == "open_phase":
         return [{
             "prediction": "在用户补充至少 2 个具体年份的具体事件后, 算法应能落到某个 phase",
             "evidence_required": "具体年份 + 事件类型 + 该事件的强度 (大事 / 中事 / 小事)",
+            "anchor_collection_rules": {
+                "min_anchors": 2,
+                "year_range": "ALL",
+                "no_age_window": True,
+                "no_type_filter": True,
+                "no_intensity_filter": True,
+                "agent_must_not_add_constraints": [
+                    "age_window (e.g. '25 岁前' / '成年前' / '本命大运前')",
+                    "event_type filter (e.g. '只收事业 / 只收感情')",
+                    "intensity filter (e.g. '只收大事件')",
+                    "geographic filter (e.g. '只收国内事件')",
+                ],
+                "agent_must_show_realtime_validation": (
+                    "用户输入被判无效时必须立刻显式告知原因, "
+                    "禁止只显示 '已识别 0 个有效年份' 不解释为什么 / "
+                    "禁止显示 '已补事件年份: ... 等待重跑' 但实际不调 vote()."
+                ),
+                "agent_must_actually_rerun": (
+                    "提交按钮被点后必须真调 multi_school_vote.vote(bazi, "
+                    "fallback_phase_candidates=[anchor1, anchor2]) 重算后验, "
+                    "不允许只回'等待重跑校准'话术不跑."
+                ),
+                "see_protocol": "references/open_phase_anchor_protocol.md",
+            },
         }]
     return [{
         "prediction": f"adopted phase '{decision}' 应能解释用户至少 2 条 anchor 事件",

@@ -77,6 +77,17 @@ BANNED_TERMS: tuple[tuple[str, str, str], ...] = (
     ("## 不在协议里的话", "exit10", "closing_header"),
     # SKILL.md v9.3 删除的 Step 2.7
     ("Step 2.7", "deprecated", "skill_step_27"),
+    # ─── v9.3 合盘 5 条（he_pan v9.3 化）───────────────────────────
+    # 旧合盘 v8 caveat：「合盘场景暂未升级到 v8，仍走旧 R0/R1 健康三问」
+    ("暂未升级到 v8", "deprecated", "hepan_v8_caveat"),
+    ("暂未升级到v8", "deprecated", "hepan_v8_caveat"),
+    # 旧合盘 confidence 表述：「confidence 受双方 R1 命中率限制 / 双方 R1 健康三问」
+    ("双方 R1 命中率", "deprecated", "hepan_double_r1_hit_rate"),
+    ("双方R1命中率", "deprecated", "hepan_double_r1_hit_rate"),
+    # 旧合盘 R0 反询问 + 健康三问命名（v9.3 合盘走 adaptive_elicit 多人编排）
+    ("R0 反询问", "deprecated", "hepan_r0_anti_query"),
+    # 「健康三问」是 v6/v7 单盘旧词；合盘文档若仍引用必须改为 adaptive_elicit
+    ("健康三问", "deprecated", "hepan_health_three_questions"),
 )
 
 

@@ -76,6 +76,62 @@ def test_step_27_caught(tmp_path: Path):
     assert "deprecated" in severities, f"未命中 Step 2.7: {hits}"
 
 
+# ---------------------------------------------------------------------------
+# §2b v9.3.1 合盘 5 条 banned_terms（he_pan v9.3 化）
+# ---------------------------------------------------------------------------
+
+def test_hepan_v8_caveat_caught(tmp_path: Path):
+    """旧 SKILL.md 「合盘暂未升级到 v8」必须被命中。"""
+    md = (
+        "# 合盘\n\n"
+        "合盘暂未升级到 v8，仍走旧 R0/R1 校验路径。\n"
+    )
+    hits = _scan_text(tmp_path, "fake_skill.md", md)
+    terms = {h.term for h in hits}
+    assert "暂未升级到 v8" in terms, f"未命中 hepan_v8_caveat: {hits}"
+
+
+def test_hepan_double_r1_hit_rate_caught(tmp_path: Path):
+    md = (
+        "# 合盘\n\n"
+        "confidence 受双方 R1 命中率限制（短板效应）。\n"
+    )
+    hits = _scan_text(tmp_path, "fake.md", md)
+    terms = {h.term for h in hits}
+    assert "双方 R1 命中率" in terms, f"未命中 hepan_double_r1_hit_rate: {hits}"
+
+
+def test_hepan_r0_anti_query_caught(tmp_path: Path):
+    md = (
+        "# 关系能量\n\n"
+        "由 R0 反询问做命局取向校准。\n"
+    )
+    hits = _scan_text(tmp_path, "fake.md", md)
+    terms = {h.term for h in hits}
+    assert "R0 反询问" in terms, f"未命中 hepan_r0_anti_query: {hits}"
+
+
+def test_hepan_health_three_questions_caught(tmp_path: Path):
+    md = (
+        "# 合盘\n\n"
+        "双方都通过了 R1 健康三问（≥ 2/3 命中）→ 解读可以重一些。\n"
+    )
+    hits = _scan_text(tmp_path, "fake.md", md)
+    terms = {h.term for h in hits}
+    assert "健康三问" in terms, f"未命中 hepan_health_three_questions: {hits}"
+
+
+def test_hepan_terms_passed_with_negation(tmp_path: Path):
+    """同行带 negation token（已退役 / banned）应放行。"""
+    md = (
+        "# 合盘 v9.3\n\n"
+        "旧 R0/R1 健康三问路径已退役，仅 --ack-batch 兜底。\n"
+        "双方 R1 命中率（已退役）改为双方 phase.confidence 短板。\n"
+    )
+    hits = _scan_text(tmp_path, "fake.md", md)
+    assert hits == [], f"带 negation 应放行，实际：{hits}"
+
+
 def test_tone_term_in_positive_body_caught(tmp_path: Path):
     """协议文件正向引导 LLM 写「陀氏式」措辞 + 无 v9.3 banner → 必须命中。"""
     md = (

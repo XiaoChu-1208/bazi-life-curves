@@ -13,7 +13,7 @@ LLM 在写命理解读时常见的两种错误：
 2. **强制引用盲派应事**——避免离开机械事实的"幻觉自由发挥"
 
 > **v6 更新 + v7 现代化**：曲线维度从 3 维（精神 / 财富 / 名声）扩展为 4 维（**+ 关系能量**）。
-> 关系能量维度由 R0 反询问·关系画像（偏好类型 + 对方反应模式）做命局取向校准 + 由 score_curves 单独打分通道生成 emotion_yearly / emotion_cumulative。
+> 关系能量维度由 v9 adaptive_elicit D2「关系结构」维度题（偏好类型 + 对方反应模式 · 取代旧 v6/v7 R0 反询问，已退役）做命局取向校准 + 由 score_curves 单独打分通道生成 emotion_yearly / emotion_cumulative。
 > 见 §4.2 / §4.6 / 文末「关系能量维度专项解读模板（§10）」。
 >
 > **v7 现代化要点**（必读）：
@@ -168,10 +168,10 @@ LLM 在写命理解读时常见的两种错误：
 - 精神曲线：高峰段 / 低谷段 / 中位区间，用具体年龄段说
 - 财富曲线：同上
 - 名声曲线：同上
-- **感情曲线（v6 新增）**：同上 + 必须援引 R0 反询问的命中情况
-  · 若 R0 = 2/2：感情维度的解读可以高置信度展开
-  · 若 R0 = 1/2：在感情段开头注明"R0 部分对，以下感情解读偏一种取向"
-  · 若 R0 = 0/2：感情段降权处理，写成"按命局原始读法可能是 X，但 R0 没对上 → 用户实际可能是 Y"，把双解都给出来
+- **感情曲线（v6 新增 · v9 adaptive_elicit D2 校准 · 旧 R0 反询问已退役）**：同上 + 必须援引 D2 关系结构题的命中情况
+  · 若 D2 高置信（top1 ≥ 0.85）：感情维度的解读可以高置信度展开
+  · 若 D2 中置信：在感情段开头注明"D2 部分对，以下感情解读偏一种取向"
+  · 若 D2 未触发 / 低置信：感情段降权处理，写成"按命局原始读法可能是 X，但 D2 没对上 → 用户实际可能是 Y"，把双解都给出来
 - 四条曲线的相互关系：是否同步？是否互补？是否对冲？特别要看**感情 vs 财富/名声**的对冲（典型场景：中年事业冲顶但感情低谷 / 早年感情顺但财富未起）
 
 ### 4.3 累积曲线的解读
@@ -613,4 +613,24 @@ analysis.life_review.body =
 - [ ] mangpai `confidence == high` 事件全部 surface 到叙事
 - [ ] `silenced_motifs` 全文未涉及（含暗示）
 - [ ] tone_blacklist.yaml 字面 / 正则全部未命中（whitelisted: love_letter / free_speech 仅豁免字面短语，emoji / 多感叹号 / 撒娇腔仍禁）
+
+### 13.7 合盘 closing 三段（v9.3 新增 · he_pan 13 节专用）
+
+> 单盘的 closing 三段（§13.3）是「LLM 走完八十年」自然回望；合盘里则是「LLM 走完两人各自八十年再回到桌上」的多视角收尾。
+> `he_pan_orchestrator.py` 已经为每个人独立跑过 v9 adaptive_elicit + virtue_motifs，
+> 因此每人都拥有完整 `analysis.virtue_narrative.*` + `motifs[]`。
+> 合盘 13 节流式输出在 Node 11–13 把它们拼接为：
+
+| 合盘节 | 必须用的 markdown header（首行 · v9.3 白名单）| 数据源 | 禁止 |
+|---|---|---|---|
+| Node 11 | `## 我想和你说 · <name1>` | 第 1 人 `virtue_narrative.declaration / love_letter / free_speech` 三段（同序拼接，不另起标题） | 旧 v9 白名单 / 「灵魂宣言 / 情书 / 宣告 / 承认人性」字眼（命中即 exit 10） |
+| Node 12 | `## 我想和你说 · <name2>` | 第 2 人同上 | 同上 |
+| Node 13 | `## 共振 motif` | `set(p1.motif_ids) ∩ set(p2.motif_ids)`，由 `virtue_motifs.intersect_motifs(*virtue_jsons)` 算出 | 不许凭"感觉"配 motif；交集为空时**显式说**「两位的人性主题不重叠」并解释合盘为何仍可走 |
+
+**合盘 closing 写作铁律**：
+1. **每人 closing 三段必须连续 emit**（Node 11 整段一次性写完再写 Node 12，禁止 p1.declaration → p2.declaration 交错）
+2. **不要把单盘的「LLM 走完八十年」语气直接复制**到合盘，第一句应明示视角已切换为对话场（"现在回到你们俩对面"）
+3. **共振 motif** 节必须援引每人 motif_ids 中具体哪几个被选中（如 `["self_worth_through_giving", "loyalty_under_pressure"]`），不能只说"有共振"
+4. 任一人 `motifs.love_letter_eligible == false` 时该人 Node 11/12 的中段（`love_letter`）跳过，header 仍写但段落用「（此处保持沉默）」一行占位
+5. R-STREAM-1/2 同样适用：3 节最少 3 个 message turn，禁止合并
 

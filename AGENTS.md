@@ -386,7 +386,30 @@ python scripts/calibrate.py
 
 ### 当用户问"跟 Y 合不合"
 
-跑 `he_pan.py`，按 `he_pan_protocol.md` 4 层评分（合作 / 婚配 / 友谊 / 家人）输出。
+v9.3 起合盘走 **多人 adaptive_elicit 编排** + `he_pan.py` 4 层评分 + 13 节流式：
+
+```bash
+# Step A · 多人编排 plan
+python scripts/he_pan_orchestrator.py --mode plan-v9 \
+  --bazi /tmp/p1.json /tmp/p2.json --names Alice Bob \
+  --out-dir /tmp/hepan_state/
+
+# Step B · 串行 next-person（每人独立跑 v9 单题流式 adaptive_elicit）
+python scripts/he_pan_orchestrator.py --mode next-person \
+  --bazi /tmp/p1.json /tmp/p2.json --names Alice Bob \
+  --out-dir /tmp/hepan_state/
+
+# Step C · 每人 finalize 后各跑一次 virtue_motifs.py
+python scripts/virtue_motifs.py --bazi /tmp/hepan_state/p1.bazi.json \
+  --curves /tmp/hepan_state/p1.curves.json --out /tmp/hepan_state/p1.virtue_motifs.json
+
+# Step D · 4 层合盘（入口守门：每人 phase finalized + virtue_motifs 必须存在）
+python scripts/he_pan.py --bazi /tmp/hepan_state/p*.bazi.json \
+  --names Alice Bob --type marriage --require-virtue-motifs \
+  --out /tmp/hepan_state/he_pan.json
+```
+
+按 `he_pan_protocol.md` v2 的 13 节流式输出（10 节常规 + Node 11/12 「## 我想和你说 · <name>」 + Node 13 「## 共振 motif」 ∩ 双方 motif_ids）。**禁止旧 R0/R1 健康三问 batch 路径（`--mode plan / collect-r1 / apply-answers` 默认 exit 2，需 `--ack-batch` 兜底）。**
 
 ### 当用户告诉你"我 31 岁升职了，命局对吗"
 
@@ -396,12 +419,18 @@ python scripts/calibrate.py
 
 ## 九、版本与演进
 
-当前主版本：v7.4（2026-04）
+当前主版本：**v9.3.1（2026-04）**
 
 - v7：现代化语言重构 + LGBTQ+ 包容
 - v7.1：P5 三气成象 / 假从真从 detect
 - v7.2：相位反演 Auto-Loop + 真太阳时 + confirmed_facts 持久化
 - v7.3：R3 原生家庭反询问
 - v7.4：化气格 + 神煞 + R0' 反迎合反向探针
+- v8 / v8.1：phase decision + AskQuestion 结构化点选 + Round 2 confirmation
+- v9：discriminative_question_bank 5 维度 + adaptive_elicit 单题流式贝叶斯（EIG + 4 条早停）
+- v9.1：mangpai surface 强制 + tone_blacklist
+- v9.2：rare phase P0 候选池 + 月令格中立化
+- v9.3：R-STREAM-1/2 单节单 message 物理硬 lint + closing 三段「我想和你说的话」改名 + audit_reference_consistency 协议回潮防火墙 + Step 2.7 已删除（默认流式 markdown）
+- **v9.3.1（当前）**：合盘 v9.3 化 — `he_pan_orchestrator.py` plan-v9 / next-person 多人 adaptive_elicit 编排；`he_pan.py` 13 节流式 + `--require-virtue-motifs` 入口守门（exit 7）；`he_pan_protocol.md` v2；旧 R0/R1 健康三问 batch 路径全部已退役（`--ack-batch` 兜底）
 
-详见 `references/phase_inversion_protocol.md §9` 版本时间表。
+详见 `references/phase_inversion_protocol.md §9` + `references/he_pan_protocol.md` v2 + `CHANGELOG.md` 版本时间表。

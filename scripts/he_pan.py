@@ -13,7 +13,7 @@
 设计原则：
   1. **脚本只算结构性兼容（五行 / 干支 / 十神 / 大运）**，不打"夫妻好不好"这种价值标签
   2. 每条加 / 减分都标命理依据 + 可证伪点
-  3. confidence 受双方 R1 命中率限制（短板效应，详见 he_pan_protocol.md）
+  3. confidence 取双方 phase.confidence 的最小值（短板效应 · v9 adaptive_elicit 后验，旧 R1 命中率已退役 · 详见 he_pan_protocol.md v2）
   4. 公正性：不接受身份信息（姓名 / 关系状态等），仅看八字结构
   5. 输出供 LLM 在对话里写人话解读，不直接给"配 / 不配"结论
 
@@ -657,13 +657,14 @@ def build(bazis: List[dict], names: List[str], rel_type: str,
 
 
 LLM_INSTRUCTION = """\
-== 合盘解读规则（强制） ==
+== 合盘解读规则（强制 · v9.3 / he_pan_protocol.md v2）==
 
 1. **不要直接给"配 / 不配"结论**——只解释结构性匹配项 + 给双方"如何用"的建议
 2. 必须按层（五行 / 干支 / 十神 / 大运）逐层解读，每层引用 notes 里的具体项
-3. 必须先告知 confidence 上限：
-   - 双方都通过了 R1 健康三问（≥ 2/3 命中）→ 解读可以重一些
-   - 任一方 R1 < 2/3 → 必须加 caveat："另一方八字校验不足，结论作为方向参考"
+3. 必须先告知 confidence 上限（短板效应 · 取 min(phase.confidence_label_score) of all persons）：
+   - 双方 phase.confidence ∈ {high, mid_high} → 解读可以重一些
+   - 任一方 phase.confidence == mid（0.60-0.80）→ 必须在 ## 概览 节明示该人档位 + 加 caveat
+   - 任一方 phase.confidence < 0.60 或 is_provisional=True → 入口已 exit 7，不应跑到这里
 4. 关键加分项（top_pluses）：要写"为什么这个有意义" + "实际怎么用上"
 5. 关键减分项（top_minuses）：要写"摩擦点是什么" + "可以怎么规避或缓冲"
 6. focus_years 给的同步度：要落到具体建议（如"未来 5 年共有 4 年大运同向 → 适合一起搞大事")
@@ -676,23 +677,28 @@ LLM_INSTRUCTION = """\
 == 禁止 ==
 - ❌ 不援引脚本的具体 notes，凭"感觉"打分
 - ❌ 把 grade 直接报给用户（"你们是 D 级"——很伤人，应转化为人话）
-- ❌ 跳过双方 R1 校验直接合盘
-- ❌ 把所有节点憋在末尾一次性吐（v5 流式硬要求）
+- ❌ 跳过任一方 phase finalize（is_provisional=true 或 confidence < 0.60）直接合盘 → 入口已 exit 7
+- ❌ 缺任一方 virtue_motifs.json 直接合盘 → 入口 exit 7（除非 BAZI_HEPAN_SKIP_VIRTUE=1 兜底）
+- ❌ 把所有节点憋在末尾一次性吐（R-STREAM-1/2 物理硬 lint）
 
-== 输出格式 + 流式分节顺序（v5 强制）==
+== 输出格式 + 流式分节顺序（v9.3 强制 · 13 节）==
 合盘默认走 markdown-only（无 HTML），LLM **不要先问"要不要图"**——除非用户明确说"也给我个汇总表 / 想看 HTML"。
-按下面的节序**流式输出**（每写完一节立刻发出，禁止憋整段）：
+按下面的节序**流式输出**（每写完一节立刻 send 一条 message，禁止憋整段）：
 
-  ## 概览                       ← Node 1：N 人 / 关系类型 / confidence（基于双方 R1）
+  ## 概览                       ← Node 1：N 人 / 关系类型 / confidence（基于双方 phase.confidence）
   ## 总分定调                   ← Node 2：人话定调，不甩 grade
   ## 第 1 层 · 五行互补          ← Node 3
   ## 第 2 层 · 干支互动          ← Node 4
   ## 第 3 层 · 十神互配          ← Node 5
   ## 第 4 层 · 大运同步          ← Node 6
-  ## 关键加分项 · 怎么用         ← Node 7（援引 top_pluses）
-  ## 关键减分项 · 怎么避         ← Node 8（援引 top_minuses）
-  ## 关系类型 tips              ← Node 9（按 rel_type 给特定建议）
+  ## 关键加分项                 ← Node 7（援引 top_pluses）
+  ## 关键减分项                 ← Node 8（援引 top_minuses）
+  ## 关系类型特定 tips           ← Node 9
   ## 总结                       ← Node 10：「如果决定做 X，怎样能更顺」
+  ─── 合盘 closing 三段（每人各一组，virtue_motifs 驱动）─────────
+  ## 我想和你说 · <name1>        ← Node 11：第 1 人 virtue_narrative 三段（同序拼接 declaration / love_letter / free_speech）
+  ## 我想和你说 · <name2>        ← Node 12：第 2 人同上
+  ## 共振 motif                 ← Node 13：set(p1.motif_ids) ∩ set(p2.motif_ids)，无交集时显式说"两位的人性主题不重叠"
 """
 
 
@@ -710,6 +716,21 @@ def main():
     ap.add_argument("--focus-years", type=int, nargs="*", default=None,
                     help="关注的公历年份列表（用于大运同步度），默认 今年-今年+10")
     ap.add_argument("--out", default="he_pan.json", help="输出路径")
+    ap.add_argument(
+        "--require-virtue-motifs",
+        action="store_true",
+        default=True,
+        help="（默认开启 · v9.3）每人必须提供 virtue_motifs.json（与 --bazi 同目录"
+             " · 文件名 <bazi_basename>.virtue_motifs.json 或 virtue_motifs.json）；"
+             "缺则 exit 7。设 BAZI_HEPAN_SKIP_VIRTUE=1 可兜底跳过（合盘 closing"
+             " 三段 Node 11-13 必须由 LLM 显式标注'virtue_motifs 缺失'）。",
+    )
+    ap.add_argument(
+        "--no-require-virtue-motifs",
+        dest="require_virtue_motifs",
+        action="store_false",
+        help="显式关闭 v9.3 默认 require-virtue-motifs（仅供 CI / 单元测试）。",
+    )
     args = ap.parse_args()
 
     bazis = [json.loads(Path(p).read_text(encoding="utf-8")) for p in args.bazi]
@@ -747,6 +768,40 @@ def main():
             print("  2. 或在确认低置信可接受的前提下设 BAZI_HEPAN_BYPASS_V8_GATE=1 强行过.",
                   file=sys.stderr)
             sys.exit(3)
+
+    # v9.3: 入口守卫 — 每人必须提供 virtue_motifs.json（合盘 Node 11-13 数据源）
+    if args.require_virtue_motifs and _os.environ.get("BAZI_HEPAN_SKIP_VIRTUE") != "1":
+        missing_virtue: list = []
+        for path, n in zip(args.bazi, names):
+            bazi_path = Path(path)
+            candidates = [
+                bazi_path.with_name(f"{bazi_path.stem}.virtue_motifs.json"),
+                bazi_path.parent / "virtue_motifs.json",
+            ]
+            if "bazi" in bazi_path.stem:
+                candidates.append(
+                    bazi_path.with_name(
+                        bazi_path.stem.replace("bazi", "virtue_motifs") + ".json"
+                    )
+                )
+            if not any(c.exists() and c.resolve() != bazi_path.resolve() for c in candidates):
+                missing_virtue.append(
+                    f"  · {n} ({path}): 找不到 virtue_motifs.json（已查 "
+                    + ", ".join(str(c.name) for c in candidates) + "）"
+                )
+        if missing_virtue:
+            print("\n[he_pan v9.3 GATE] 拒绝合盘 — 任一参与者缺 virtue_motifs.json:",
+                  file=sys.stderr)
+            for e in missing_virtue:
+                print(e, file=sys.stderr)
+            print("\n建议:", file=sys.stderr)
+            print("  1. 各自先跑 `python scripts/virtue_motifs.py --bazi <p_i.json> "
+                  "--curves <p_i_curves.json> --out <p_i.virtue_motifs.json>`;",
+                  file=sys.stderr)
+            print("  2. 或在 CI / 调试场景下设 BAZI_HEPAN_SKIP_VIRTUE=1 显式跳过 "
+                  "(合盘 Node 11-13 必须由 LLM 显式标注 'virtue_motifs 缺失').",
+                  file=sys.stderr)
+            sys.exit(7)
 
     if args.focus_years:
         focus = sorted(set(args.focus_years))
