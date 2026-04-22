@@ -608,6 +608,98 @@ def enforce_no_fabricated_anchor_constraint(
     return hits
 
 
+# ============================================================================
+# §7 · placeholder 工程内容外泄守卫 (web artifact, v9.3.1)
+# ============================================================================
+#
+# 背景: chart_artifact.html.j2 的 placeholder div (LLM 没写时的占位文案) 历史上
+# 把 references/*.md 协议路径 + analysis.X.Y schema 字串直接展示给读者. 这是
+# 工程内容泄漏 (engineering leak): 普通读者看到 "references/multi_dim_xiangshu_protocol.md §3"
+# 只会困惑或失去信任.
+#
+# 本守卫扫渲染后的 HTML, 若 placeholder 区出现 references/.+\.md 或 analysis\.\w+
+# schema 字串 → exit 13.
+
+_PLACEHOLDER_DIV_RE = re.compile(
+    r'<div\s+className\s*=\s*"[^"]*\bplaceholder\b[^"]*"[^>]*>(.*?)</div>',
+    re.DOTALL | re.IGNORECASE,
+)
+# 注: render 后的 className 在 React JSX 字符串里仍是 "className=" (template 是 .j2 → .html)
+# 但实际浏览器渲染后会变成 class="placeholder". 这里同时支持两种写法.
+_PLACEHOLDER_HTML_RE = re.compile(
+    r'<div\s+class\s*=\s*"[^"]*\bplaceholder\b[^"]*"[^>]*>(.*?)</div>',
+    re.DOTALL | re.IGNORECASE,
+)
+
+_ENGINEERING_LEAK_PATTERNS: tuple[tuple[str, str], ...] = (
+    (r"references/[\w/_-]+\.md", "protocol path leak (references/*.md)"),
+    (r"\banalysis\.[\w.\[\]]+", "schema path leak (analysis.X.Y)"),
+    (r"\bvirtue_motifs\.[\w.]+", "schema path leak (virtue_motifs.X)"),
+    (r"\b__BAZI_[A-Z_]+__", "internal global leak (__BAZI_X__)"),
+)
+
+
+@dataclass(frozen=True)
+class PlaceholderLeakHit:
+    pattern: str
+    reason: str
+    snippet: str
+
+
+class PlaceholderLeakError(SystemExit):
+    """v9.3.1 · placeholder div 里出现工程协议路径 / schema → exit 13."""
+
+    def __init__(self, hits: list[PlaceholderLeakHit]):
+        super().__init__(13)
+        self.hits = hits
+
+    def render(self) -> str:
+        lines = [
+            "[_v9_guard] PLACEHOLDER ENGINEERING LEAK · "
+            "渲染后的 HTML 里 placeholder 占位区出现工程内容:"
+        ]
+        for h in self.hits:
+            lines.append(f"  · {h.reason}")
+            lines.append(f"    snippet: '{h.snippet}'")
+            lines.append(f"    pattern: {h.pattern}")
+        lines.append(
+            "  · 修法: 把 references/*.md / analysis.X.Y / __BAZI_*__ 这类工程标识"
+        )
+        lines.append("        从 placeholder div 文本里搬到 Jinja {# … #} 注释中,")
+        lines.append("        给读者只留中性说明 (\"…尚未写入\" 之类).")
+        return "\n".join(lines)
+
+
+def scan_placeholder_engineering_leak(html: str) -> list[PlaceholderLeakHit]:
+    """扫渲染后的 HTML, 抽出所有 .placeholder div 内文, 检查工程内容外泄."""
+    hits: list[PlaceholderLeakHit] = []
+    if not html:
+        return hits
+    placeholders: list[str] = []
+    placeholders.extend(_PLACEHOLDER_DIV_RE.findall(html))
+    placeholders.extend(_PLACEHOLDER_HTML_RE.findall(html))
+    for content in placeholders:
+        for pattern, reason in _ENGINEERING_LEAK_PATTERNS:
+            for m in re.finditer(pattern, content):
+                snippet = content[max(0, m.start() - 8): m.end() + 8].replace("\n", " ")
+                hits.append(PlaceholderLeakHit(
+                    pattern=pattern, reason=reason, snippet=snippet.strip(),
+                ))
+    return hits
+
+
+def enforce_no_placeholder_engineering_leak(
+    html: str, *, raise_on_hit: bool = True,
+) -> list[PlaceholderLeakHit]:
+    """扫并抛错; 调用方可设 raise_on_hit=False 自行处理."""
+    hits = scan_placeholder_engineering_leak(html)
+    if hits and raise_on_hit:
+        err = PlaceholderLeakError(hits)
+        print(err.render(), file=sys.stderr)
+        raise err
+    return hits
+
+
 __all__ = [
     "enforce_v9_only_path",
     "V9PathBlocked",
@@ -629,4 +721,8 @@ __all__ = [
     "enforce_no_fabricated_anchor_constraint",
     "FabricatedAnchorHit",
     "FabricatedAnchorError",
+    "scan_placeholder_engineering_leak",
+    "enforce_no_placeholder_engineering_leak",
+    "PlaceholderLeakHit",
+    "PlaceholderLeakError",
 ]

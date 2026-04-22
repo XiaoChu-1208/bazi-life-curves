@@ -589,6 +589,66 @@ function MangpaiBlock({ events }) {
   );
 }
 
+// v9.3.1 · 顶部固定黄条: 提示用户当前是流式中间产物.
+function PartialBanner() {
+  if (!IS_PARTIAL) return null;
+  const ts = (window.__BAZI_DATA__ && window.__BAZI_DATA__.generated_at) || "";
+  return (
+    <div className="partial-banner" data-resilience-banner="partial" style={{
+      position: "sticky", top: 0, zIndex: 1000,
+      padding: "8px 16px", background: "#fef6dd", color: "#7a5e1f",
+      borderBottom: "1px solid #d9c074", fontSize: 13, lineHeight: 1.6,
+      textAlign: "center",
+    }}>
+      ⚠️ 流式中间产物 · {ts ? `生成于 ${ts} · ` : ""}非最终版本（最终版会移除此横幅）
+    </div>
+  );
+}
+
+// v9.3.1 · LLM 字段覆盖度横幅 (绿: 全齐 / 黄: partial), 透明展示哪些字段没写.
+function CoverageBanner() {
+  const cov = (window.__BAZI_DATA__ && window.__BAZI_DATA__.coverage) || null;
+  if (!cov || typeof cov.coverage_pct !== "number") return null;
+  const isComplete = cov.missing && cov.missing.length === 0;
+  return (
+    <div className={"coverage-banner " + (isComplete ? "ok" : "warn")}
+         data-resilience-banner="coverage"
+         style={{
+      margin: "10px 16px", padding: "8px 12px",
+      background: isComplete ? "#eaf5ec" : "#fef6dd",
+      border: "1px solid " + (isComplete ? "#88b98c" : "#d9c074"),
+      borderRadius: 4, fontSize: 12, color: isComplete ? "#3d7a47" : "#7a5e1f",
+    }}>
+      <b>LLM 内容完成度：</b>{cov.coverage_pct.toFixed(1)}%（{cov.present?.length || 0}/{cov.required?.length || 0} 项已写）
+      {!isComplete && cov.missing && cov.missing.length > 0 && (
+        <details style={{marginTop: 4, cursor: "pointer"}}>
+          <summary style={{display: "inline", color: "#7a5e1f"}}>
+            还差 {cov.missing.length} 项（点开查看）
+          </summary>
+          <ul style={{margin: "6px 0 0 0", paddingLeft: 24, fontSize: 11, color: "#5a4426"}}>
+            {cov.missing.slice(0, 30).map((m, i) => <li key={i}>{m}</li>)}
+            {cov.missing.length > 30 && <li>… 共 {cov.missing.length} 项</li>}
+          </ul>
+        </details>
+      )}
+    </div>
+  );
+}
+
+// v9.3.1 · 时代-民俗志空态 explainer (代替无声跳过)
+function ZeitgeistEmptyExplain() {
+  return (
+    <div className="card zeitgeist-empty" data-resilience-fallback="zeitgeist-empty">
+      <h2>时代-民俗志解读层</h2>
+      <div className="sub" style={{color: "#8a7a55"}}>
+        本次渲染未提供时代窗口骨架，本层不展示。
+        若要启用，请在运行 <code>render_artifact.py</code> 时加上 <code>--zeitgeist &lt;path&gt;</code>
+        或 <code>--bazi &lt;path&gt;</code>（脚本会现场推算）。
+      </div>
+    </div>
+  );
+}
+
 // v9.3.1 · 空数据 fallback 卡片（与 scripts/render_chart.py:40-42 拒空点行为对齐）
 function NoChartFallback({ reason }) {
   return (
@@ -777,6 +837,8 @@ function App() {
 
   return (
     <>
+      <PartialBanner />
+      <CoverageBanner />
       <h1>{TITLE}</h1>
       <div className="meta">
         {/* v9.3.1 · resilience: 全部嵌套访问改可选链 + 兜底，缺字段不再白屏 */}
@@ -834,8 +896,7 @@ function App() {
             <div className="cds-opening"><Markdown source={currentDayunBody} /></div>
           ) : (
             <div className="placeholder">
-              （此处由 LLM 在 analyze 阶段先写当前大运段评价及其十年逐年流年；
-              {IS_PARTIAL ? " ⌛ 流式写作中" : ""}）
+              当前大运段评价及十年逐年流年尚未写入。{IS_PARTIAL ? "⌛ 流式写作中。" : ""}
             </div>
           )}
         </div>
@@ -998,13 +1059,14 @@ function App() {
       )}
 
       {/* === 整图综合分析（默认展开） === */}
+      {/* v9.3.1 placeholder 文案剥离工程协议路径 (engineering 注释见 Jinja 注释块) */}
       <details className="overall-analysis" open>
         <summary>整图综合分析（命局基本盘 + 三条曲线形状 + 命主定位）</summary>
         {ANALYSIS.overall && ANALYSIS.overall.trim() ? (
           <Markdown source={ANALYSIS.overall} />
         ) : (
           <div className="placeholder">
-            （此处由 LLM 根据 references/multi_dim_xiangshu_protocol.md §4 写入综合分析。）
+            综合分析尚未写入。{IS_PARTIAL ? "⌛ 流式写作中，稍后会补齐这一节。" : "请稍后再读这一节。"}
           </div>
         )}
       </details>
@@ -1026,9 +1088,7 @@ function App() {
                 <Markdown source={lifeReview[d.key]} />
               ) : (
                 <div className="placeholder">
-                  （此处由 LLM 写入一生 {d.name} 的整体评价。
-                  key = "{d.key}"
-                  {IS_PARTIAL ? " · ⌛ 流式写作中" : ""}）
+                  尚未写入「{d.name}」的一生总评。{IS_PARTIAL ? "⌛ 流式写作中。" : ""}
                 </div>
               )}
             </div>
@@ -1072,8 +1132,7 @@ function App() {
                     <Markdown source={virtueNarrative.opening} />
                   ) : (
                     <div className="placeholder">
-                      （此处由 LLM 在 Node 2 之前/之时写入位置① · 用 1-2 句不下定论的悬疑话起笔，
-                      引出贯穿一生的德性母题。{IS_PARTIAL ? "⌛ 流式写作中" : ""}）
+                      开篇悬疑提示尚未写入。{IS_PARTIAL ? "⌛ 流式写作中。" : ""}
                     </div>
                   )}
                 </div>
@@ -1139,8 +1198,7 @@ function App() {
                     <Markdown source={virtueNarrative.convergence_notes} />
                   ) : (
                     <div className="placeholder">
-                      （此处由 LLM 在 convergence_years 命中的关键年内嵌之外，
-                      额外写一段「母题之间的回响」总览。{IS_PARTIAL ? "⌛ 流式写作中" : ""}）
+                      母题汇聚总览尚未写入。{IS_PARTIAL ? "⌛ 流式写作中。" : ""}
                     </div>
                   )}
                 </div>
@@ -1157,8 +1215,7 @@ function App() {
                   <div className="vc-body"><Markdown source={virtueNarrative.declaration} /></div>
                 ) : (
                   <div className="placeholder">
-                    （此处 LLM 写整个一生评价的收尾段——首行必须用「## 我想和你说」起。
-                    {IS_PARTIAL ? " ⌛ 流式写作中" : ""}）
+                    「我想和你说」尚未写入。{IS_PARTIAL ? "⌛ 流式写作中。" : ""}
                   </div>
                 )}
 
@@ -1167,9 +1224,7 @@ function App() {
                     <div className="vc-body vc-soft"><Markdown source={virtueNarrative.love_letter} /></div>
                   ) : (
                     <div className="placeholder">
-                      （此处 LLM 代项目的编写者向命主说一段——首行必须用「## 项目的编写者想和你说」起。
-                      条件已成立（love_letter_eligible=true）。
-                      {IS_PARTIAL ? " ⌛ 流式写作中" : ""}）
+                      「项目的编写者想和你说」尚未写入。{IS_PARTIAL ? "⌛ 流式写作中。" : ""}
                     </div>
                   )
                 )}
@@ -1178,9 +1233,7 @@ function App() {
                   <div className="vc-body vc-free"><Markdown source={virtueNarrative.free_speech} /></div>
                 ) : (
                   <div className="placeholder">
-                    （此处 LLM 用大模型自身身份写一段——首行必须用「## 我（大模型）想和你说」起，
-                    收尾必须用「我不知道我说的对不对。但你读到这里，你会知道」或等价句。
-                    {IS_PARTIAL ? " ⌛ 流式写作中" : ""}）
+                    「我（大模型）想和你说」尚未写入。{IS_PARTIAL ? "⌛ 流式写作中。" : ""}
                   </div>
                 )}
               </div>
@@ -1204,7 +1257,9 @@ function App() {
         )}
       </div>
 
-      {/* === v7.5 时代-民俗志解读层（仅在传入 zeitgeist 时显示） === */}
+      {/* === v7.5 时代-民俗志解读层 === */}
+      {/* v9.3.1 · 不再静默隐藏: 没传 zeitgeist → 显式 ZeitgeistEmptyExplain */}
+      {!(HAS_ZEITGEIST && eraWindows.length > 0) && <ZeitgeistEmptyExplain />}
       {HAS_ZEITGEIST && eraWindows.length > 0 && (
         <div className="card">
           <h2>时代-民俗志解读层（v7.5）</h2>
@@ -1241,13 +1296,8 @@ function App() {
                       <Markdown source={narrative} />
                     ) : (
                       <div className="placeholder">
-                        （此处由 LLM 按 references/zeitgeist_protocol.md §3 写入「区间叙事」：
-                        ①时代底色（1-2 句不带身份名词的中性概括）　
-                        ②标志性细节（民俗志层 6 子层挑 ≥ 3 项 high/mid 置信）　
-                        ③命局给的几个具体节点（首选形态 + 备选形态）　
-                        ④累计影响（这一段如何沉淀到命主的人生轨迹）　
-                        ⑤整段证伪点。
-                        key = "{era.id}"。）
+                        「{era.label}」这一段时代背景的叙事尚未写入。
+                        {IS_PARTIAL ? "⌛ 流式写作中。" : ""}
                       </div>
                     )}
                   </div>
@@ -1281,13 +1331,7 @@ function App() {
                     <Markdown source={r.body} />
                   ) : (
                     <div className="placeholder">
-                      （此处由 LLM 写入「{seg.label}」大运的整体评价。
-                      key = "{seg.label}"。
-                      v7.5 推荐按 references/dayun_review_template.md 的 6 块结构写：
-                      ①命理属性　②时代镶嵌（与 era_windows 对齐 · v7.5 重點）　
-                      ③三派交叉与盲派应事　④4 维曲线整体倾向　
-                      ⑤关键年份概览　⑥核心策略建议。
-                      也可写到 ANALYSIS.dayun_reviews["{seg.label}"] 字段（整体 markdown，覆盖此处）。）
+                      「{seg.label}」大运的整体评价尚未写入。{IS_PARTIAL ? "⌛ 流式写作中。" : ""}
                     </div>
                   )}
                 </div>
@@ -1303,9 +1347,7 @@ function App() {
         <div className="sub">人生中的高峰、低谷、转折年。每条都展开了完整的大白话推论。</div>
         {keyYears.length === 0 ? (
           <div className="placeholder">
-            （此处由 LLM 按 references/multi_dim_xiangshu_protocol.md §3 写入关键年份。
-            数据结构：analysis.key_years = [{`{year, age, ganzhi, dayun, kind, headline, body}`}]
-            kind ∈ peak/dip/shift。建议至少覆盖 6-10 个关键年。）
+            关键年份评价尚未写入。{IS_PARTIAL ? "⌛ 流式写作中，关键高峰 / 低谷 / 转折年会陆续补齐。" : ""}
           </div>
         ) : keyYears.map((k, i) => {
           const pt = pointsByYear[k.year];

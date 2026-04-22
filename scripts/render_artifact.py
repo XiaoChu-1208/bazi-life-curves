@@ -319,7 +319,8 @@ def render(curves: dict,
            analysis: dict | None = None,
            zeitgeist: dict | None = None,
            virtue_motifs: dict | None = None,
-           allow_partial: bool = False) -> str:
+           allow_partial: bool = False,
+           coverage_report: dict | None = None) -> str:
     env = Environment(
         loader=FileSystemLoader(str(TEMPLATE_DIR)),
         autoescape=select_autoescape(["html"]),
@@ -334,8 +335,23 @@ def render(curves: dict,
     # 块, 用 _safe_json escape '<', 物理消除 `</script>` 注入面.
     pillars_str = curves.get("pillars_str") if isinstance(curves, dict) else None
     title = f"八字人生曲线图（{pillars_str}）" if pillars_str else "八字人生曲线图"
+    # v9.3.1 · coverage 注入到模板, 让 CoverageBanner 透明展示哪些字段没写
+    coverage_payload = None
+    if isinstance(coverage_report, dict):
+        coverage_payload = {
+            "coverage_pct": coverage_report.get("coverage_pct"),
+            "required": coverage_report.get("required") or [],
+            "present": coverage_report.get("present") or [],
+            "missing": coverage_report.get("missing") or [],
+            "warnings": coverage_report.get("warnings") or [],
+        }
+
+    from datetime import datetime, timezone
+    generated_at = datetime.now(timezone.utc).astimezone().isoformat(timespec="seconds")
+
     payload = {
         "title": title,
+        "generated_at": generated_at,
         "curves": curves,
         "analysis": {
             "overall": analysis.get("overall", ""),
@@ -354,6 +370,7 @@ def render(curves: dict,
         "virtue_motifs": virtue_motifs,
         "has_virtue_motifs": bool(virtue_motifs),
         "partial": bool(allow_partial),
+        "coverage": coverage_payload,
     }
     return tmpl.render(
         title=title,
@@ -610,6 +627,9 @@ def main():
                     help="v9.2 · 流式渲染模式：缺字段时显示「⌛ 流式写作中」占位，不抛错也不算 fail。"
                          "用于 agent 边写边刷 HTML 看进度（最终产物仍要去掉此 flag 跑覆盖率审计）。"
                          "**partial 模式自动关掉所有下方 v9 strict 审计**。")
+    ap.add_argument("--require-final-version", action="store_true",
+                    help="v9.3.1 · 构建分发版时拒绝 partial: 与 --allow-partial 同时给会 raise. "
+                         "防止意外把流式中间产物当成最终版发出去 (顶部还会有黄条提示).")
     ap.add_argument("--coverage-report", default=None,
                     help="v9.1 · 可选 · 把 LLM 字段覆盖度 JSON 写到该路径")
 
@@ -646,6 +666,12 @@ def main():
     ap.add_argument("--mangpai", default=None,
                     help="v9 audit-mangpai-surface 用：output/X.mangpai.json 路径。")
     args = ap.parse_args()
+    # v9.3.1 · partial vs final-version 互斥校验
+    if args.require_final_version and args.allow_partial:
+        raise SystemExit(
+            "[render_artifact] --require-final-version 与 --allow-partial 互斥: "
+            "前者用于构建分发版, 后者用于流式中间产物."
+        )
     if args.from_stream_state:
         curves = _curves_from_stream_state(Path(args.from_stream_state))
     elif args.curves:
@@ -690,7 +716,11 @@ def main():
     if not args.allow_partial:
         _run_v9_audits(args, analysis, virtue_motifs)
 
-    html = render(curves, analysis, zeitgeist, virtue_motifs, allow_partial=args.allow_partial)
+    html = render(
+        curves, analysis, zeitgeist, virtue_motifs,
+        allow_partial=args.allow_partial,
+        coverage_report=coverage,
+    )
     Path(args.out).write_text(html, encoding="utf-8")
     n_eras = len((zeitgeist or {}).get("era_windows_used", []))
     print(f"[render_artifact] wrote {args.out} ({len(html)} bytes), "

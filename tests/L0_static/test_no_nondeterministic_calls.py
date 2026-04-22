@@ -42,6 +42,7 @@ ALLOWLIST_FILES = {
     "he_pan.py",                # 报告生成时间
     "he_pan_orchestrator.py",   # v9 PR-2 多人 v8 编排器,串脚本不进打分
     "mcp_server.py",            # MCP 服务,非打分路径
+    "render_artifact.py",       # v9.3.1 渲染 HTML 报告, 仅展示 generated_at 给读者, 不进打分链路
     "phase_inversion_loop.py",  # 编排器,只串脚本不进打分
     "adaptive_elicit.py",       # v9 自适应问答主入口:用 dt.date.today() 取当前年份;
                                 # 用 random.Random(bazi_fp) 做 batch 题集**确定性**洗牌
