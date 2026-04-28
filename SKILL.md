@@ -474,6 +474,158 @@ python scripts/phase_posterior.py --round 2 \
 
 完整规则见 `references/handshake_protocol.md` §4 和 `references/phase_decision_protocol.md` §7。
 
+### 2.6b v9.6 · 事件 Ask-Loop 兜底（R2 仍 < 0.85 时启用）
+
+> **v9.6 新增**：R2 confirmation 跑完仍 `top1_p < 0.85` 时，启用**事件 ask-loop**——
+> 抛若干历史年份「是否发生明显事件」清单题，做独立 Bayesian 收敛，把候选 phase 后验
+> 向「与用户真实经历最一致」的方向拉。完整学理 / 似然表 / 收敛阈值见
+> `references/event_ask_loop_protocol.md`。
+
+> **本节是 Claude（编排者）的执行手册**。本套 7 个脚本是纯逻辑工具，不含交互循环——
+> 「问→答→收敛」循环由 Claude 用 Bash 调脚本 + 翻译成自然语言问用户来串。
+
+#### 触发条件
+
+- R2 confirmation 后 `phase_decision.top1_p < 0.85` 且 `phase_decision.elicitation_path != "fast_path"`
+- candidate top-k（默认 4）里至少 2 个 phase 后验 ≥ 0.05
+- 用户未显式拒答历史事件类问题
+
+不满足任一条 → 跳过本节，走原 R2 confirmation_status 既定 action（render / render_with_caveat / escalate）。
+
+#### 执行序列（Claude 必须严格按序）
+
+```bash
+# Step 1：从 elicit 后验初始化事件 state
+python scripts/event_elicit_cli.py init \
+    --elicit-posterior '{"phase_id_1": 0.42, "phase_id_2": 0.31, ...}' \
+    --top-k 4
+# stdout → {"state": {...}}  保存到 out/.event.state.json
+```
+
+进入循环（最多 5 轮，含 Stage A + Stage B）：
+
+```bash
+# Step 2A · Stage A：拿 disjoint 年批次（每批 2-4 年）
+python scripts/event_elicit_cli.py pick-disjoint \
+    --bazi out/bazi.json \
+    --state-json "$(cat out/.event.state.json)" \
+    --batch-size 4
+# stdout → {"batch": [{"year": 2018, "sole_phase": "...", "all_predictions": {...}}, ...]}
+# 若 batch == [] → 转 Stage B（见 Step 2B）
+```
+
+把 batch 中每个 `year` 翻译成自然语言问用户。题面铁律：
+
+- 主语：「你 YYYY 年（你 NN 岁那年）」
+- 问句：「是不是发生过比较明显的事？比如健康、感情、工作、家庭里的大动静」
+- **绝对不**告诉用户那年对应哪个 phase 预测什么事件
+- 选项：让用户自由作答，Claude 把自述映射成 `yes` / `partial` / `no` / `dunno`
+
+自然语言 → discrete 映射规范：
+
+| 用户原话 | discrete |
+|---|---|
+| 「我那年父亲去世了 / 考上大学 / 离婚 / 创业 / 大病一场」 | `yes` |
+| 「有点变化但不算大事 / 跳了次槽 / 谈了个对象但不长久」 | `partial` |
+| 「没什么特别的 / 平淡 / 跟前一年差不多」 | `no` |
+| 「记不清 / 想不起来 / 不太确定 / 算了吧」 | `dunno` |
+
+```bash
+# Step 3A · 提交 Stage A 答案 → Bayesian 更新
+python scripts/event_elicit_cli.py update-stage-a \
+    --state-json "$(cat out/.event.state.json)" \
+    --batch-json '<上一步的 batch JSON>' \
+    --answers-json '{"2018": {"discrete": "yes", "free_text": "...", "summary": "..."}, ...}'
+# stdout → {"state": {新 state}}  覆写 out/.event.state.json
+```
+
+Stage A 用尽（pick-disjoint 返回 `batch: []`）或累计已问 5 题 → 转 Stage B：
+
+```bash
+# Step 2B · Stage B：找重叠年候选
+python scripts/event_elicit_cli.py find-overlap \
+    --bazi out/bazi.json \
+    --state-json "$(cat out/.event.state.json)" \
+    --max-candidates 8
+# stdout → {"candidates": [{"year": ..., "user_age": ..., "predicting_phases": [...]}, ...]}
+
+# Step 2B' · 算法挑分歧最大年（零 LLM）
+python scripts/event_elicit_cli.py pick-stage-b \
+    --state-json "$(cat out/.event.state.json)" \
+    --candidates-json '<上一步的 candidates JSON>'
+# stdout → {"pick": {"year": ..., "candidate_categories": ["升学考试...", "...", ...], ...}}
+```
+
+Stage B 题面：「你 YYYY 年那次比较明显的事，主要是哪一类？（多选）」+ 列出 `pick.candidate_categories` + 始终包含「以上都不是」选项。允许用户自由输入。
+
+```bash
+# Step 3B · 提交 Stage B 答案
+python scripts/event_elicit_cli.py update-stage-b \
+    --state-json "$(cat out/.event.state.json)" \
+    --pick-json '<上一步 pick JSON>' \
+    --answer-json '{"discrete": "yes", "chosen_categories": ["创业 / 自由职业 / 作品发表"], "free_text": "...", "summary": "..."}'
+```
+
+每轮后调 `evaluate` 检查是否收敛：
+
+```bash
+python scripts/event_elicit_cli.py evaluate \
+    --state-json "$(cat out/.event.state.json)" \
+    --elicit-posterior '<R2 末态后验>'
+# stdout → {"fused_posterior": {...}, "verdict": {"tier": "high|soft|weak|refuse", "top1": "...", "top1_p": 0.83, ...}}
+```
+
+收敛规则：
+- `tier == "high"`（≥ 0.80） → 跳到 Step 4 写回
+- `tier == "soft"`（≥ 0.70）且已问 ≥ 4 题 → 跳到 Step 4 写回（带 soft 警示档）
+- `tier == "weak"`（≥ 0.60）且已问 ≥ 5 题 → 跳到 Step 4 写回（带 weak 警示档）
+- `tier == "refuse"`（< 0.60）且已问 ≥ 5 题 → exhausted，跳到 Step 4（`--stop-reason exhausted`），向用户说明"信心略低，请把曲线当趋势参考"
+
+#### 验证题（可选 · 当 `top1_p ≥ 0.85` 但用户主动要求确认时）
+
+```bash
+python scripts/event_elicit_cli.py find-verification \
+    --bazi out/bazi.json \
+    --state-json "$(cat out/.event.state.json)" \
+    --top1 <phase_id> --top1-label <中文名>
+# stdout → {"pick": {...}, "fallback_text": "..."} 或 {"pick": null}
+```
+
+验证题 **必须**透明告知：
+1. 这是验证题（不是猜测题）
+2. 当前判定 phase 的中文名
+3. 命中 → 把握度 ≥ 0.92；落空 → 触发 top1 → top2 回退重判
+
+#### Step 4 · 后验写回 + 重跑下游（**必跑**）
+
+```bash
+# 1. 写回 bazi.json（重算 strength_after_phase / yongshen / xishen / jishen / climate）
+python scripts/apply_event_finalize.py \
+    --bazi out/bazi.json \
+    --posterior '<verdict.fused_posterior 或 evaluate 的 fused_posterior>' \
+    --stop-reason event_loop_converged   # 或 exhausted / verification_passed
+# stdout → {"status": "DONE", "decision": ..., "phase_label": ..., "confidence": ...}
+
+# 2. 重跑曲线（曲线按新 phase 喜忌算 —— 必须）
+python scripts/score_curves.py --bazi out/bazi.json --out out/curves.json
+
+# 3. 重跑德性母题（按新 phase 重新选 motif —— 必须）
+python scripts/virtue_motifs.py --bazi out/bazi.json --out out/virtue_motifs.json
+```
+
+**漏掉重跑就是 v9.6 修的真 bug**——曲线和母题还停在旧 phase，apply_event_finalize 等于白调。
+
+#### Round 3 红线（在 R2 红线之外补充）
+
+| # | 红线 | 触发 | 处理 |
+|---|------|------|------|
+| HS-R8 | event ask-loop 后未重跑 score_curves | apply_event_finalize 后 deliver 直接读旧 curves.json | 强制重跑或 escalate |
+| HS-R9 | 事件题诱导用户 | 题面带"这年你应该会有……" / 暗示具体事件类型 | 立即停下重抛中性题面 |
+| HS-R10 | 「记不清」当弱否定 | 把 dunno 当作弱 no 处理 | 严禁，dunno 必须中性，参 §1.3 协议 |
+| HS-R11 | 多次落空仍强行 deliver | exhausted（< 0.60）跑完仍走 render | 强制 low_confidence_offer 文案，参 §8 退化策略 |
+
+完整规则见 `references/event_ask_loop_protocol.md`。
+
 ### 2.55 [DEPRECATED · v8] 旧 phase_inversion_loop 事后反演路径
 
 > **v8 起本节整体废弃**。下文仅作为兼容性说明保留，**新流程不要走这里**。

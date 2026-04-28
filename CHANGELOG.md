@@ -1,5 +1,101 @@
 # Changelog
 
+## v9.6 — 2026-04 · 事件 Ask-Loop 兜底（R2 之后第三轮收敛）
+
+> **Triggering pattern**: web 端实测发现，R2 confirmation 跑完 top1_p 仍处于
+> 0.65–0.85 中段的 ambiguous 命盘占比 ~25%，原 v9.2 路径只能给"weakly_confirmed +
+> caveat"或"escalate 核对时辰"——但用户的时辰其实是对的，只是性格自述对多个 phase
+> 都讲得通。本次新增**事件 ask-loop**：在性格自述（elicit）通道之外开第二条
+> 独立贝叶斯通道——抛若干历史年份"是否发生明显事件"清单题，用真实经历做证据
+> 把后验向"与用户经历最一致"的 phase 拉。事件比性格自述更"硬"（用户更难撒谎），
+> 但避免事件主导滑向宿命，加权融合刻意定 1:1.2（事件 55% / 性格 45%）。
+>
+> 本版本合并跨度 v9.4–v9.6：v9.4 disjoint 年清单题 + Stage A Bayesian 引擎、
+> v9.5 Stage B 重叠年事件类型查表（v2 零 LLM）+ verification 题、v9.6 把后验
+> 真正写回 bazi.json + 重跑 score_curves / virtue_motifs（修真 bug：之前后验
+> 只更新 in-memory state，deliver pipeline 拿到旧判定，事件题白答了）。
+>
+> 引擎层先行落地，本次只做 B 引擎库的回流——web 适配层（A 项目 SSE 串流 / TS
+> 包装层）不进本仓。普通用户经 Claude 调本 skill 时，由 Claude 当编排者用 Bash
+> 串脚本 + 把结构化问题翻译成自然语言问用户。
+
+### 新增脚本（共 7 个，~2228 行，零新第三方依赖）
+
+- `scripts/event_elicit.py`：Stage A 后验初始化 + Bayesian 更新引擎
+  - 4 选项答案 yes/partial/no/dunno，似然表硬编码 + assert 强制归一性
+  - **「记不清」中性铁律**：`P(dunno|predicted) == P(dunno|not_predicted)` 由 assert
+    保证，违反「不替用户记忆」铁律即代码 fail
+  - `fuse_posteriors(elicit, event, w_e=1.0, w_v=1.2)` 加权对数融合
+  - 三档收敛阈值 high 0.80 / soft 0.70 / weak 0.60（2026-04 从原 0.85/0.79/0.69
+    放宽，77.9% 不该落到"重警示"档）
+- `scripts/event_year_predictor.py`：Phase × 流年/大运 预测命中矩阵
+  - 复用 `_phase_registry.zuogong_trigger_branches` + 十神标签命中
+  - `select_disjoint_year_batch` 找独占预测年（Stage A 数据基础）
+- `scripts/event_elicit_stage_b.py`：重叠年事件类型判别（v2 零 LLM）
+  - Jaccard 加权后验分歧分公式：`Σ_{i<j} (1-jaccard) × π_i × π_j`
+  - `update_with_category_answer` categorical 似然查表
+- `scripts/phase_event_categories.py`：Phase → 事件类别静态映射（12 大类纯数据）
+  - 替代早期"每对 (年×phase) 调 LLM 估事件类型"的高成本路线
+  - 类别用大白话不用命理术语（"升学/学术贵人" 而非 "印星岁运"）
+- `scripts/event_verification.py`：融合后验透明复核题
+  - likelihood 不对称：hit ×5 / miss ×0.2 / partial / dunno 中性
+  - 题面铁律：透明告知"这是验证题 + 当前判定 + 命中/落空后果"，与
+    methodology.md「命理师之道」§II 对齐
+- `scripts/event_elicit_cli.py`：9 个子命令（init / pick-disjoint / update-stage-a /
+  find-overlap / pick-stage-b / update-stage-b / find-verification /
+  update-verification / evaluate）
+  - 每命令 stdin 不读、命令行参数读 state JSON、stdout 输出单行 JSON
+  - 错误走 stderr + exit 1
+- `scripts/apply_event_finalize.py`：最终后验写回 + 重算 derived 字段
+  - **复用** `adaptive_elicit._finalize_phase`（同一套 phase / phase_decision /
+    strength_after_phase / yongshen_after_phase / xishen / jishen / climate 写入逻辑）
+  - 加 `phase_decision.event_loop_finalized: true` + `elicitation_path: "event_loop_v9.6"`
+    标记，下游可识别但不强依赖
+
+### 新增文档
+
+- `references/event_ask_loop_protocol.md`：完整学理协议
+  - §0 何时启用 / §1 Stage A disjoint 年清单 / §2 Stage B 重叠年类别 /
+    §3 验证题 / §4 收敛阈值 / §5 后验融合 / §6 写回 + 重跑契约 /
+    §7 编排者契约（Claude / 调用方）/ §8 退化与 fallback /
+    §9 工程不变量（assert 强制）/ §10 与其它协议关系
+  - 风格对齐 `handshake_protocol.md` + `elicitation_ethics.md`
+
+### 修改：SKILL.md v9.6 编排手册
+
+- 新增 §2.6b 「v9.6 · 事件 Ask-Loop 兜底（R2 仍 < 0.85 时启用）」
+  - 触发条件 + 完整执行序列（每步给具体 Bash 命令）
+  - 自然语言 → discrete 映射规范表（防诱导铁律）
+  - Round 3 红线 HS-R8/R9/R10/R11（漏重跑 / 诱导 / dunno 误判 / 多次落空仍 deliver）
+
+### 修改：AGENTS.md
+
+- §2 标准 pipeline 流程图加可选节点：
+  `adaptive_elicit next → R2 confirmation → [若 top1<0.85] event ask-loop → score_curves 重跑`
+- §4 协议映射表新增 `event_ask_loop_protocol.md` ↔ `event_*.py` 行
+
+### 不变量保护
+
+- `bazi.json` schema 兼容：`phase_decision` 新增 2 个**可选**标记字段
+  （`event_loop_finalized` / `elicitation_path`），下游读取必须容错（v9.3.1 之前的
+  bazi.json 不会有这俩字段）
+- `decide_phase` / `phase_posterior.py` / `_finalize_phase` 后验公式未动
+- `score_curves.py` / `virtue_motifs.py` / `render_artifact.py` 逻辑零改动——
+  本次只在 phase decision 层兜底，下游照常吃 bazi.phase 重新跑
+- 不引入新第三方依赖（`requirements.txt` 不变）
+- 高确信命盘（top1 ≥ 0.85）行为完全不变，事件 ask-loop 不启用
+
+### 事件 Ask-Loop 与现有通道的关系
+
+- **与 elicit（性格自述）独立**：两条贝叶斯通道分别更新后验后融合
+- **与盲派（mangpai_events）独立**：本协议是 phase decision 层兜底，盲派是事件
+  烈度修正层。两者目前不交叉，未来可考虑把盲派 events 作为 `reversal_overrides`
+  触发源融入本通道
+- **与 virtue_motifs 独立**：母题独立通道，写回 bazi.json 后必须重跑 motif
+  选择（不同 phase 触发不同母题）
+
+---
+
 ## v9.2 — 2026-04 · 自适应贝叶斯问答 + 双盲 6 约束 + 题库静态审计
 
 > **Triggering pattern**: 用户反馈 v8 一次性 28 题流程"问得太多 / 模棱两可 / 像在被试卷"，

@@ -83,6 +83,14 @@ DETERMINISTIC_CORE = {
     "audit_no_premature_decision.py",    # v9 审计工具,纯静态 JSON 字段检查
     "audit_virtue_recurrence_continuity.py",  # v9 审计工具,纯静态文本/JSON 扫描
     "audit_reference_consistency.py",    # v9.3 防回潮审计,纯静态 markdown 扫描
+    # v9.6 事件 ask-loop 引擎(纯 Bayesian / 查表逻辑, 无随机/时间; 详见 references/event_ask_loop_protocol.md)
+    "event_elicit.py",                   # Stage A 后验初始化 + Bayesian 更新 (纯函数 + assert 守不变量)
+    "event_year_predictor.py",           # phase × 年份命中矩阵 (查 _phase_registry, 纯 predicate)
+    "event_elicit_stage_b.py",           # 重叠年事件类型判别 (Jaccard 加权 + 查 phase_event_categories)
+    "event_verification.py",             # 验证题候选 + likelihood 不对称 (纯 predicate + 似然查表)
+    "phase_event_categories.py",         # phase → 事件类别静态映射表 (纯数据)
+    "event_elicit_cli.py",               # 9 个子命令分发器 (subprocess 边界, 纯 JSON IO 无随机/时间)
+    "apply_event_finalize.py",           # 写回 bazi.json (delegate to adaptive_elicit._finalize_phase)
 }
 
 

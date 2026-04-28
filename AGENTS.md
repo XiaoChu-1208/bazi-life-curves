@@ -49,6 +49,25 @@ handshake.py --round 2         # v9 · 基于 R1 决策的 EIG 选题 confirmati
 [Agent 调宿主 AskQuestion 抛 R2 题 → user_answers.r2.json]
 phase_posterior.py --round 2   # v8.1 · 合并 R1+R2 算最终后验 + confirmation_status
     ↓ output/bazi.json         # bazi.phase / phase_decision / phase_confirmation
+
+[v9.6 可选 · R2 后 top1_p < 0.85 时启用事件 ask-loop 兜底]
+event_elicit_cli.py init       # 从 R2 末态后验初始化事件通道 state（top-k=4 候选）
+    ↓ out/.event.state.json
+event_elicit_cli.py pick-disjoint / find-overlap + pick-stage-b
+                               # 出题：Stage A disjoint 年清单题 → Stage B 重叠年类别题
+    ↓ Agent 翻译成自然语言问用户 → 用户答 → Agent 调 LLM 把自述映射 discrete + chosen_categories
+event_elicit_cli.py update-stage-a / update-stage-b
+                               # 提交答案 → 独立 Bayesian 通道更新（与 elicit 后验解耦）
+event_elicit_cli.py evaluate   # 融合 elicit + 事件后验（默认 1.0:1.2 加权对数融合）
+    ↓ verdict.tier ∈ {high≥0.80, soft≥0.70, weak≥0.60, refuse<0.60}
+[可选验证题] event_elicit_cli.py find-verification → update-verification（透明复核 · 命中 ×5 / 落空 ×0.2）
+apply_event_finalize.py        # 写回 bazi.json + 重算 strength_after_phase / yongshen / xishen / jishen / climate
+                               # 加 phase_decision.event_loop_finalized=true + elicitation_path="event_loop_v9.6"
+    ↓ output/bazi.json (新 phase)
+[必须重跑] score_curves.py --bazi out/bazi.json   # 曲线按新 phase 喜忌重算
+[必须重跑] virtue_motifs.py --bazi out/bazi.json  # 母题按新 phase 重选
+完整学理见 references/event_ask_loop_protocol.md · 编排手册见 SKILL.md §2.6b
+
 [save_confirmed_facts.py --round r2 --r1-* --r2-* 写回 confirmed_facts.json（按 round 分桶）]
     ↓ output/confirmed_facts.json
 render_artifact.py --virtue-motifs output/X.virtue_motifs.json
@@ -271,6 +290,10 @@ bazi-life-curves/
 | `_bazi_core.py` 的 detector / decide_phase / pairwise_discrimination_power / assess_confirmation | `references/phase_decision_protocol.md` (v8 / §7 v8.1) + `references/diagnosis_pitfalls.md` §14 |
 | `_question_bank.py` / `references/discriminative_question_bank.md` 题目 / likelihood_table | 两边必须 1:1 同步；calibrate.py 做一致性检查 |
 | `phase_posterior.py` 后验阈值 / R1 决策规则 / R2 confirmation_status | `references/phase_decision_protocol.md` §5 / §7 |
+| `event_elicit.py` / `event_elicit_stage_b.py` / `event_year_predictor.py` / `event_verification.py` 似然表 / 收敛阈值 / 融合权重 / 触发预测规则 | `references/event_ask_loop_protocol.md`（v9.6 · 事件 ask-loop 学理 + 编排者契约 + 工程不变量） |
+| `phase_event_categories.py` 的 phase → 事件类别映射 | `references/event_ask_loop_protocol.md` §2.1 + 古籍出处铁律（§4.2） |
+| `apply_event_finalize.py` 的写回字段 | `references/event_ask_loop_protocol.md` §6 + `references/phase_decision_protocol.md`（兼容字段） |
+| `event_elicit_cli.py` 子命令 / 参数 / stdout JSON schema | SKILL.md §2.6b 编排手册（v9.6） + `references/event_ask_loop_protocol.md` §7 |
 | `he_pan.py` 的 4 层评分 | `references/he_pan_protocol.md` |
 | 任何涉及性别 / 取向 / 关系结构的改动 | **必须**先读 `references/fairness_protocol.md §9-§10`，违反会破坏现代化承诺 |
 
