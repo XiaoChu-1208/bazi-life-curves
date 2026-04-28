@@ -700,6 +700,354 @@ def enforce_no_placeholder_engineering_leak(
     return hits
 
 
+# ============================================================================
+# §8 · 反系统化铁律 (v9.4 新增 · R-MOTIF-1 / R-MOTIF-2 / R-MOTIF-3)
+# ============================================================================
+#
+# narrative 文本永远不能让命主感觉到「我被装进了 38 个抽屉里某一个」。
+# 详见 references/virtue_recurrence_protocol.md §3.11 + AGENTS.md §反系统化铁律。
+#
+#   R-MOTIF-1: enforce_no_motif_id_leak       —— motif id 字面禁出 narrative
+#   R-MOTIF-2: enforce_no_canonical_label_leak —— catalog name 字面禁出 narrative
+#   R-MOTIF-3: enforce_paraphrase_diversity   —— 同母题 ≥2 位置必须改写
+
+# motif id 通用正则：catalog 内母题 id 形如 B1 / K2_xxx / L3 / C2_yyy 等
+# 字符集 [ABCDEFHIKLPRT] 对齐 references/virtue_motifs_catalog.md 实际启用的类前缀。
+_MOTIF_ID_PATTERN = re.compile(r"\b[ABCDEFHIKLPRT]\d+(?:_[A-Za-z][A-Za-z_]*)?\b")
+
+
+@dataclass(frozen=True)
+class MotifIdLeakHit:
+    motif_id: str
+    snippet: str
+    reason: str
+
+
+class MotifIdLeakError(SystemExit):
+    """v9.4 R-MOTIF-1 · narrative 中出现 motif id 字面 → exit 5。"""
+
+    def __init__(self, node: str, hits: list[MotifIdLeakHit]):
+        super().__init__(5)
+        self.node = node
+        self.hits = hits
+
+    def render(self) -> str:
+        lines = [
+            f"[_v9_guard] MOTIF ID LEAK · {self.node} 节出现 motif id 字面（R-MOTIF-1 · 反系统化）："
+        ]
+        for h in self.hits:
+            lines.append(f"  · motif_id='{h.motif_id}'  snippet='{h.snippet}'  ({h.reason})")
+        lines.append(
+            "  · 修法：改写成只属于这个具体命主的真实情境（化用 paraphrase_seeds + 再次个性化润色），"
+            "禁止字面引用任何 motif id。"
+        )
+        lines.append(
+            "  · 详见 references/virtue_recurrence_protocol.md §3.11.1 + AGENTS.md §反系统化铁律 R-MOTIF-1"
+        )
+        return "\n".join(lines)
+
+
+def scan_motif_id_leak(text: str, motif_ids: Iterable[str] | None = None) -> list[MotifIdLeakHit]:
+    """扫文本，命中 motif id 字面（正则 + 已知 id 集合）→ 返回 hit 列表。
+
+    Args:
+        text: 要扫描的 narrative markdown
+        motif_ids: 可选 · 已知的 motif id 集合（来自 virtue_motifs.json.triggered_motifs[*].id）
+                   提供时优先按精确字面匹配，不提供则只走通用正则。
+    """
+    hits: list[MotifIdLeakHit] = []
+    if not text:
+        return hits
+
+    seen: set[str] = set()
+    # 精确字面命中（提供 motif_ids 时）
+    if motif_ids:
+        for mid in motif_ids:
+            if not mid:
+                continue
+            mid_pattern = re.compile(rf"\b{re.escape(mid)}\b")
+            for m in mid_pattern.finditer(text):
+                key = (mid, m.start())
+                if key in seen:
+                    continue
+                seen.add(key)
+                snippet = text[max(0, m.start() - 8): m.end() + 8].replace("\n", " ")
+                hits.append(MotifIdLeakHit(
+                    motif_id=mid, snippet=snippet,
+                    reason="catalog 内 motif id 字面命中（精确）",
+                ))
+    # 通用正则兜底（即使没传 motif_ids，也阻止命中 K2_/B1_/L3_ 这种模式）
+    for m in _MOTIF_ID_PATTERN.finditer(text):
+        mid = m.group(0)
+        # 单字母 + 1 位数字（如 "A1"/"B2"）误伤太多（"A1 大小"等），仅在含下划线
+        # 后缀（K2_xxx）或长度 ≥ 3 时才算 motif-like
+        if "_" not in mid and len(mid) < 3:
+            continue
+        key = (mid, m.start())
+        if key in seen:
+            continue
+        # 排除明显不是 motif id 的（如年份范围 P1980 这类，前缀 P/T/R 但后跟 ≥3 位数）
+        if re.match(r"[PRT]\d{3,}", mid):
+            continue
+        seen.add(key)
+        snippet = text[max(0, m.start() - 8): m.end() + 8].replace("\n", " ")
+        hits.append(MotifIdLeakHit(
+            motif_id=mid, snippet=snippet,
+            reason="motif id 通用正则命中（[ABCDEFHIKLPRT]\\d+(_xxx)?）",
+        ))
+    return hits
+
+
+def enforce_no_motif_id_leak(
+    text: str,
+    *,
+    node: str = "narrative",
+    motif_ids: Iterable[str] | None = None,
+    raise_on_hit: bool = True,
+) -> list[MotifIdLeakHit]:
+    """v9.4 R-MOTIF-1 · narrative 中禁止 motif id 字面；命中 → exit 5。"""
+    hits = scan_motif_id_leak(text, motif_ids=motif_ids)
+    if hits and raise_on_hit:
+        err = MotifIdLeakError(node, hits)
+        print(err.render(), file=sys.stderr)
+        raise err
+    return hits
+
+
+@dataclass(frozen=True)
+class CanonicalLabelLeakHit:
+    label: str
+    snippet: str
+
+
+class CanonicalLabelLeakError(SystemExit):
+    """v9.4 R-MOTIF-2 · narrative 中出现 catalog canonical name 字面 → exit 5。"""
+
+    def __init__(self, node: str, hits: list[CanonicalLabelLeakHit]):
+        super().__init__(5)
+        self.node = node
+        self.hits = hits
+
+    def render(self) -> str:
+        lines = [
+            f"[_v9_guard] CANONICAL LABEL LEAK · {self.node} 节出现 catalog canonical name 字面（R-MOTIF-2 · 反系统化）："
+        ]
+        for h in self.hits:
+            lines.append(f"  · label='{h.label}'  snippet='{h.snippet}'")
+        lines.append(
+            "  · 修法：catalog 里的 name 字段是内部诊断标签，永远不允许作为 narrative 字面输出。"
+        )
+        lines.append("       请改写成「只属于这个具体命主」的真实情境（化用 paraphrase_seeds + 再次润色）。")
+        lines.append(
+            "  · 详见 references/virtue_recurrence_protocol.md §3.11.2 + virtue_motifs_catalog.md 顶部声明"
+        )
+        return "\n".join(lines)
+
+
+def scan_canonical_label_leak(
+    text: str,
+    canonical_labels: Iterable[str] | None,
+) -> list[CanonicalLabelLeakHit]:
+    """扫 catalog canonical name 字面命中。labels 通常来自
+    virtue_motifs.json.triggered_motifs[*].name + silenced_motifs[*].name。
+    """
+    hits: list[CanonicalLabelLeakHit] = []
+    if not text or not canonical_labels:
+        return hits
+    seen: set[tuple[str, int]] = set()
+    for label in canonical_labels:
+        if not label or not str(label).strip():
+            continue
+        label_str = str(label).strip()
+        # 太短的 label（≤ 2 字）不扫，否则会大量误伤普通词
+        if len(label_str) < 3:
+            continue
+        idx = 0
+        while True:
+            idx = text.find(label_str, idx)
+            if idx < 0:
+                break
+            key = (label_str, idx)
+            if key not in seen:
+                seen.add(key)
+                snippet = text[max(0, idx - 8): idx + len(label_str) + 8].replace("\n", " ")
+                hits.append(CanonicalLabelLeakHit(label=label_str, snippet=snippet))
+            idx += len(label_str)
+    return hits
+
+
+def enforce_no_canonical_label_leak(
+    text: str,
+    canonical_labels: Iterable[str] | None,
+    *,
+    node: str = "narrative",
+    raise_on_hit: bool = True,
+) -> list[CanonicalLabelLeakHit]:
+    """v9.4 R-MOTIF-2 · narrative 中禁止 catalog canonical name 字面；命中 → exit 5。"""
+    hits = scan_canonical_label_leak(text, canonical_labels)
+    if hits and raise_on_hit:
+        err = CanonicalLabelLeakError(node, hits)
+        print(err.render(), file=sys.stderr)
+        raise err
+    return hits
+
+
+def _normalized_jaccard(a: str, b: str, n: int = 3) -> float:
+    """字符级 n-gram Jaccard 相似度 (0..1)。简单但够用——零依赖、不需要 nltk。"""
+    if not a or not b:
+        return 0.0
+
+    def grams(s: str) -> set[str]:
+        s = re.sub(r"\s+", "", s)
+        if len(s) < n:
+            return {s} if s else set()
+        return {s[i:i + n] for i in range(len(s) - n + 1)}
+
+    ga = grams(a)
+    gb = grams(b)
+    if not ga or not gb:
+        return 0.0
+    inter = ga & gb
+    union = ga | gb
+    return len(inter) / len(union) if union else 0.0
+
+
+@dataclass(frozen=True)
+class ParaphraseDupHit:
+    motif_id: str
+    similarity: float
+    prior_anchor: str
+    prior_snippet: str
+    new_snippet: str
+
+
+class ParaphraseDuplicationError(SystemExit):
+    """v9.4 R-MOTIF-3 · 同 motif ≥2 位置表述相似度 ≥ 0.6 → exit 5。"""
+
+    def __init__(self, node: str, hits: list[ParaphraseDupHit]):
+        super().__init__(5)
+        self.node = node
+        self.hits = hits
+
+    def render(self) -> str:
+        lines = [
+            f"[_v9_guard] PARAPHRASE DUPLICATION · {self.node} 节复述与之前 anchor 过于相似（R-MOTIF-3 · 反系统化）："
+        ]
+        for h in self.hits:
+            lines.append(
+                f"  · motif='{h.motif_id}'  similarity={h.similarity:.2f}  "
+                f"vs anchor='{h.prior_anchor}'"
+            )
+            lines.append(f"    prior:  '{h.prior_snippet[:80]}…'")
+            lines.append(f"    new:    '{h.new_snippet[:80]}…'")
+        lines.append(
+            "  · 修法：换一个角度、换一组动词、换一个比喻；同一母题第二次出现必须显著改写（相似度 < 0.6）。"
+        )
+        lines.append("  · 详见 references/virtue_recurrence_protocol.md §3.11.3")
+        return "\n".join(lines)
+
+
+def scan_paraphrase_diversity(
+    new_text: str,
+    *,
+    motif_id: str,
+    prior_texts: Iterable[dict],
+    threshold: float = 0.6,
+) -> list[ParaphraseDupHit]:
+    """对每条 prior_text 计算与 new_text 的 Jaccard 相似度；≥ threshold 收 hit。
+
+    Args:
+        new_text: 当前要落盘的 markdown
+        motif_id: 这条母题的 id（仅用于错误信息显示）
+        prior_texts: [{anchor, text}] 之前同一 motif 已写过的文本片段
+        threshold: 相似度阈值（默认 0.6）
+    """
+    hits: list[ParaphraseDupHit] = []
+    if not new_text:
+        return hits
+    for prior in prior_texts or []:
+        if not isinstance(prior, dict):
+            continue
+        prior_text = prior.get("text") or ""
+        if not prior_text:
+            continue
+        sim = _normalized_jaccard(new_text, prior_text)
+        if sim >= threshold:
+            hits.append(ParaphraseDupHit(
+                motif_id=motif_id,
+                similarity=sim,
+                prior_anchor=str(prior.get("anchor", "?")),
+                prior_snippet=prior_text,
+                new_snippet=new_text,
+            ))
+    return hits
+
+
+def enforce_paraphrase_diversity(
+    new_text: str,
+    *,
+    motif_id: str,
+    prior_texts: Iterable[dict],
+    node: str = "narrative",
+    threshold: float = 0.6,
+    raise_on_hit: bool = True,
+) -> list[ParaphraseDupHit]:
+    """v9.4 R-MOTIF-3 · 同母题 ≥2 位置出现时必须改写；命中 → exit 5。"""
+    hits = scan_paraphrase_diversity(
+        new_text, motif_id=motif_id, prior_texts=prior_texts, threshold=threshold,
+    )
+    if hits and raise_on_hit:
+        err = ParaphraseDuplicationError(node, hits)
+        print(err.render(), file=sys.stderr)
+        raise err
+    return hits
+
+
+def detect_motifs_in_text(
+    text: str,
+    triggered_motifs: Iterable[dict],
+) -> list[str]:
+    """v9.4 helper · 探测 markdown 文本中触发了哪些 motif（用于
+    `_motif_text_log` 自动归类与 paraphrase diversity 比对）。
+
+    探测规则：
+      - paraphrase_seeds 任一句的关键 n-gram（≥6 字片段）出现在 text → 命中
+      - 触发 anchor age 数字 + structural keyword 出现 → 命中
+
+    返回命中的 motif id 列表（去重 + 保序）。
+    """
+    if not text:
+        return []
+    found: list[str] = []
+    seen: set[str] = set()
+    for m in triggered_motifs or []:
+        if not isinstance(m, dict):
+            continue
+        mid = m.get("id")
+        if not mid or mid in seen:
+            continue
+        # 关键词命中：paraphrase_seeds 中每句取 ≥6 字片段
+        seeds = m.get("paraphrase_seeds") or []
+        hit = False
+        for seed in seeds:
+            if not isinstance(seed, str) or len(seed) < 6:
+                continue
+            # 取首段连续中文 / 字母序列做关键 n-gram
+            for i in range(0, len(seed) - 5):
+                chunk = seed[i:i + 6]
+                if chunk.strip() and chunk in text:
+                    hit = True
+                    break
+            if hit:
+                break
+        # 即使没有 paraphrase_seeds 命中，年龄锚点 + activation_points 也可能识别——
+        # 这一步保守：默认按 paraphrase_seeds 命中。
+        if hit:
+            found.append(mid)
+            seen.add(mid)
+    return found
+
+
 __all__ = [
     "enforce_v9_only_path",
     "V9PathBlocked",
@@ -725,4 +1073,18 @@ __all__ = [
     "enforce_no_placeholder_engineering_leak",
     "PlaceholderLeakHit",
     "PlaceholderLeakError",
+    # v9.4 反系统化铁律
+    "scan_motif_id_leak",
+    "enforce_no_motif_id_leak",
+    "MotifIdLeakHit",
+    "MotifIdLeakError",
+    "scan_canonical_label_leak",
+    "enforce_no_canonical_label_leak",
+    "CanonicalLabelLeakHit",
+    "CanonicalLabelLeakError",
+    "scan_paraphrase_diversity",
+    "enforce_paraphrase_diversity",
+    "ParaphraseDupHit",
+    "ParaphraseDuplicationError",
+    "detect_motifs_in_text",
 ]

@@ -7,21 +7,49 @@
 零数字污染铁律：本脚本**不**修改 `score_curves.py` / `mangpai_events.py` 的
 任何字段，只**读取**它们的产物，并**追加**第三层叙事通道的结构。
 
-输出 schema（`virtue_motifs/v1`）：
+输出 schema（v9.4 升级到 `virtue_motifs/v2`）：
 
     {
-        "version": 1,
-        "schema": "virtue_motifs/v1",
+        "version": 2,
+        "schema": "virtue_motifs/v2",
         "input_signature": {...},
         "complexity_score": 0.0-1.0,
         "love_letter_eligible": bool,    # 位置 ⑤ 触发
         "blessing_path": bool,           # 命好路径（命主全部 motif gravity ≤ gentle）
         "convergence_hint": str,         # 给 LLM 的母题聚合提示（不下定论）
-        "triggered_motifs": [...],       # 强度 ≥ threshold 的母题
+        "triggered_motifs": [
+            {
+                "id": str,                    # ⚠ 内部诊断标签 - 永不允许字面进 narrative
+                "name": str,                  # ⚠ canonical name - 永不允许字面进 narrative
+                "category": str,
+                "tone": str,
+                "default_gravity": str,
+                "is_l_class": bool,
+                "is_persistent": bool,
+                "gravity_class": str,
+                "intensity": float,
+                "first_activation_age": int|None,
+                "activation_count": int,
+                "activation_points": [...],
+                # ↓↓↓ v9.4 新增：给 LLM 的「可化用」材料 ↓↓↓
+                "paraphrase_seeds": [str, ...],   # 3-5 句面向"这个具体命主"的口语化改写起点
+                "individuation_anchors": {        # 让 LLM 把母题嵌进个体真实情境
+                    "age_hits": [int, ...],
+                    "shishen_hits": [str, ...],
+                    "ganzhi_hits": [str, ...],
+                    "curve_extremes": [...],
+                },
+            }, ...
+        ],
         "motif_recurrence_map": {...},   # {motif_id: [activation_point, ...]}
         "silenced_motifs": [...],        # catalog 内、未触发的 motif_id
         "convergence_years": [...]       # 流年 ≥3 母题汇聚的年份（位置 ③ 触发依据）
     }
+
+⚠ v9.4 反系统化铁律（详见 references/virtue_recurrence_protocol.md §3.11）：
+   triggered_motifs[*].id / name 是 internal diagnostic labels，永远不能字面落入
+   user-facing narrative；LLM 必须化用 paraphrase_seeds 的意思（再次个性化润色），
+   并保证同一母题在 ≥2 位置的两次表述显著改写（字符 n-gram Jaccard < 0.6）。
 
 本脚本是 pure function：相同输入 → 字节相同输出（bit-for-bit）。
 """
@@ -1155,6 +1183,200 @@ def _make_convergence_hint(triggered: List[Dict[str, Any]], blessing_path: bool,
     return " ".join(parts)
 
 
+# ---------------------------------------------------------------------------
+# v9.4 · paraphrase_seeds + individuation_anchors（反系统化材料）
+# ---------------------------------------------------------------------------
+
+# 每条 motif 的「写作起点」模板。LLM 必须再次润色 / 个性化 / 改写动词与比喻，
+# 不允许逐字复制 seed。模板内的 {age} / {shishen} / {ganzhi} / {curve} 由
+# _build_paraphrase_seeds 替换为命主真实数字 / 字面。
+#
+# 设计原则：
+#   1. 每条 seed 都指向一个"具体情境"（年龄 + 角色 + 处境），不是抽象人性论。
+#   2. seed 之间句式 / 动词 / 比喻互不相同，确保 LLM 改写后仍有改写空间。
+#   3. 不出现 motif id / canonical name 字面（它们是诊断标签，命主看不到）。
+#
+# 兜底：catalog 中未列入此表的 motif → 走 _GENERIC_SEEDS（基于 category + tone）。
+_MOTIF_SEED_TEMPLATES: Dict[str, List[str]] = {
+    # —— A 分配类 ——
+    "A1": [
+        "你不是那种把钱独自装进口袋的人，{age} 岁那年你大概率选择了和身边人一起分。",
+        "在 {age} 岁，比起自己赢，你更难忍别人受苦——这件事你大概会换个名字记一辈子。",
+        "你身上有一种「看见兄弟先抬头」的本能，而不是先低头看自己手里有多少。",
+    ],
+    "A2": [
+        "{age} 岁那阵子你被推到一个位置：钱不全是你赚的，但你成了那个替别人保管的人。",
+        "你不像是要把财据为己有的人，反倒像被叫去看门——你心里清楚，这门不是你的。",
+        "命里有一种「别人借你的手放钱」的处境，{age} 岁前后第一次让你尝到这个滋味。",
+    ],
+    "A3": [
+        "你大概很早就发现：长子/长女这件事不是头衔，是一笔没人替你还的债。",
+        "{age} 岁，你已经在替家里人扛只属于他们的账目，没人感谢，但你也停不下来。",
+        "你身上挂着一个谁也没立过字据的角色——「先到家的那个人」。",
+    ],
+    # —— B 真话类 ——
+    "B1": [
+        "{age} 岁前后你说过一句不该说的真话，后来很多年都在替那一句话算账。",
+        "你不是不会绕，是绕到一半还是会回头说出口——这件事让你付的代价不小。",
+        "命里有一处「话说出口后退路就少了一截」的关口，你不止一次踩进去。",
+    ],
+    "B2": [
+        "你心里同时挂着几个人，他们不属于同一边——这件事让你 {age} 岁那年特别累。",
+        "你不擅长选边，更不擅长伪装选好了边——夹在中间是你常态。",
+        "「同时对得起几个人」这件事像一块磨刀石，磨了你很多年。",
+    ],
+    "B3": [
+        "{age} 岁你被冤过，但你没炸——这种克制不是修养，是你早就学会的姿势。",
+        "命里有一种「替别人担黑锅还得保持体面」的功课，你考过不止一次。",
+        "你身上有一种被冤后还能起身把事情办完的本事，外人不容易看见。",
+    ],
+    # —— C 亲密类 ——
+    "C1": [
+        "{age} 岁那段，你大概第一次知道：再亲的人也救不了某些事。",
+        "你身上有一处「最近的人最够不到」的痛，外人摸不到，自己也常常说不清。",
+        "命里有一道关：你越想被亲人懂，越会发现那条路是堵的。",
+    ],
+    "C2": [
+        "你不是要逃家，是这家本来就不太接得住你——{age} 岁前后你心里清楚了这一层。",
+        "你大概从很小的时候就在练「自己接住自己」，因为没别人接得住。",
+        "命里有一片你一直想回但回不去的地方，它叫家，但里面没你的位置。",
+    ],
+    "C3": [
+        "你身边那个最该爱你的人，本身也很缺爱——{age} 岁你开始懂这件事的重量。",
+        "你大概一直在给一个空杯子倒水，倒到 {age} 岁才允许自己喘口气。",
+        "命里有一种「你的爱只够灌进无底洞」的处境，它不是你的错，但它要你买单。",
+    ],
+    # —— D 自我类 ——
+    "D1": [
+        "{age} 岁你大概第一次正面撞上自己内心那个最不想看的部分。",
+        "你身上有一种「往里走比往外走难」的功课，外人看不见。",
+        "命里有一段必须独处的时间，独到没人替你扛——你的关键年正在做这件事。",
+    ],
+    # —— E 命运类 ——
+    "E1": [
+        "你身上一直有一种「事情还没真的过去」的感觉，尤其在 {age} 岁那种关口最明显。",
+        "命里有一处持续音，它不爆发也不消失，只是每隔几年敲一下让你想起。",
+        "你大概早就察觉：有些事不会被时间冲走，只会被你认下。",
+    ],
+    # —— F 财富类 ——
+    "F1": [
+        "{age} 岁你大概赚到过不属于自己留住的钱，过手了，也烫手。",
+        "命里有一道关：钱来得不慢，但不是为了让你买安稳的。",
+        "你和钱的关系不是「积」，而是「过」——这件事你 {age} 岁前后才真正接受。",
+    ],
+    # —— H 健康类 ——
+    "H1": [
+        "{age} 岁前后你身体替你说过一些你嘴上没说的话。",
+        "命里有一处「身体替你扛了情绪」的关口，你最好别忽略它的提醒。",
+        "你身上有一种「先撑着，垮也是后来才垮」的韧性，但那不代表没成本。",
+    ],
+    # —— I 情感类 ——
+    "I1": [
+        "{age} 岁那段感情你心里多少知道留不住，可你还是把自己交了进去。",
+        "命里有一种「明知道结局还要走完」的感情功课，你考过。",
+        "你身上有一种为感情买单从不讨价还价的劲，外人看不出代价多大。",
+    ],
+    # —— K 创业类 ——
+    "K1": [
+        "{age} 岁你大概离开过一个能让你安稳的位置，去做一件没人替你担保的事。",
+        "命里有一种「往外推自己」的劲，它不让你停在体面的位置上。",
+        "你身上有一处不接受被收编的傲气，{age} 岁前后第一次完整付出了它的代价。",
+    ],
+    "K2": [
+        "你身上一直有一根弦：必须自己拍板——{age} 岁你又一次没让别人替你定。",
+        "命里有一种「站出来的人只能是你」的处境，它不商量。",
+        "你不是不愿合伙，是你心里那本账只能你自己结。",
+    ],
+    # —— L 远行类 ——
+    "L1": [
+        "{age} 岁你大概离开过一个本来够安稳的地方，没人逼你走，是你心里有股劲。",
+        "命里有一种「身体在远方，心也在远方」的劲，它让你舍得熟悉的东西。",
+        "你身上有一种走到哪儿都不太归属的味道，但这不是漂泊，是你选的。",
+    ],
+}
+
+_GENERIC_SEEDS: List[str] = [
+    "你身上有一种外人很难看见、但你自己心里有数的功课，{age} 岁前后第一次让它成了形。",
+    "命里有一处必须由你独自承担的关口，它不轰烈，但每隔几年都会回来敲一下。",
+    "你大概早就知道这件事是你自己要走完的，没人能替——{age} 岁那年你又一次确认了它。",
+]
+
+
+def _build_individuation_anchors(
+    motif: Dict[str, Any],
+    bazi: Dict[str, Any],
+    curves: Dict[str, Any],
+) -> Dict[str, Any]:
+    """从 activation_points + bazi 抽取「这条母题命中了哪些个体字段」。"""
+    aps = motif.get("activation_points") or []
+    age_hits = sorted({ap.get("age") for ap in aps if isinstance(ap, dict) and ap.get("age")})
+    ganzhi_hits = sorted({ap.get("ganzhi") for ap in aps if isinstance(ap, dict) and ap.get("ganzhi")})
+    shishen_hits = sorted({
+        ap.get("shishen") for ap in aps
+        if isinstance(ap, dict) and ap.get("shishen")
+    })
+    # curve_extremes：activation_points 上若标了 peak/dip/turning 拉过来
+    curve_hits = []
+    for ap in aps:
+        if not isinstance(ap, dict):
+            continue
+        kind = ap.get("kind") or ap.get("turning_kind")
+        if kind in ("peak", "dip", "turning", "shift"):
+            curve_hits.append({
+                "year": ap.get("year"),
+                "age": ap.get("age"),
+                "kind": kind,
+            })
+    return {
+        "age_hits": age_hits,
+        "shishen_hits": shishen_hits,
+        "ganzhi_hits": ganzhi_hits,
+        "curve_extremes": curve_hits,
+    }
+
+
+def _build_paraphrase_seeds(
+    motif: Dict[str, Any],
+    anchors: Dict[str, Any],
+) -> List[str]:
+    """v9.4 · 给每条触发的 motif 生成 3-5 句面向命主的「改写起点」。
+
+    LLM 在 narrative 中必须**化用 seed 的意思**（再次个性化润色），
+    严禁逐字复制 seed，更严禁字面输出 motif id / canonical name。
+    """
+    mid = motif.get("id") or ""
+    templates = _MOTIF_SEED_TEMPLATES.get(mid)
+    if templates is None:
+        # 同 prefix 兜底（如 K3/K4 → 走 K2 的）
+        if mid:
+            for known_id, seeds in _MOTIF_SEED_TEMPLATES.items():
+                if mid[:1] == known_id[:1]:
+                    templates = seeds
+                    break
+    if templates is None:
+        templates = _GENERIC_SEEDS
+
+    age_hits = anchors.get("age_hits") or []
+    primary_age = age_hits[0] if age_hits else (motif.get("first_activation_age") or 0)
+
+    seeds: List[str] = []
+    for tmpl in templates:
+        seed = tmpl
+        if "{age}" in seed:
+            seed = seed.replace("{age}", str(primary_age) if primary_age else "那一段")
+        if "{ganzhi}" in seed:
+            gh = anchors.get("ganzhi_hits") or []
+            seed = seed.replace("{ganzhi}", gh[0] if gh else "那年的干支")
+        if "{shishen}" in seed:
+            ss = anchors.get("shishen_hits") or []
+            seed = seed.replace("{shishen}", ss[0] if ss else "那个十神")
+        if "{curve}" in seed:
+            ce = anchors.get("curve_extremes") or []
+            seed = seed.replace("{curve}", str(ce[0].get("year")) if ce else "那个拐点")
+        seeds.append(seed)
+    return seeds
+
+
 def run(bazi: Dict[str, Any], curves: Dict[str, Any]) -> Dict[str, Any]:
     ctx = CtxView(bazi=bazi, curves=curves)
 
@@ -1195,6 +1417,13 @@ def run(bazi: Dict[str, Any], curves: Dict[str, Any]) -> Dict[str, Any]:
     for rank, m in enumerate(triggered_motifs, 1):
         m["rank"] = rank
 
+    # v9.4 · 为每条 triggered motif 装配 individuation_anchors + paraphrase_seeds
+    # （LLM 化用 seeds 时必须再次个性化润色；详见 §3.11.3 改写铁律）
+    for m in triggered_motifs:
+        anchors = _build_individuation_anchors(m, bazi, curves)
+        m["individuation_anchors"] = anchors
+        m["paraphrase_seeds"] = _build_paraphrase_seeds(m, anchors)
+
     # Step 5: silenced_motifs（catalog 内、未触发）
     triggered_ids = {m["id"] for m in triggered_motifs}
     silenced_motifs = sorted(spec.id for spec in MOTIFS if spec.id not in triggered_ids)
@@ -1224,8 +1453,8 @@ def run(bazi: Dict[str, Any], curves: Dict[str, Any]) -> Dict[str, Any]:
     convergence_hint = _make_convergence_hint(triggered_motifs, blessing_path, love_letter_eligible)
 
     return {
-        "version": 1,
-        "schema": "virtue_motifs/v1",
+        "version": 2,
+        "schema": "virtue_motifs/v2",
         "input_signature": _input_signature(bazi),
         "complexity_score": complexity_score,
         "love_letter_eligible": love_letter_eligible,

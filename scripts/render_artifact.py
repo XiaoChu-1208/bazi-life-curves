@@ -364,6 +364,8 @@ def render(curves: dict,
             "dayun_reviews": analysis.get("dayun_reviews", {}),
             "era_narratives": analysis.get("era_narratives", {}),
             "confirmed_facts": analysis.get("confirmed_facts", {}),
+            # v9.4 · 母题侧记独立节点（每个 anchor 一段 80-200 字第三人称累加叙事）
+            "motif_witness": analysis.get("motif_witness", {}),
         },
         "zeitgeist": zeitgeist or {},
         "has_zeitgeist": bool(zeitgeist and zeitgeist.get("era_windows_used")),
@@ -444,6 +446,28 @@ def _run_v9_audits(args, analysis, virtue_motifs) -> None:
         if rc != 0:
             raise SystemExit(rc)
 
+    # 7) audit-motif-witness-cumulative (v9.4)：累加性
+    if (
+        getattr(args, "audit_motif_witness_cumulative", False)
+        and analysis is not None
+    ):
+        _audit_motif_witness_cumulative(analysis, virtue_motifs)
+
+    # 8) audit-no-motif-id-leak (v9.4 R-MOTIF-1) + canonical label leak (R-MOTIF-2)
+    if (
+        getattr(args, "audit_no_motif_id_leak", False)
+        and analysis is not None
+        and virtue_motifs
+    ):
+        _audit_no_motif_label_leak(analysis, virtue_motifs)
+
+    # 9) audit-paraphrase-diversity (v9.4 R-MOTIF-3)
+    if (
+        getattr(args, "audit_paraphrase_diversity", False)
+        and analysis is not None
+    ):
+        _audit_paraphrase_diversity(analysis)
+
     # 6) audit-stream-batching (v9.3 R-STREAM-1)：扫 analysis._stream_violations
     if args.audit_stream_batching and analysis is not None:
         violations = analysis.get("_stream_violations") or []
@@ -467,6 +491,210 @@ def _run_v9_audits(args, analysis, virtue_motifs) -> None:
                 file=sys.stderr,
             )
             raise SystemExit(11)
+
+
+def _iter_narrative_fields(analysis: dict):
+    """yield (node_label, text) 遍历 analysis 内**所有** narrative markdown 字段。"""
+    if not isinstance(analysis, dict):
+        return
+    overall = analysis.get("overall")
+    if isinstance(overall, str) and overall.strip():
+        yield ("analysis.overall", overall)
+    for k, v in (analysis.get("life_review") or {}).items():
+        if isinstance(v, str) and v.strip():
+            yield (f"analysis.life_review.{k}", v)
+    for k, v in (analysis.get("virtue_narrative") or {}).items():
+        if isinstance(v, str) and v.strip():
+            yield (f"analysis.virtue_narrative.{k}", v)
+    for k, v in (analysis.get("dayun_reviews") or {}).items():
+        if isinstance(v, str) and v.strip():
+            yield (f"analysis.dayun_reviews[{k}]", v)
+    for k, v in (analysis.get("era_narratives") or {}).items():
+        if isinstance(v, str) and v.strip():
+            yield (f"analysis.era_narratives[{k}]", v)
+    for k, v in (analysis.get("motif_witness") or {}).items():
+        if isinstance(v, str) and v.strip():
+            yield (f"analysis.motif_witness[{k}]", v)
+    for i, ky in enumerate(analysis.get("key_years") or []):
+        if isinstance(ky, dict):
+            body = ky.get("body")
+            if isinstance(body, str) and body.strip():
+                yield (f"analysis.key_years[{i}].body", body)
+    for year, v in (analysis.get("liunian") or {}).items():
+        if isinstance(v, str) and v.strip():
+            yield (f"analysis.liunian[{year}]", v)
+
+
+def _audit_motif_witness_cumulative(analysis: dict, virtue_motifs: dict | None) -> None:
+    """v9.4 · 检查 motif_witness 累加性：第 ≥2 个 anchor 必须呼应之前 anchor 的母题关键词。
+
+    简化判定：从前序 anchor 的文本中抽取与触发母题相关的"标志短语"（基于
+    paraphrase_seeds 的 6-字片段），新 anchor 必须命中至少 1 个，否则报警。
+    若 virtue_motifs 未提供 paraphrase_seeds，则降级为：要求新 anchor 与之前 anchor
+    的字符 n-gram Jaccard 相似度 ≥ 0.05（极宽松，仅防"完全无关"）。
+    """
+    mw = analysis.get("motif_witness") or {}
+    if not isinstance(mw, dict) or len(mw) < 2:
+        return
+    # 按写入顺序近似为 dict 插入顺序（Python 3.7+ 保序）
+    anchors = list(mw.keys())
+    triggered = (virtue_motifs or {}).get("triggered_motifs") or []
+    seed_phrases: list[str] = []
+    for m in triggered:
+        for s in (m.get("paraphrase_seeds") or []) if isinstance(m, dict) else []:
+            if isinstance(s, str) and len(s) >= 6:
+                seed_phrases.append(s)
+
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    try:
+        from _v9_guard import _normalized_jaccard  # type: ignore
+    except ImportError:
+        _normalized_jaccard = None  # type: ignore
+
+    def _has_echo(curr_text: str, prev_text: str) -> bool:
+        if seed_phrases:
+            # 只要有任一 seed 的 ≥6 字 chunk 同时出现在 prev 与 curr，即视为"呼应了同一母题"
+            for seed in seed_phrases:
+                for i in range(0, len(seed) - 5):
+                    chunk = seed[i:i + 6]
+                    if chunk in prev_text and chunk in curr_text:
+                        return True
+            return False
+        if _normalized_jaccard:
+            return _normalized_jaccard(curr_text, prev_text) >= 0.05
+        return True  # 没有判据时不阻断
+
+    fail = []
+    for i in range(1, len(anchors)):
+        curr_anchor = anchors[i]
+        curr_text = mw.get(curr_anchor) or ""
+        if not curr_text.strip():
+            continue
+        prev_blob = "\n".join(mw.get(a) or "" for a in anchors[:i])
+        if not _has_echo(curr_text, prev_blob):
+            fail.append((curr_anchor, anchors[:i]))
+
+    if fail:
+        print(
+            "[render_artifact] R-MOTIF-WITNESS-CUMULATIVE 违规：以下 anchor 未呼应之前 anchor 的母题：",
+            file=sys.stderr,
+        )
+        for curr, priors in fail:
+            print(f"  · {curr!r} 未呼应 {priors}", file=sys.stderr)
+        print(
+            "  · v9.4 motif_witness 铁律：每段必须显式呼应之前 anchor 已写过的母题，"
+            "命主才能感受到 fate master 的累加凝视。\n"
+            "  · 详见 references/virtue_recurrence_protocol.md §3.10",
+            file=sys.stderr,
+        )
+        raise SystemExit(5)
+
+
+def _audit_no_motif_label_leak(analysis: dict, virtue_motifs: dict) -> None:
+    """v9.4 R-MOTIF-1 + R-MOTIF-2 · 扫所有 narrative 字段的 motif id / canonical name 字面。"""
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    try:
+        from _v9_guard import (  # type: ignore
+            scan_motif_id_leak,
+            scan_canonical_label_leak,
+        )
+    except ImportError as e:
+        raise SystemExit(f"[render_artifact] 找不到 _v9_guard: {e}")
+
+    triggered = virtue_motifs.get("triggered_motifs") or []
+    silenced = virtue_motifs.get("silenced_motifs") or []
+    motif_ids: list[str] = []
+    canonical_labels: list[str] = []
+    for m in triggered:
+        if isinstance(m, dict):
+            if m.get("id"):
+                motif_ids.append(m["id"])
+            if m.get("name"):
+                canonical_labels.append(m["name"])
+    for m in silenced:
+        if isinstance(m, dict):
+            if m.get("id"):
+                motif_ids.append(m["id"])
+            if m.get("name"):
+                canonical_labels.append(m["name"])
+        elif isinstance(m, str):
+            motif_ids.append(m)
+
+    any_hit = False
+    for label, text in _iter_narrative_fields(analysis):
+        id_hits = scan_motif_id_leak(text, motif_ids=motif_ids)
+        if id_hits:
+            any_hit = True
+            print(
+                f"[render_artifact] R-MOTIF-1 motif id leak · {label}：",
+                file=sys.stderr,
+            )
+            for h in id_hits[:5]:
+                print(f"  · '{h.motif_id}'  snippet='{h.snippet}'", file=sys.stderr)
+        cn_hits = scan_canonical_label_leak(text, canonical_labels)
+        if cn_hits:
+            any_hit = True
+            print(
+                f"[render_artifact] R-MOTIF-2 canonical label leak · {label}：",
+                file=sys.stderr,
+            )
+            for h in cn_hits[:5]:
+                print(f"  · '{h.label}'  snippet='{h.snippet}'", file=sys.stderr)
+    if any_hit:
+        print(
+            "  · 修法：narrative 中永远不出现 motif id 与 catalog 内 canonical name 字面。"
+            "化用 paraphrase_seeds 的意思，再次个性化润色为只属于这个命主的具体情境。\n"
+            "  · 详见 references/virtue_recurrence_protocol.md §3.11.1 / §3.11.2",
+            file=sys.stderr,
+        )
+        raise SystemExit(5)
+
+
+def _audit_paraphrase_diversity(analysis: dict) -> None:
+    """v9.4 R-MOTIF-3 · 同一 motif 在 _motif_text_log 中 ≥2 条 → 任两条相似度必须 < 0.6。"""
+    log = analysis.get("_motif_text_log") or {}
+    if not isinstance(log, dict) or not log:
+        return
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    try:
+        from _v9_guard import _normalized_jaccard  # type: ignore
+    except ImportError as e:
+        raise SystemExit(f"[render_artifact] 找不到 _v9_guard: {e}")
+
+    fails: list[tuple[str, str, str, float]] = []
+    for mid, entries in log.items():
+        if not isinstance(entries, list) or len(entries) < 2:
+            continue
+        for i in range(len(entries)):
+            for j in range(i + 1, len(entries)):
+                ti = (entries[i] or {}).get("text") or ""
+                tj = (entries[j] or {}).get("text") or ""
+                if not ti or not tj:
+                    continue
+                sim = _normalized_jaccard(ti, tj)
+                if sim >= 0.6:
+                    fails.append((
+                        mid,
+                        (entries[i] or {}).get("anchor", "?"),
+                        (entries[j] or {}).get("anchor", "?"),
+                        sim,
+                    ))
+    if fails:
+        print(
+            "[render_artifact] R-MOTIF-3 paraphrase 改写不足：以下 motif 的两段表述过于相似：",
+            file=sys.stderr,
+        )
+        for mid, a, b, sim in fails[:10]:
+            print(
+                f"  · motif='{mid}'  similarity={sim:.2f}  anchors=({a!r}, {b!r})",
+                file=sys.stderr,
+            )
+        print(
+            "  · 修法：换一个角度、换一组动词、换一个比喻；同一母题第二次必须显著改写（< 0.6）。\n"
+            "  · 详见 references/virtue_recurrence_protocol.md §3.11.3",
+            file=sys.stderr,
+        )
+        raise SystemExit(5)
 
 
 def _enforce_streamed_emit(log: list) -> None:
@@ -503,8 +731,15 @@ _NODE_ORDER_GROUPS: list[tuple[str, tuple[str, ...]]] = [
                         "virtue_narrative.convergence_notes")),
 ]
 
+# v9.4 · motif_witness 节点不参与五阶段节序校验（它是穿插在各阶段之间的"旁白
+# message"），归类时直接 skip 而不是 fail；详见 multi_dim_xiangshu_protocol.md §13.1
+_NODE_ORDER_SKIP_PREFIXES: tuple[str, ...] = ("motif_witness.",)
+
 
 def _classify_node(node: str) -> int:
+    for skip_pref in _NODE_ORDER_SKIP_PREFIXES:
+        if node.startswith(skip_pref):
+            return -2  # 中性 skip：既不算违序也不参与节序流
     for i, (_grp, prefixes) in enumerate(_NODE_ORDER_GROUPS):
         for pref in prefixes:
             if node == pref or node.startswith(pref):
@@ -663,6 +898,22 @@ def main():
                     help="v9.3 默认开：扫 analysis._stream_violations，若 R-STREAM-1 "
                          "（同 agent_turn_id 内连续 append_analysis_node ≥ 2 节）≥ 1 → exit 11。"
                          "用于物理拦截 LLM 在一个 turn 里塞多节、绕过 stop turn 的违规。")
+    ap.add_argument("--audit-motif-witness-cumulative",
+                    action=argparse.BooleanOptionalAction, default=True,
+                    help="v9.4 默认开：扫 analysis.motif_witness.<anchor>，"
+                         "第 ≥ 2 个 anchor 必须显式呼应之前 anchor 的母题（关键词命中），"
+                         "否则视为没做到累加感 → exit 5。详见 virtue_recurrence_protocol.md §3.10。")
+    ap.add_argument("--audit-no-motif-id-leak",
+                    action=argparse.BooleanOptionalAction, default=True,
+                    help="v9.4 默认开 · R-MOTIF-1：扫所有 narrative 字段（dayun_reviews / "
+                         "liunian / key_years / motif_witness / virtue_narrative.*），"
+                         "命中 motif id 字面（K2_xxx / B1 / L3 等）→ exit 5。"
+                         "详见 virtue_recurrence_protocol.md §3.11.1。")
+    ap.add_argument("--audit-paraphrase-diversity",
+                    action=argparse.BooleanOptionalAction, default=True,
+                    help="v9.4 默认开 · R-MOTIF-3：同一母题在 ≥ 2 个 narrative 位置出现时，"
+                         "字符 n-gram Jaccard 相似度必须 < 0.6，否则 → exit 5。"
+                         "依赖 analysis._motif_text_log。详见 virtue_recurrence_protocol.md §3.11.3。")
     ap.add_argument("--mangpai", default=None,
                     help="v9 audit-mangpai-surface 用：output/X.mangpai.json 路径。")
     args = ap.parse_args()

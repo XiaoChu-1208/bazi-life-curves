@@ -1616,6 +1616,11 @@ def score(
         "yongshen": bazi["yongshen"],
         "geju": bazi.get("geju", {}),
         "phase": bazi.get("phase", {"id": "day_master_dominant", "label": "默认 · 日主主导", "is_inverted": False}),
+        # v9.4 · 算法判断披露铁律：phase_decision / phase_confirmation 必须随 curves
+        # 一起出，让 render_artifact / 前端 chat 直接读到「命格 + 置信度 + 校验状态」，
+        # 不再依赖 LLM 复述。详见 references/multi_dim_xiangshu_protocol.md 阶段 -1。
+        "phase_decision": bazi.get("phase_decision"),
+        "phase_confirmation": bazi.get("phase_confirmation"),
         "shensha": bazi.get("shensha", {}),
         "birth_year": bazi["birth_year"],
         "gender": bazi["gender"],

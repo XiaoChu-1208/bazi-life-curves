@@ -74,6 +74,21 @@ VALID_VIRTUE_KEYS = {
     "free_speech",
 }
 
+# v9.4 motif_witness 独立节点（升级版 G 块母题侧记）
+# 详见 references/virtue_recurrence_protocol.md §3.10 + §3.11
+# anchor 命名约定：
+#   after_current_dayun        当前大运段评述后
+#   after_current_liunian      当前大运 10 流年后
+#   after_dayun.<label>        每段其它大运后（可选累加）
+#   after_key_years            关键流年汇总后
+#   before_closing             closing 三段前的最终累加
+VALID_MOTIF_WITNESS_TOPLEVEL_ANCHORS = {
+    "after_current_dayun",
+    "after_current_liunian",
+    "after_key_years",
+    "before_closing",
+}
+
 # v9 五阶段节序（render_artifact --required-node-order 默认校验）：
 #   ① opening         位置①（开篇悬疑 / 暗线起手）
 #   ② current_dayun   当前大运段评价（包含其十年流年）
@@ -173,6 +188,27 @@ def _set_node(state: dict, node: str, markdown: str) -> str:
         ky[idx]["body"] = markdown
         return f"analysis.key_years[{idx}].body"
 
+    if node.startswith("motif_witness."):
+        anchor_path = node.split(".", 1)[1]
+        if not anchor_path:
+            raise SystemExit("[append_analysis_node] motif_witness.<anchor> 不能为空")
+        # 顶层 anchor 校验：after_current_dayun / after_current_liunian /
+        # after_key_years / before_closing / after_dayun.<label>
+        head = anchor_path.split(".", 1)[0]
+        if head == "after_dayun":
+            sub = anchor_path.split(".", 1)[1] if "." in anchor_path else ""
+            if not sub:
+                raise SystemExit(
+                    "[append_analysis_node] motif_witness.after_dayun.<label> 不能为空"
+                )
+        elif head not in VALID_MOTIF_WITNESS_TOPLEVEL_ANCHORS:
+            raise SystemExit(
+                f"[append_analysis_node] 未知 motif_witness anchor: {head!r}"
+                f"（支持：{sorted(VALID_MOTIF_WITNESS_TOPLEVEL_ANCHORS)} | after_dayun.<label>）"
+            )
+        state.setdefault("motif_witness", {})[anchor_path] = markdown
+        return f"analysis.motif_witness[{anchor_path!r}]"
+
     if node.startswith("liunian."):
         rest = node.split(".", 1)[1]
         try:
@@ -195,6 +231,8 @@ def _set_node(state: dict, node: str, markdown: str) -> str:
         f" | virtue_narrative.<opening|convergence_notes|declaration|love_letter|free_speech>"
         f" | dayun_reviews.<label> | era_narratives.<id> | key_years.<index>"
         f" | liunian.<year>"
+        f" | motif_witness.<after_current_dayun|after_current_liunian|after_dayun.<label>"
+        f"|after_key_years|before_closing>"
     )
 
 
@@ -292,6 +330,23 @@ def main() -> None:
         action="store_true",
         help="静默模式，不输出写入摘要（默认会打印 '已写入 X 字符到 Y'）",
     )
+    ap.add_argument(
+        "--virtue-motifs",
+        default=None,
+        help=(
+            "可选 · output/X.virtue_motifs.json 路径。"
+            "传入后启用 v9.4 反系统化铁律：扫 narrative 的 motif id / canonical name 字面，"
+            "以及同 motif ≥2 位置的 paraphrase 改写度（命中 → SystemExit 5）。"
+        ),
+    )
+    ap.add_argument(
+        "--dry-run",
+        action="store_true",
+        help=(
+            "仅跑校验、不写 partial 文件，也不更新 _stream_log。"
+            "Web harness retry 子流程使用，避免脏写 analysis.partial.json。"
+        ),
+    )
     args = ap.parse_args()
 
     state_path = Path(args.state)
@@ -311,11 +366,64 @@ def main() -> None:
             enforce_tone,
             enforce_no_phase_leak_in_message,
             check_message_heading_count,
+            enforce_no_motif_id_leak,
+            enforce_no_canonical_label_leak,
+            enforce_paraphrase_diversity,
+            detect_motifs_in_text,
         )
     except ImportError as e:
         raise SystemExit(f"[append_analysis_node] 找不到 _v9_guard：{e}")
     enforce_tone(markdown, node=args.node, raise_on_hit=True)
     enforce_no_phase_leak_in_message(markdown, raise_on_hit=True)
+
+    # v9.4 反系统化铁律（R-MOTIF-1/2/3）— 仅在传入 virtue_motifs 时启用
+    motif_ids: list = []
+    canonical_labels: list = []
+    triggered_motifs: list = []
+    if args.virtue_motifs:
+        vm_path = Path(args.virtue_motifs)
+        if not vm_path.exists():
+            raise SystemExit(
+                f"[append_analysis_node] --virtue-motifs 文件不存在: {vm_path}"
+            )
+        try:
+            vm_data = json.loads(vm_path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError as e:
+            raise SystemExit(
+                f"[append_analysis_node] --virtue-motifs 不是合法 JSON: {e}"
+            )
+        triggered_motifs = vm_data.get("triggered_motifs") or []
+        for m in triggered_motifs:
+            if not isinstance(m, dict):
+                continue
+            if m.get("id"):
+                motif_ids.append(m["id"])
+            if m.get("name"):
+                canonical_labels.append(m["name"])
+        # silenced motifs 也禁字面（catalog 整体的所有 canonical name 都不许出）
+        for m in vm_data.get("silenced_motifs") or []:
+            if isinstance(m, dict) and m.get("name"):
+                canonical_labels.append(m["name"])
+            # silenced 旧格式可能是纯 id 字符串
+            elif isinstance(m, str):
+                motif_ids.append(m)
+        enforce_no_motif_id_leak(markdown, node=args.node, motif_ids=motif_ids, raise_on_hit=True)
+        enforce_no_canonical_label_leak(
+            markdown, canonical_labels, node=args.node, raise_on_hit=True,
+        )
+        # paraphrase diversity：识别本节命中了哪些 motif，与 _motif_text_log 历史比对
+        text_log = state.get("_motif_text_log") or {}
+        hit_ids = detect_motifs_in_text(markdown, triggered_motifs)
+        for mid in hit_ids:
+            prior = text_log.get(mid) or []
+            if prior:
+                enforce_paraphrase_diversity(
+                    markdown,
+                    motif_id=mid,
+                    prior_texts=prior,
+                    node=args.node,
+                    raise_on_hit=True,
+                )
 
     # v9.3 R-STREAM-2：单节 markdown 顶级 ## heading ≥ 2 → 视为 "在一节里塞了多节"。
     # closing 三段在最后一条 turn 允许紧邻出现 → free_speech 节豁免（最末段）。
@@ -331,8 +439,27 @@ def main() -> None:
             f"  · 详见 AGENTS.md §v9 流式铁律 R-STREAM-2"
         )
 
+    if args.dry_run:
+        if not args.quiet:
+            print(
+                f"[append_analysis_node] DRY-RUN OK · {len(markdown):>5} 字符 通过校验 "
+                f"(node={args.node!r}, state 未写)",
+                file=sys.stderr,
+            )
+        return
+
     location = _set_node(state, args.node, markdown)
     _append_stream_log(state, args.node, location, len(markdown))
+    # v9.4 ·  R-MOTIF-3 配套：把本节命中的母题文本记进 _motif_text_log
+    if args.virtue_motifs and triggered_motifs:
+        text_log = state.setdefault("_motif_text_log", {})
+        hit_ids = detect_motifs_in_text(markdown, triggered_motifs)
+        for mid in hit_ids:
+            entries = text_log.setdefault(mid, [])
+            entries.append({
+                "anchor": args.node,
+                "text": markdown,
+            })
     _atomic_write_json(state_path, state)
 
     if not args.quiet:

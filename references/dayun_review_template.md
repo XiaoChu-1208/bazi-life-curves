@@ -205,10 +205,11 @@ WTO 红利期，房地产从启动到一轮狂飙，第一波互联网创业（2
 - [ ] 没出现 `class_inference_ethics §5` 红线关键词
 - [ ] 未来段（age > 当前年龄）的 F 段保持"方向 + 大类 + 避坑"，没具体事件
 - [ ] B 段的 folkways 选了用神/阶级匹配的（不是流水账）
-- [ ] G 段：若该 10 年 `output/virtue_motifs.json.motif_recurrence_map` 有母题激活则写、否则不写
-- [ ] G 段引用了脚本提供的具体激活点（年龄 + 母题 id）
+- [ ] G 段：若该 10 年 `output/virtue_motifs.json.motif_recurrence_map` 有母题激活则写、否则不写（v9.4 起新写法走独立节点 `motif_witness.<anchor>`，旧 G 段保留兼容）
+- [ ] G 段引用脚本提供的**具体激活点（年龄 + 化用 paraphrase_seeds）**——v9.4 反系统化铁律：**禁止字面**写出 motif id（`B1` / `K2_xxx` 等）或 catalog canonical name（"亲密者的无能"等）；只允许化用 `triggered_motifs[i].paraphrase_seeds` 并再次个性化润色（详见 [virtue_recurrence_protocol.md §3.11](virtue_recurrence_protocol.md)）
 - [ ] G 段未涉及 `silenced_motifs`
 - [ ] G 段未出现 `virtue_recurrence_protocol.md §3.5` 禁用词
+- [ ] G 段未出现 motif id 字面 / canonical label 字面（受 `_v9_guard.enforce_no_motif_id_leak` / `enforce_no_canonical_label_leak` 强制审计）
 
 ## 7. 与其他协议的关系
 

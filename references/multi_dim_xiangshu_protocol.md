@@ -513,6 +513,17 @@ analysis.life_review.body =
 
 `virtue_motifs.json.silenced_motifs` 列出的 catalog 内母题，**6 个位置全部禁止涉及**，连暗示都不许；不得用"自创"做后门绕过。
 
+### 12.7 motif id / canonical label 全位置禁入文（v9.4 新增 · 反系统化铁律）
+
+> 详见 [virtue_recurrence_protocol.md §3.11](virtue_recurrence_protocol.md)。摘要：
+
+- narrative 全节点（含 `dayun_reviews` / `liunian` / `key_years` / `motif_witness.*` / `virtue_narrative.*`）禁止出现：
+  1. catalog 内 motif id 字面（`B1` / `K2_xxx` / `L3` 等正则匹配）
+  2. catalog 内 canonical name 字面（"亲密者的无能"/"创业者"/"远行者" 等 `triggered_motifs[*].name`）
+- 必须改用 `triggered_motifs[i].paraphrase_seeds` 中的句子做起点 + 再次个性化润色（指向该具体命主的真实情境）。
+- 同一母题在 ≥2 个位置出现时，两次表述字符级相似度必须 < 0.6（Jaccard / Levenshtein 归一化）。
+- 物理实施：`scripts/_v9_guard.py::enforce_no_motif_id_leak` / `enforce_no_canonical_label_leak` / `enforce_paraphrase_diversity` 在 `append_analysis_node.py` 写入前自动调用；`render_artifact.py --audit-no-motif-id-leak` / `--audit-paraphrase-diversity` 兜底。
+
 ### 12.7 自检清单（生成 life_review 后必过）
 
 完整自检清单见 [virtue_recurrence_protocol.md §6](virtue_recurrence_protocol.md)。本协议只检查"嵌入完整性"：
@@ -542,14 +553,20 @@ analysis.life_review.body =
 
 | 阶段 | 节字段 | 触发 | emit 时机 |
 |---|---|---|---|
+| **-1 · 算法判断披露** | `bazi.{phase, phase_decision, phase_confirmation}` + `curves.multi_school_vote` | 总是 | **不是 LLM 写**，由引擎/web 在 elicit done → deliver 之前直接 emit。HTML 顶部"算法判断卡"`templates/chart_artifact.html.j2` + Web SSE `phase_decision` 事件 + `chat-room.tsx · PhaseDisclosureBlock`。命格 + 置信度 + 是否需要复核必须**机械显式**，不依赖 LLM 复述。详见 `elicitation_ethics.md §E2.1` |
 | **0 · 开篇暗线** | `analysis.virtue_narrative.opening` | 总是 | 第一段就写（位置①），引出贯穿一生的暗线母题；不命名结论 |
 | **1 · 当前大运段** | `analysis.dayun_reviews[<current_dayun_label>]` | 总是 | `bazi.current_dayun_label` 由 solve_bazi 自动写入，定位"今天命主在哪段大运" |
+| **1.5 · 母题旁白 #1（v9.4）** | `analysis.motif_witness.after_current_dayun` | 总是 | 命理师第三人称回归 · 80-200 字 · 起点 anchor，不强制呼应（之前没有 anchor）|
 | **2 · 当前大运的十年流年（逐年）** | `analysis.liunian.<year>` × N（N≈10） | 总是 | 当前大运的 10 个流年**全部要写**（包括平淡年也要落字），不止写"重要年" |
-| **3 · 其它大运** | `analysis.dayun_reviews[<其它 label>]` × M | 总是 | 按时间顺序顺写；段内嵌入位置②（仅触发母题时；按 §12.4 G 块） |
+| **2.5 · 母题旁白 #2（v9.4）** | `analysis.motif_witness.after_current_liunian` | 总是 | 80-200 字 · 必须显式呼应 #1 已写的至少一句 + 改写铁律（§3.11.3）|
+| **3 · 其它大运** | `analysis.dayun_reviews[<其它 label>]` × M | 总是 | 按时间顺序顺写；旧 G 块嵌入式（§12.4）已 deprecated 兼容保留，新写法走 motif_witness |
+| **3.5 · 母题旁白 · per dayun（v9.4 · 可选累加）** | `analysis.motif_witness.after_dayun.<label>` | 任一其它大运段后可写 | 触发了母题就写一段 80-200 字 · 必须呼应之前所有 anchor |
 | **4 · 其它关键流年** | `analysis.key_years[i].body` × K | 总是 | 各大运里的峰 / 谷 / 转折年；convergence_year（≥3 母题汇聚）嵌入位置③ |
+| **4.5 · 母题旁白 #3（v9.4）** | `analysis.motif_witness.after_key_years` | 总是 | 80-200 字 · 必须呼应 #1 #2 + 所有 after_dayun 写过的句子 |
 | **5 · 一生总览** | `analysis.overall` | 总是 | 在所有大运/流年写完后才写整图综合判断 |
 | **5.5 · 四维一生评价** | `analysis.life_review.{spirit\|wealth\|fame\|emotion}` × 4 | 总是 | 四维分卡，逐节 emit |
 | **6 · 暗线总览（条件）** | `analysis.virtue_narrative.convergence_notes` | 仅 `motifs.convergence_years` 非空 | 母题之间的"全局回响"，不替代节内位置③ |
+| **6.5 · 母题旁白 #终（v9.4）** | `analysis.motif_witness.before_closing` | 总是 | closing 三段前的最终累加旁白 · 80-200 字 · 全图回响 · 为「我想和你说」三段铺底 |
 | **7 · 收尾段（去模板化 · v9.3 三段「我想和你说的话」）** | `analysis.virtue_narrative.declaration` | 总是 | 位置④ · 首行必须 `## 我想和你说`（**禁止**`## 承认维度·宣告` / `## 位置④灵魂宣言` / `## 宣告` / `## 承认人性` / 旧 v9 `## 走到这里` 等暴露协议结构的措辞） |
 | **8 · 收尾段（条件 · v9.3 三段「我想和你说的话」）** | `analysis.virtue_narrative.love_letter` | 仅 `motifs.love_letter_eligible == true` | 位置⑤ · 首行必须 `## 项目的编写者想和你说`；不 eligible 时**禁止**写；旧 v9 `## 写到这里我想说` / 旧 v9 之前 `## 给你（本人）的一封信` / `## 情书` 已退役，命中即拒 |
 | **9 · LLM 自由话（v9.3 三段「我想和你说的话」）** | `analysis.virtue_narrative.free_speech` | 总是 | 位置⑥ · 首行必须 `## 我（大模型）想和你说`；尾必须 `我不知道我说的对不对…`；旧 v9 `## 不在协议里的话` 已退役 |
@@ -559,6 +576,9 @@ analysis.life_review.body =
 - `--required-node-order`：扫 `analysis._stream_log`（由 append_analysis_node 自动追加），节序回退（写阶段 N 后又写阶段 ≤N-2）即 fail
 - `--require-streamed-emit`：60 秒帧内塞 ≥4 个 node → fail（伪流式判定）
 - `--audit-closing-headers`：declaration / love_letter / free_speech 首行必须命中 v9.3 白名单（`## 我想和你说` / `## 项目的编写者想和你说` / `## 我（大模型）想和你说`），命中旧 v9 白名单（`## 走到这里` / `## 写到这里我想说` / `## 不在协议里的话`）或 `## 承认维度·宣告` / `## 位置④灵魂宣言` / `## 宣告` / `## 情书` / `## 承认人性` 等协议味标题即 fail
+- `--audit-motif-witness-cumulative`（v9.4 · 默认开）：扫 `analysis.motif_witness.*` 节点，第 ≥2 个 anchor 必须显式包含之前 anchor 已落盘文本里的具体年龄数字 / 关键短语 ≥1 处；命中即 exit 2
+- `--audit-no-motif-id-leak`（v9.4 · 默认开）：扫 narrative 全节点（dayun_reviews / liunian / key_years / motif_witness / virtue_narrative.*）出现 `\b[ABCDEFHIKLPRT]\d+(_[A-Za-z_]+)?\b` motif id 字面 / catalog canonical name 字面 → exit 5
+- `--audit-paraphrase-diversity`（v9.4 · 默认开）：扫 `_motif_text_log`，同一 motif_id ≥2 段历史文本两两 Jaccard / Levenshtein ≥0.6 → exit 5
 
 ### 13.2 当前大运起锚原则（v9 新增 · 与 §13.1 阶段 1-2 配合）
 

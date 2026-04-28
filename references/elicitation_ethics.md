@@ -61,6 +61,39 @@
 为什么硬约束：哪怕 LLM 加 caveat 说"这只是初步推断"，**用户的答题也会受锚定**。
 心理学上叫 confirmation bias / anchoring；在 Bazi elicitation 上后验偏移可达 0.2+。
 
+### §E2.1 · finalize **之后** 必须主动披露（v9.4 算法判断披露铁律）
+
+**约束**：R1 / R2 收敛、`phase_decision` 写到 `bazi.json` 之后（即"中间态"已结束、
+进入 deliver / open_phase 之前），**必须**对用户**显式披露**：
+
+1. 算法判定的命格 label + id（如 "默认 · 日主主导 / day_master_dominant"）
+2. 置信度等级（high / mid / low / reject）+ 后验概率（如有）
+3. 是否需要复核（`is_provisional` / `confidence ∈ {low, reject}` /
+   `confirmation.action == "escalate"` / `multi_school_vote.decision == "open_phase"`
+   任一为真都视为"需要"）
+4. 后验 top-3 候选读法（让用户看到"还有哪些读法被认真考虑过"）
+
+**实现位点（v9.4 同时落地）**：
+
+- 引擎侧：`scripts/score_curves.py` 把 `bazi.phase_decision` / `phase_confirmation`
+  透传到 `curves.json` → `templates/chart_artifact.html.j2` 顶部"算法判断卡"
+  **永远渲染**（即使 phase 是默认值；audit 通过即出图）
+- Web 侧：`web/src/app/api/chat/route.ts · afterElicitDone()` 在 `transition(deliver)`
+  之前 SSE 发 `{ type: "phase_decision", payload: PhaseDisclosureWire }`；
+  `web/src/components/chat-room.tsx · PhaseDisclosureBlock` 渲染同信源的卡片
+
+**反例**（v9.4 之前的 bug）：
+
+```
+× 用户答完题 → 直接进开场白 → 看不到算法判定了什么、置信度多高
+× LLM 在开场白里描述命格意象 → 用户不知道这是不是 LLM 自己脑补的
+× HTML chart 只在 phase_decision.confidence < high 时才提一句"建议复核"
+```
+
+**为什么硬约束**：用户付费读这一份，没办法判断"你算了没有 / 算对了没有 /
+要不要再校验"——比 §E2 更严重的信任问题。E2 管"中间态不要污染"，E2.1
+管"finalize 之后必须摊牌"。两者不矛盾：collapsed 之前藏，collapsed 之后亮。
+
 ---
 
 ## §E3 · 进度不倒推

@@ -79,15 +79,21 @@ render_artifact.py --virtue-motifs output/X.virtue_motifs.json
 写 `analysis` 阶段必须**按五阶段流式 emit**，由 [`references/multi_dim_xiangshu_protocol.md`](references/multi_dim_xiangshu_protocol.md) §13.1 定义为权威；render_artifact 默认 `--required-node-order` + `--require-streamed-emit` 物理审计。
 
 - **节序（v9 重排 · 以"当前所在大运"为锚 · 不再先写整图）**：
+  0. **阶段 -1（v9.4 · 算法判断披露 · 不是 LLM 写）** · `bazi.{phase, phase_decision, phase_confirmation}` + `curves.multi_school_vote` 由引擎/web 在 elicit done → deliver 之前直接 emit。HTML 顶部"算法判断卡"`templates/chart_artifact.html.j2` 永远渲染；Web 侧 `web/src/app/api/chat/route.ts · afterElicitDone` 发 SSE `phase_decision` 事件 → `chat-room.tsx · PhaseDisclosureBlock`。**LLM 不得**在 opening 里复述命格名 / 置信度 / 后验概率（仍受 §E2 约束：禁止在 narrative 里出现 phase 字面 id）。详见 `references/elicitation_ethics.md §E2.1`
   1. **阶段 0** · `virtue_narrative.opening`（开篇暗线 · 位置① · 30-80 字）
   2. **阶段 1** · `dayun_reviews[<current_dayun_label>]`（命主"今天"所在大运段 · `bazi.current_dayun_label` 由 solve_bazi 自动写）
-  3. **阶段 2** · `liunian.<year>` × N≈10（当前大运 10 个流年逐年写 · **平淡年也要落字**）
-  4. **阶段 3** · `dayun_reviews[<其它 label>]` × M（按时间顺序顺写 · 触发母题时段内嵌入位置②G 块）
-  5. **阶段 4** · `key_years[i].body` × K（其它关键年 · convergence_year 嵌入位置③）
-  6. **阶段 5** · `analysis.overall`（整图综合 · **现在才写**）
-  7. **阶段 5.5** · `life_review.{spirit/wealth/fame/emotion}` × 4（四维一生评价）
-  8. **阶段 6** · `virtue_narrative.convergence_notes`（仅 `motifs.convergence_years` 非空）
-  9. **阶段 7-9** · 收尾三段 closing（去模板化 · 见下）
+  3. **阶段 1.5（v9.4 新增）** · `motif_witness.after_current_dayun`（命理师第三人称回归 · 80-200 字 · 起点 anchor）
+  4. **阶段 2** · `liunian.<year>` × N≈10（当前大运 10 个流年逐年写 · **平淡年也要落字**）
+  5. **阶段 2.5（v9.4 新增）** · `motif_witness.after_current_liunian`（必须显式呼应 #1 + 改写铁律）
+  6. **阶段 3** · `dayun_reviews[<其它 label>]` × M（按时间顺序顺写 · 旧 G 块嵌入式 deprecated · 新写法走阶段 3.5）
+  7. **阶段 3.5（v9.4 · 可选累加）** · `motif_witness.after_dayun.<label>`（任一其它大运后触发母题就写一段）
+  8. **阶段 4** · `key_years[i].body` × K（其它关键年 · convergence_year 嵌入位置③）
+  9. **阶段 4.5（v9.4 新增）** · `motif_witness.after_key_years`（必须呼应 #1 #2 + 所有 after_dayun）
+  10. **阶段 5** · `analysis.overall`（整图综合 · **现在才写**）
+  11. **阶段 5.5** · `life_review.{spirit/wealth/fame/emotion}` × 4（四维一生评价）
+  12. **阶段 6** · `virtue_narrative.convergence_notes`（仅 `motifs.convergence_years` 非空）
+  13. **阶段 6.5（v9.4 新增）** · `motif_witness.before_closing`（closing 三段前的最终累加旁白）
+  14. **阶段 7-9** · 收尾三段 closing（去模板化 · 见下）
 - **每写完一节立刻 send 一条 assistant message**（哪怕半成品也要先发出 `## [阶段 N · 写作中…]` 占位），禁止积累 ≥2 节不发；60 秒帧内塞 ≥4 节即被 `--require-streamed-emit` 判伪流式（exit 4）
 - **节序回退判定**：写阶段 N 后又写阶段 ≤N-2 → exit 4（dayun↔liunian 同阶段交错允许）
 - 节内嵌套：每段大运评价节内**仅在母题激活时**嵌入德性母题位置②G 块（由 `audit_virtue_recurrence_continuity._check_position2` 强制）；convergence_year 命中的关键年节内**必须**嵌入位置③
@@ -140,6 +146,17 @@ render_artifact.py --virtue-motifs output/X.virtue_motifs.json
 - **banned_phrases**（字面短语）：`"人生 A 面"` / `"你真的好棒"` / `"加油哦"` / `"你值得拥有"` / `"给你（本人）的一封信"` 等鸡汤化、撒娇腔、模板化措辞
 - **banned_patterns**（正则 · `applies_to_whitelisted: true` 即对所有节生效）：`！{2,}` / `~{2,}` / emoji 全集（U+1F300-1FAFF / U+2600-27BF）
 - **whitelisted_nodes**：`virtue_narrative.love_letter` / `virtue_narrative.free_speech` 仅豁免**字面短语**（情书可以情绪化）；emoji / 多感叹号 / 撒娇腔仍**全位置禁**
+- **`motif_witness.*` 节点（v9.4）**：纳入与其它结构化叙事节点同样的 hard ban —— emoji / 多感叹号 / 撒娇腔禁；不在 whitelist 里
+
+### 反系统化铁律（v9.4 新增 · `R-MOTIF-1` / `R-MOTIF-2` / `R-MOTIF-3`）
+
+详见 [`references/virtue_recurrence_protocol.md §3.11`](references/virtue_recurrence_protocol.md) + [`references/multi_dim_xiangshu_protocol.md §12.7`](references/multi_dim_xiangshu_protocol.md)。三层物理护栏（`append_analysis_node.py` 写入前自动调用 + `render_artifact.py` 兜底）：
+
+- **R-MOTIF-1（反 motif id 字面）**：`scripts/_v9_guard.py::enforce_no_motif_id_leak` —— narrative 全节点禁止出现 catalog 内 motif id 字面（`B1` / `K2_xxx` / `L3` 等正则匹配）；命中 → exit 5
+- **R-MOTIF-2（反 canonical label 字面）**：`scripts/_v9_guard.py::enforce_no_canonical_label_leak` —— catalog 内 canonical name 字段（"亲密者的无能"/"创业者"/"远行者" 等）禁止字面落入 narrative；命中 → exit 5
+- **R-MOTIF-3（同母题改写多样性）**：`scripts/_v9_guard.py::enforce_paraphrase_diversity` —— 同一母题在 ≥2 个位置（多个 motif_witness anchor / dayun_review G 块 / love_letter / free_speech）出现时，两次表述字符级相似度（Jaccard / Levenshtein 归一化）必须 < 0.6；命中 → exit 5
+
+LLM 在写 narrative 时只允许引用 `virtue_motifs.json.triggered_motifs[i].paraphrase_seeds`（v2 schema 起每条 motif 携带 3-5 句面向「这个具体命主」的口语化改写起点）+ 必须再次个性化润色，**严禁**出现 motif id / canonical label 字面。命主面前**永远不能**显出系统的诊断结构感。
 
 ### Closing 三段「我想和你说的话」（v9.3 改名 · `_v9_guard.enforce_closing_header`）
 

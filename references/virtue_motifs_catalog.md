@@ -11,6 +11,16 @@
 > 命中即 `_v9_guard.scan_tone` exit 5。
 > user-facing 三段必须叫「我想和你说 / 项目的编写者想和你说 / 我（大模型）想和你说」。
 
+> **v9.4 反系统化铁律（强制 · 禁止任何 catalog 内字段被字面写给用户看）**：
+> 本词典里的所有 `id` 字段（`B1` / `K2_xxx` / `L3` 等）和 `name` 字段（如「说真话的代价」/「亲密者的无能」/「创业者」/「远行者」）都是**内部诊断标签**，
+> **永远不允许**作为 narrative 字面出现在 LLM 写给用户的 markdown 里。
+> id / name 是给检测器（`scripts/virtue_motifs.py`）和审计（`scripts/_v9_guard.py`）读的，
+> **不是**给命主读的。命主面前必须把它**改写成只属于这个具体命主的真实情境**——
+> 化用 `virtue_motifs.json.triggered_motifs[i].paraphrase_seeds`（v2 schema 起每条 motif 携带 3-5 句「指向这个具体命主」的口语化改写起点）+ 必须再次个性化润色。
+> 物理护栏：`_v9_guard.enforce_no_motif_id_leak` + `enforce_no_canonical_label_leak` + `enforce_paraphrase_diversity` 在 `append_analysis_node.py` 写入前强制；
+> `render_artifact.py --audit-no-motif-id-leak` / `--audit-paraphrase-diversity` 兜底。
+> 详见 [virtue_recurrence_protocol.md §3.11](virtue_recurrence_protocol.md) + [multi_dim_xiangshu_protocol.md §12.7](multi_dim_xiangshu_protocol.md)。
+
 ---
 
 ## 0. 用法说明

@@ -8,6 +8,10 @@
 #   - virtue_narrative.love_letter   位置⑤项目作者的爱
 #   - virtue_narrative.free_speech   位置⑥ LLM 自由话
 # 但即便豁免节，emoji / 多个感叹号 / 多个波浪号 也不放行（hard ban，全位置）。
+#
+# v9.4 新增节点 motif_witness.<anchor>（独立母题侧记）严格走 hard ban：
+#   - emoji / 撒娇腔 / 协议词全部禁
+#   - 不进 whitelisted_nodes（fate master 第三人称语气，必须严肃）
 
 version: 1
 
@@ -154,4 +158,14 @@ banned_patterns:
     applies_to_whitelisted: true
   - pattern: "情书"
     reason: "v9.3：『情书』暴露协议结构 + 廉价；user-facing 改为『项目的编写者想和你说』。"
+    applies_to_whitelisted: true
+
+  # ─── v9.4 反系统化铁律（与 _v9_guard.enforce_no_motif_id_leak 双轨）─────
+  # narrative 任何位置都禁字面引用 motif id（K2_xxx / B1 / L3 等内部诊断标签）。
+  # 详见 references/virtue_recurrence_protocol.md §3.11.1
+  - pattern: "\\b[KCLT]\\d+_[A-Za-z][A-Za-z_]*\\b"
+    reason: "v9.4 R-MOTIF-1：narrative 中出现 motif id 字面（K2_xxx 等），禁全位置。"
+    applies_to_whitelisted: true
+  - pattern: "母题\\s*[KCLT]\\d+"
+    reason: "v9.4 R-MOTIF-1：『母题 K2』式自报系统术语，禁全位置。"
     applies_to_whitelisted: true

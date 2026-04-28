@@ -340,3 +340,71 @@ def test_safe_json_escapes_line_separators() -> None:
     assert "\u2029" not in out
     assert "\\u2028" in out
     assert "\\u2029" in out
+
+
+# ─── §6 · CDN 兜底 + 杂项 (Bug 1 / 9) ──────────────────────────
+
+def test_template_has_noscript_banner() -> None:
+    """模板必须含 <noscript> 横幅告知用户需要 JS."""
+    template_path = ROOT / "templates" / "chart_artifact.html.j2"
+    text = template_path.read_text(encoding="utf-8")
+    assert "<noscript>" in text
+    assert "JavaScript" in text
+
+
+def test_template_all_cdn_scripts_have_onerror() -> None:
+    """所有外部 CDN <script src=...> 都必须有 onerror 兜底."""
+    import re
+    template_path = ROOT / "templates" / "chart_artifact.html.j2"
+    text = template_path.read_text(encoding="utf-8")
+    cdn_scripts = re.findall(r'<script\s+src="https://[^"]+"[^>]*>', text)
+    assert len(cdn_scripts) >= 6, f"应该有 ≥ 6 个 CDN script, 实际 {len(cdn_scripts)}"
+    for s in cdn_scripts:
+        assert "onerror" in s, f"CDN script 缺 onerror 兜底: {s}"
+
+
+def test_template_has_global_cdn_fail_handler() -> None:
+    """模板必须有全局 vanilla JS 监听器 + cdn-fail fallback marker."""
+    template_path = ROOT / "templates" / "chart_artifact.html.j2"
+    text = template_path.read_text(encoding="utf-8")
+    assert "__BAZI_CDN_FAIL__" in text
+    assert "addEventListener('error'" in text
+    assert 'data-resilience-fallback="cdn-fail"' in text
+
+
+def test_template_confidence_nan_guard() -> None:
+    """mangpai_conflict_alert 的 conf 渲染必须有 Number.isFinite 守卫."""
+    template_path = ROOT / "templates" / "chart_artifact.html.j2"
+    text = template_path.read_text(encoding="utf-8")
+    # 旧的脆弱写法 Number(h.confidence).toFixed(2) 不应单独出现
+    # (允许在 Number.isFinite ? ... : "—" 守卫之内)
+    assert "Number.isFinite(Number(h.confidence))" in text, (
+        "mangpai conf 渲染缺 Number.isFinite 守卫"
+    )
+
+
+def test_render_full_flow_with_require_final_version_partial_raises() -> None:
+    """--require-final-version + --allow-partial 同时给应 raise SystemExit."""
+    import subprocess
+    import json as _json
+    import tempfile
+    with tempfile.TemporaryDirectory() as td:
+        tdp = Path(td)
+        curves_path = tdp / "curves.json"
+        curves_path.write_text(_json.dumps(_ok_curves()), encoding="utf-8")
+        out_path = tdp / "out.html"
+        proc = subprocess.run(
+            [
+                sys.executable,
+                str(ROOT / "scripts" / "render_artifact.py"),
+                "--curves", str(curves_path),
+                "--out", str(out_path),
+                "--allow-partial",
+                "--require-final-version",
+            ],
+            capture_output=True, text=True,
+        )
+        assert proc.returncode != 0, (
+            f"--allow-partial + --require-final-version 同时给应 exit 非零, 实际 stdout={proc.stdout!r} stderr={proc.stderr!r}"
+        )
+        assert "互斥" in proc.stderr or "互斥" in proc.stdout

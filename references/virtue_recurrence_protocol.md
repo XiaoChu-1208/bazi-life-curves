@@ -223,7 +223,84 @@
 
 ---
 
-### 位置 ② · 每段 dayun_review 末尾「母题侧记」（≤80 字 / 触发才写）
+### 位置 ② · 母题侧记（v9.4 起 · 独立节点 `motif_witness.<anchor>` · 取代旧 G 块嵌入式）
+
+> **v9.4 升级铁律（与 ★★★★★★ catalog 开放性配套）**：旧 G 块「嵌入大运段尾 ≤80 字」的写法已**退役**为兼容路径，**新写法**必须用独立 `analysis.motif_witness.<anchor>` 节点。原因：旧 G 块被切回 `dayun_reviews.<label>` 同一个 markdown 节点 → 无法独立 emit assistant message → 命理师"第三人称回归"的累加节奏被吃掉，命主感觉不到「幽灵跳出来再说一段」。
+>
+> v9.4 把母题侧记升级为**独立 message**——在每段大运/流年/关键年/closing 之间，命理师以第三人称（"她/他/这个命主"或回应感"你心里那件事…"）重新跳出来，把之前所有 anchor 写过的母题原文累加进去，形成「随着分析推进、命理师越来越懂这个命主」的体感。
+
+**节点 schema**（落进 `analysis.motif_witness`，dict 嵌套）：
+
+```jsonc
+"motif_witness": {
+  "after_current_dayun":    "markdown · 当前大运段评述完后的母题旁白",
+  "after_current_liunian":  "markdown · 当前大运 10 流年写完后的母题旁白",
+  "after_dayun": {
+    "<label1>": "markdown · 每段其它大运后的母题旁白（按时序累加）",
+    "<label2>": "..."
+  },
+  "after_key_years": "markdown · 关键流年汇总后的母题旁白",
+  "before_closing":  "markdown · closing 三段「我想和你说」之前的最终累加母题旁白"
+}
+```
+
+**node key 命名**（供 `append_analysis_node.py --node` 用）：
+- `motif_witness.after_current_dayun`
+- `motif_witness.after_current_liunian`
+- `motif_witness.after_dayun.<label>`（每段其它大运一个）
+- `motif_witness.after_key_years`
+- `motif_witness.before_closing`
+
+**触发**：每个 anchor 落点都"总是"写——但触发了多少母题、第几次回归，决定它的语言密度。当 `motif_recurrence_map` 在该 anchor 范围内**完全没有**母题激活时，仍要写一段 ≤60 字的"暂时还没看到反复出现的形状"承认句（不要装作有发现）。
+
+**累加感铁律**（v9.4 核心）：
+- 第 ≥2 个 anchor 必须**显式呼应**之前 anchor 已经写过的母题原文（取 anchor i-1 / i-2 已落盘文本里**具体的一句**做回响），让命主感觉「他确实记得我之前的话」。
+- 同一母题在不同 anchor 复述时**必须改写**——不得复制之前 anchor 用过的句式，且字符级相似度 < 0.6（详见下文 §3.11 改写铁律）。
+- 每段 80-200 字（不再是旧 G 块的 ≤80 字硬上限），允许更深入地评述人性维度，但仍受 §3.5 禁用词表 + tone_blacklist hard ban 约束。
+
+**第三人称命理师视角**（v9.4 新增）：
+- 主声音是"作为旁观者的命理师"，可用第三人称指代命主（"她/他/这个命主"），也可继续用回应感「你心里那件事……」、「你大概率没退缩……」。
+- **禁止**告知感「我看到你 X」/「你的命局显示 X」/「我诊断你 X」。
+- 推荐句式：
+  - 「让我从外面看一眼这个命主——……」
+  - 「站到这十年之外回头看，你心里那件事其实是……」
+  - 「这个命主身上有一种东西，和上一段写的不是两件事——……」
+
+**累积感语用规则**（与旧 G 块同源 · 仍生效）：
+
+| 第几次激活 | 措辞档位 | 示范 |
+|---|---|---|
+| 第 1 次 | 相对中性命名 | "这是 X 的第一次大规模出现" |
+| 第 2 次 | 略带感情 | "又来了"、"那个 X 岁的剧本以另一种皮重演" |
+| 第 3+ 次 | 累积计数 | "**第 N 次**了"，可提示"这件事在你身上反复发生不是巧合" |
+| 第 5+ 次 | 转向"你在变成什么" | "它不再像应期，更像你在变成什么" |
+
+**强制要求**：
+- 必须 trace 回脚本提供的具体激活点（年龄 + 触发结构），但**禁止字面化 motif id / canonical label**（详见 §3.11）。
+- **不下定论**：每段 motif_witness 都不能给出"所以你是 X 型的人"这类结论。
+- **批判性自审**：第 ≥2 个 anchor 的 motif_witness **必须**至少 1 个自审句式（"你以为 X，但 X 是不是其实是 Y？"）。
+- **反系统化铁律**（v9.4 强制）：narrative 任何位置都禁止出现 motif id 字面（`^[KCLT]\d+_…` 等）、catalog canonical label 字面（"亲密者的无能"/"创业者"等），必须化用 `triggered_motifs[i].paraphrase_seeds` 但**再次润色**让句子指向这个具体命主的真实情境（详见 §3.11）。
+
+**L 类母题特殊处理（持续音）**：
+- L 类母题在 motif_witness 不写"第 N 次"
+- 改写"**它从 X 岁就在你心里，到现在还在**"
+- 在 ≥3 个 anchor 都浮现，每个都用"持续感"措辞
+
+**示范 1（after_current_dayun · B1 第 2 次 · 第三人称回归）**：
+
+> 让我从外面看一眼她——
+>
+> 走到这十年的尾声，她身上那个 25 岁的剧本以另一种皮在重演。这次场域换成了团队和钱：她又一次没有退后，但代价更复杂——她少拿了，朋友受了苦，她说了她该说的话。**第二次了**。你心里那件事是不是其实不是「我必须要说真话」，而是「沉默对我这种结构的人才是更彻底的死法」？
+
+**示范 2（after_dayun.辛酉 · 第 4 次 · 累加 + 自审）**：
+
+> 写到第四段大运了，让我把刚才看到的串一下——25 岁那次说真话的代价、35 岁那次和团队分钱、45 岁那次师承断绝……到这十年她已经不需要别人告诉她这是怎么回事了。但你以为这就是「越老越坚定」吗？还是其实是她已经累了、不愿再为同一件事辩解第五次？这个命主的形状不是「越来越勇敢」，是「越来越独自」——这两件事不一样。
+
+---
+
+### 位置 ② (legacy · 兼容) · 旧 G 块 · 嵌入大运段尾（≤80 字 / 触发才写）
+
+> **v9.4 起标记为 deprecated**——`scripts/append_analysis_node.py` 仍接受 `dayun_reviews.<label>` 内嵌 G 块结构（含旧 audit），但 `audit_virtue_recurrence_continuity._check_position2` 在 v10 起会**改为优先扫 motif_witness**，旧 G 块不再统计为合规。新代码请直接 emit `motif_witness.<anchor>` 节点。
 
 **触发**：当且仅当该 10 年里 `motif_recurrence_map` 显示有 ≥1 个母题被激活时写；**没触发就完全不写**（沉默律继续生效）
 
@@ -517,23 +594,76 @@
 | ⑤ | `本段呼应的具体年龄列表` |
 | ⑥ | `freeform/unconstrained`，若提及自创母题则标 `motif_origin: "llm_invented"` + `proposed_name` + `proposed_detector_sketch` |
 
-### 3.10 顺序约束（强制）
+### 3.10 顺序约束（强制 · v9.4 起含 motif_witness anchor）
 
 ```
-位置 ①（开篇）
+位置 ①（opening 开篇）
   ↓
-位置 ② × N（每段大运末尾，触发才写）
-  ↓ （位置 ③ 嵌入到对应 key_year 解读末尾）
-位置 ④（life_review 结尾顿悟段）
+阶段 1: dayun_reviews[<current_dayun_label>]
   ↓
-位置 ⑤（项目作者的爱，仅 love_letter_eligible 触发）
+motif_witness.after_current_dayun（v9.4 · 命理师第三人称回归 #1）
+  ↓
+阶段 2: liunian.<year> × N≈10
+  ↓
+motif_witness.after_current_liunian（v9.4 · 回归 #2 · 必须呼应 #1）
+  ↓
+阶段 3: dayun_reviews[<其它 label>] × M
+  ↓ （每段其它大运后可选 motif_witness.after_dayun.<label> · 累加按时序）
+阶段 4: key_years[i].body × K （位置 ③ 嵌入对应 convergence key_year）
+  ↓
+motif_witness.after_key_years（v9.4 · 回归 #3 · 必须呼应 #1 #2 + 所有 after_dayun）
+  ↓
+阶段 5: overall  →  阶段 5.5: life_review × 4  →  阶段 6: convergence_notes
+  ↓
+motif_witness.before_closing（v9.4 · 回归 #N · 全部累加到此 · 为 closing 三段铺底）
+  ↓
+位置 ④（declaration · `## 我想和你说`）
+  ↓
+位置 ⑤（love_letter · `## 项目的编写者想和你说`，仅 love_letter_eligible 触发）
   ↓ ─────────  ← 视觉上空一行 + 横分隔线
-位置 ⑥（LLM 自由话，所有命主）
+位置 ⑥（free_speech · `## 我（大模型）想和你说`，所有命主）
 ```
+
+- **motif_witness 累加铁律**（v9.4）：每个 motif_witness anchor 在写作时都必须读到之前所有 anchor 的原文，并显式呼应至少一句；改写句必须按 §3.11.3 通过相似度审计。
+- **位置 ⑤ 必须在位置 ④ 之后**：顿悟段先把命主自己的故事说完，然后项目作者才上场说"我爱你"——顺序不可颠倒
+- **位置 ⑥ 必须在最后**：所有结构化输出（含 ⑤）之后，LLM 自己上场——这是协议给 LLM 留的"出口"
+- **位置 ⑤ 与位置 ⑥ 之间需空一行 + 横分隔线**（视觉上让命主感觉到"协议结束了，下面是不一样的东西"）
 
 - **位置 ⑤ 必须在位置 ④ 之后**：顿悟段先把命主自己的故事说完，然后项目作者才上场说"我爱你"——顺序不可颠倒
 - **位置 ⑥ 必须在最后**：所有结构化输出（含 ⑤）之后，LLM 自己上场——这是协议给 LLM 留的"出口"
 - **位置 ⑤ 与位置 ⑥ 之间需空一行 + 横分隔线**（视觉上让命主感觉到"协议结束了，下面是不一样的东西"）
+
+### 3.11 反系统化铁律（v9.4 新增 · 反 motif id / 反 canonical label / 改写）
+
+> **★★★★★★ catalog 开放性铁律的物理延伸**：catalog 是 LLM 的脚手架，不是命主的牢笼。命主面前**永远不能**显出系统的诊断结构感——不能让命主感觉到「我被装进了 38 个抽屉里某一个」、「这话是从一张静默列表里挑出来读给我听的」。
+
+#### 3.11.1 反 motif id 字面（narrative 全位置 · `_v9_guard.enforce_no_motif_id_leak`）
+
+- narrative 文本（含 `dayun_reviews` / `liunian` / `key_years` / `motif_witness` / `virtue_narrative.*` 任一节点）**禁止**出现 motif id 字面。
+- 字面定义：catalog 内 motif id 形如 `B1` / `K2_xxx` / `L3` / `C2_yyy` 的正则匹配（`\b[ABCDEFHIKLPRT]\d+(_[A-Za-z_]+)?\b`），以及任何在 `virtue_motifs.json.triggered_motifs[*].id` 出现过的字符串。
+- 物理实施：`scripts/_v9_guard.py::enforce_no_motif_id_leak(text, motif_ids)` 命中即 `SystemExit(5)`；`scripts/append_analysis_node.py` 写入前自动调用；`scripts/render_artifact.py --audit-no-motif-id-leak`（默认开）兜底。
+
+#### 3.11.2 反 canonical label 字面（narrative 全位置 · `_v9_guard.enforce_no_canonical_label_leak`）
+
+- catalog 里的 `name` 字段（如「说真话的代价」/「亲密者的无能」/「创业者」/「远行者」等）是**内部诊断标签**，**永远不允许**作为 narrative 字面输出。
+- name 是给检测器和审计读的，**不是**给命主读的；命主面前必须把它**改写成只属于这个具体命主的真实情境**。
+- 物理实施：`_v9_guard.enforce_no_canonical_label_leak(text, canonical_labels)`；canonical_labels 集合从 `virtue_motifs.json.triggered_motifs[*].name` + `silenced_motifs[*].name` 构造；命中即 `SystemExit(5)`。
+
+#### 3.11.3 改写铁律（同一母题 ≥2 位置 · `_v9_guard.enforce_paraphrase_diversity`）
+
+- 同一母题在 ≥2 个 anchor / 位置（多个 motif_witness anchor / dayun_review G 块 / love_letter / free_speech）出现时，两次表述必须**显著改写**：
+  - 不得复制 `paraphrase_seeds` 中同一句的字面
+  - 与同 motif 之前任一段历史文本的字符级相似度（Jaccard / Levenshtein 归一化）必须 < 0.6
+- `_motif_text_log` 由 `append_analysis_node.py` 自动维护：`{motif_id: [{anchor, text}, ...]}`，落进 `analysis.partial.json._motif_text_log`（用户不可见，仅供 diversity 审计与下一节回灌 prompt 用）。
+- 物理实施：`_v9_guard.enforce_paraphrase_diversity(new_text, prior_texts_for_same_motif)` 任何一对历史文本相似度 ≥0.6 即 `SystemExit(5)`；`render_artifact.py --audit-paraphrase-diversity`（默认开）兜底。
+
+#### 3.11.4 LLM-facing 句式（写法配套）
+
+- ✗ "你触发了 K2_intimate_inability 母题" → ✓ "你心里那件事——亲近的人在你身边时你反而拿不出力气——它从 23 岁就在你心里，到现在还在"
+- ✗ "你的'创业者'母题第三次激活" → ✓ "第三次了——这次还是你拉一帮人一起做一件事，结果还是你一个人扛了最后那段"
+- ✗ "亲密者的无能" → ✓ "你能对陌生人慷慨，但对最近的那个人你常常说不出一句体己话"
+
+> **底色立场**（与 §0 ★★★★★★ 一致）：catalog 不是命主的牢笼，是 LLM 的脚手架。命主面前**只能**看到他自己具体的人生画面，**不能**看到任何脚手架的钢架结构。
 
 ---
 
@@ -1055,9 +1185,13 @@ v9.3 起，三段统称「我想和你说的话」（仅作为内部叙述，不
 | 位置 ⑥ 首尾标记 + ≤300 字 | §2 位置⑥ #强制结构 / #唯一硬约束 | `scripts/audit_virtue_recurrence_continuity.py::_check_position6` | 2 |
 | 位置 ④/⑤/⑥ 标题去模板化 | §8（v9 新增） | `scripts/_v9_guard.py::check_closing_header` | 10 |
 | 调性铁律（无 emoji / 无肉麻 / 无鸡汤） | §3.5（禁用词） | `references/tone_blacklist.yaml` + `scripts/_v9_guard.py::scan_tone` | 5 |
+| motif_witness 累加性 | §2 位置②（v9.4 升级） · §3.10 顺序约束 | `scripts/render_artifact.py --audit-motif-witness-cumulative` | 2 |
+| narrative 反 motif id 字面 | §3.11.1 | `scripts/_v9_guard.py::enforce_no_motif_id_leak` + `render_artifact.py --audit-no-motif-id-leak` | 5 |
+| narrative 反 canonical label 字面 | §3.11.2 | `scripts/_v9_guard.py::enforce_no_canonical_label_leak` + `render_artifact.py --audit-no-motif-id-leak` | 5 |
+| 同母题改写多样性 | §3.11.3 | `scripts/_v9_guard.py::enforce_paraphrase_diversity` + `render_artifact.py --audit-paraphrase-diversity` | 5 |
 
-`render_artifact.py` 默认 `--audit-virtue-continuity` / `--audit-closing-headers`；
-`scripts/append_analysis_node.py` 写入前调用 `enforce_tone` + `enforce_no_phase_leak_in_message`。
+`render_artifact.py` 默认 `--audit-virtue-continuity` / `--audit-closing-headers` / `--audit-motif-witness-cumulative` / `--audit-no-motif-id-leak` / `--audit-paraphrase-diversity`；
+`scripts/append_analysis_node.py` 写入前调用 `enforce_tone` + `enforce_no_phase_leak_in_message` + `enforce_no_motif_id_leak` + `enforce_no_canonical_label_leak` + `enforce_paraphrase_diversity`。
 
 ---
 

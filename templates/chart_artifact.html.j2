@@ -4,12 +4,18 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>{{ title }}</title>
-<script src="https://cdn.jsdelivr.net/npm/react@18.3.1/umd/react.production.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/prop-types@15.8.1/prop-types.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/recharts@2.12.7/umd/Recharts.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/marked@13.0.2/marked.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@babel/standalone@7.24.7/babel.min.js"></script>
+<!-- v9.3.1 · 全部 CDN 脚本加 onerror 兜底, 任一挂掉时全局监听器写入 #app 错误条 -->
+<script>
+  // 必须在 CDN <script> 之前定义, 让 onerror 触发时可以访问.
+  window.__BAZI_CDN_FAIL__ = window.__BAZI_CDN_FAIL__ || [];
+  window.__bazi_cdn_fail = function (src) { window.__BAZI_CDN_FAIL__.push(src); };
+</script>
+<script src="https://cdn.jsdelivr.net/npm/react@18.3.1/umd/react.production.min.js" onerror="window.__bazi_cdn_fail(this.src)"></script>
+<script src="https://cdn.jsdelivr.net/npm/react-dom@18.3.1/umd/react-dom.production.min.js" onerror="window.__bazi_cdn_fail(this.src)"></script>
+<script src="https://cdn.jsdelivr.net/npm/prop-types@15.8.1/prop-types.min.js" onerror="window.__bazi_cdn_fail(this.src)"></script>
+<script src="https://cdn.jsdelivr.net/npm/recharts@2.12.7/umd/Recharts.min.js" onerror="window.__bazi_cdn_fail(this.src)"></script>
+<script src="https://cdn.jsdelivr.net/npm/marked@13.0.2/marked.min.js" onerror="window.__bazi_cdn_fail(this.src)"></script>
+<script src="https://cdn.jsdelivr.net/npm/@babel/standalone@7.24.7/babel.min.js" onerror="window.__bazi_cdn_fail(this.src)"></script>
 <style>
   * { box-sizing: border-box; }
   body {
@@ -295,6 +301,69 @@
     font-size: 12px; color: #5a3a26; font-style: italic;
   }
 
+  /* v9.4 算法判断披露卡（永远渲染；放在 H1/meta 后、mangpai 警示前） */
+  .phase-disclosure {
+    margin-top: 14px;
+    border-radius: 10px;
+    padding: 14px 18px 12px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    background: #fbfaf6;
+    border: 1px solid #e4ddc8;
+  }
+  .phase-disclosure.conf-high   { background: #f3f8f1; border-color: #c8dcc1; }
+  .phase-disclosure.conf-mid    { background: #fbf8ec; border-color: #e3d6a3; }
+  .phase-disclosure.conf-low    { background: #fff5ee; border-color: #ecc8a3; }
+  .phase-disclosure.conf-reject { background: #fff1ec; border-color: #e3a48d; }
+  .phase-disclosure .pd-head {
+    display: flex; align-items: baseline; flex-wrap: wrap;
+    gap: 6px 10px; margin-bottom: 6px;
+  }
+  .phase-disclosure .pd-tag {
+    display: inline-block; padding: 2px 9px; border-radius: 4px;
+    font-size: 11px; font-weight: 600;
+    letter-spacing: 0.5px; color: #fff;
+    background: #6a7a5a;
+  }
+  .phase-disclosure.conf-high   .pd-tag { background: #4f7a4a; }
+  .phase-disclosure.conf-mid    .pd-tag { background: #b59230; }
+  .phase-disclosure.conf-low    .pd-tag { background: #c47238; }
+  .phase-disclosure.conf-reject .pd-tag { background: #c44a30; }
+  .phase-disclosure .pd-label {
+    font-size: 14.5px; font-weight: 600; color: #1a1a1a;
+  }
+  .phase-disclosure .pd-id {
+    font-size: 11.5px; color: #888; font-family: ui-monospace, Menlo, monospace;
+  }
+  .phase-disclosure .pd-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 6px 18px; font-size: 12.5px; color: #2a2a2a;
+    padding: 8px 0 6px;
+    border-top: 1px dashed rgba(0,0,0,0.08);
+  }
+  .phase-disclosure .pd-grid > div { line-height: 1.6; }
+  .phase-disclosure .pd-grid b { color: #1a1a1a; font-weight: 600; }
+  .phase-disclosure .pd-grid .pd-muted { color: #888; }
+  .phase-disclosure .pd-action {
+    margin-top: 8px; padding-top: 8px;
+    border-top: 1px dashed rgba(0,0,0,0.08);
+    font-size: 12px; color: #2a2a2a;
+  }
+  .phase-disclosure .pd-action b { color: #1a1a1a; }
+  .phase-disclosure .pd-action.act-render          { color: #2f5a30; }
+  .phase-disclosure .pd-action.act-render_with_caveat { color: #8a5a18; }
+  .phase-disclosure .pd-action.act-escalate        { color: #a8331a; font-weight: 600; }
+  .phase-disclosure .pd-provisional {
+    margin-top: 6px; font-size: 11.5px; color: #a8331a;
+    font-style: italic;
+  }
+  .phase-disclosure .pd-runners {
+    margin-top: 6px; font-size: 11.5px; color: #555;
+  }
+  .phase-disclosure .pd-runners code {
+    background: rgba(0,0,0,0.05); padding: 0 4px; border-radius: 3px;
+    font-family: ui-monospace, Menlo, monospace;
+  }
+
   /* --- markdown --- */
   .markdown { font-size: 13px; line-height: 1.7; color: #333; }
   .markdown h1, .markdown h2, .markdown h3 { margin: 14px 0 6px; color: #1a1a1a; }
@@ -376,7 +445,66 @@
 </style>
 </head>
 <body>
+<noscript>
+  <div style="margin: 32px auto; max-width: 720px; padding: 24px;
+              background: #fef6f0; border: 1px solid #d9a384; border-radius: 8px;
+              color: #7a3a1f; font-size: 14px; line-height: 1.6;
+              font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif;">
+    <div style="font-weight: 700; font-size: 16px; margin-bottom: 8px;">本报告需要 JavaScript</div>
+    本报告使用 React + Recharts 在浏览器端渲染图表与 Markdown 内容。
+    请在浏览器设置里启用 JavaScript 后刷新页面。
+  </div>
+</noscript>
 <div id="app" class="root"></div>
+
+<!-- v9.3.1 · CDN / 全局错误兜底 (vanilla JS, 不依赖 React/Recharts/marked, 任何一个挂掉都能跑) -->
+<script>
+(function () {
+  var rendered = false;
+  function showFatal(title, detail) {
+    if (rendered) return;
+    rendered = true;
+    var app = document.getElementById('app');
+    if (!app) return;
+    app.innerHTML =
+      '<div data-resilience-fallback="cdn-fail" style="margin: 32px auto; max-width: 720px; padding: 24px;' +
+      ' background: #fef6f0; border: 1px solid #d9a384; border-radius: 8px;' +
+      ' color: #7a3a1f; font-size: 14px; line-height: 1.6;">' +
+      '<div style="font-weight: 700; font-size: 16px; margin-bottom: 8px;">⚠️ ' + title + '</div>' +
+      '<div style="margin-bottom: 12px;">' + detail + '</div>' +
+      '<div style="font-size: 12px; color: #9a6a4a;">建议：检查网络连接, 或换 CDN 镜像 (jsdelivr → unpkg).</div>' +
+      '</div>';
+  }
+  // 监听 CDN 加载失败 (resource error 不冒泡, 必须 capture)
+  window.addEventListener('error', function (e) {
+    if (e && e.target && e.target.tagName === 'SCRIPT' && e.target.src) {
+      window.__BAZI_CDN_FAIL__ = window.__BAZI_CDN_FAIL__ || [];
+      if (window.__BAZI_CDN_FAIL__.indexOf(e.target.src) === -1) {
+        window.__BAZI_CDN_FAIL__.push(e.target.src);
+      }
+    }
+  }, true);
+  // 等 DOM 就绪后检查依赖是否齐
+  function checkDeps() {
+    var fails = window.__BAZI_CDN_FAIL__ || [];
+    var missing = [];
+    if (!window.React) missing.push('React');
+    if (!window.ReactDOM) missing.push('ReactDOM');
+    if (!window.Recharts) missing.push('Recharts');
+    if (!window.marked) missing.push('marked');
+    if (!window.Babel) missing.push('Babel');
+    if (fails.length > 0 || missing.length > 0) {
+      var detail = '资源加载失败: ' + (fails.length ? fails.join(', ') : missing.join(', ') + ' 未挂到 window');
+      showFatal('依赖加载失败', detail);
+    }
+  }
+  if (document.readyState === 'complete') {
+    setTimeout(checkDeps, 1500);
+  } else {
+    window.addEventListener('load', function () { setTimeout(checkDeps, 1500); });
+  }
+})();
+</script>
 
 <!-- v9.3.1 · 安全加固: 全部数据走 application/json 块 + Python 端 escape '<',
      物理消除 '</script>' / '<!--' / '<script>' 注入面. -->
@@ -819,6 +947,9 @@ function App() {
   const keyYears = ANALYSIS.key_years || [];   // [{year, age, ganzhi, dayun, kind: 'peak'|'dip'|'shift', headline, body}]
   const lifeReview = ANALYSIS.life_review || {}; // {spirit, wealth, fame, emotion}
   const virtueNarrative = ANALYSIS.virtue_narrative || {}; // {opening, declaration, love_letter, free_speech, convergence_notes}
+  // v9.4 motif_witness 独立母题侧记节点（fate master 第三人称累加旁白）
+  // {after_current_dayun, after_current_liunian, after_dayun.<label>, after_key_years, before_closing}
+  const motifWitness = ANALYSIS.motif_witness || {};
 
   // v7.5 时代-民俗志：era_windows_used（来自 _zeitgeist_loader）+ era_narratives（LLM 写）
   const eraWindows = (ZEITGEIST.era_windows_used || []);
@@ -835,6 +966,43 @@ function App() {
   const phaseDecision = (CURVES.bazi && CURVES.bazi.phase_decision) || CURVES.phase_decision || {};
   const mangpaiAlert = phaseDecision.mangpai_conflict_alert || null;
 
+  // v9.4 算法判断披露：永远渲染（"用户没办法判断你算没算" 的根治）
+  // 数据来自 score_curves.py 写到 curves.json 的 phase / phase_decision / phase_confirmation
+  const phaseSummary = CURVES.phase || {};
+  const phaseConfirmation =
+    (CURVES.bazi && CURVES.bazi.phase_confirmation) || CURVES.phase_confirmation || null;
+  const multiVote = CURVES.multi_school_vote || null;
+  const pdLabel = phaseSummary.label || phaseDecision.phase_label || "（未确定）";
+  const pdId = phaseSummary.id || phaseDecision.decision || "unknown";
+  const pdConfidence = phaseSummary.confidence || phaseDecision.confidence || "unknown";
+  const pdProb = (() => {
+    const v = phaseSummary.decision_probability ?? phaseDecision.decision_probability;
+    return Number.isFinite(Number(v)) ? Number(v) : null;
+  })();
+  const pdProvisional = phaseSummary.is_provisional === true || phaseDecision.is_provisional === true;
+  const pdInverted = phaseSummary.is_inverted === true;
+  const confirmationAction = phaseConfirmation?.action || null; // render / render_with_caveat / escalate
+  const confirmationStatus = phaseConfirmation?.status || null; // confirmed / weakly_confirmed / decision_changed / uncertain
+  const needsRecheck =
+    pdProvisional ||
+    pdConfidence === "low" ||
+    pdConfidence === "reject" ||
+    confirmationAction === "escalate" ||
+    confirmationStatus === "decision_changed" ||
+    confirmationStatus === "uncertain";
+  // 后验 top-3 候选（不含主决策）— 让用户看到"还有哪些读法被系统认真考虑过"
+  const posteriorRunners = (() => {
+    const dist = phaseDecision.posterior_distribution || {};
+    const decision = phaseDecision.decision || phaseSummary.id;
+    const entries = Object.entries(dist)
+      .filter(([k]) => k !== decision)
+      .map(([k, v]) => [k, Number(v) || 0])
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 3)
+      .filter(([, v]) => v >= 0.02);
+    return entries;
+  })();
+
   return (
     <>
       <PartialBanner />
@@ -848,6 +1016,73 @@ function App() {
         {(CURVES.yongshen && CURVES.yongshen.tongguan) ? ` · 通关 ${CURVES.yongshen.tongguan}` : ""}
         {(CURVES.yongshen && CURVES.yongshen.season) ? ` · 调候 ${CURVES.yongshen.season}` : ""}
         {CURVES.birth_year ? ` · 出生 ${CURVES.birth_year}` : ""}
+      </div>
+
+      {/* === v9.4 算法判断披露卡（永远渲染：命格 + 置信度 + 是否需要复核） === */}
+      <div className={"phase-disclosure conf-" + pdConfidence}>
+        <div className="pd-head">
+          <span className="pd-tag">算法判断</span>
+          <span className="pd-label">{pdLabel}</span>
+          <span className="pd-id">{pdId}</span>
+          {pdInverted && <span className="pd-id">· 反相位</span>}
+        </div>
+        <div className="pd-grid">
+          <div>
+            置信度：<b>{pdConfidence}</b>
+            {pdProb !== null && <span className="pd-muted"> · P={pdProb.toFixed(3)}</span>}
+          </div>
+          <div>
+            是否需要复核：
+            <b>{needsRecheck ? "需要" : "否"}</b>
+            {pdProvisional && <span className="pd-muted"> · 仅先验</span>}
+          </div>
+          {confirmationStatus && (
+            <div>
+              R2 校验状态：<b>{confirmationStatus}</b>
+              {phaseConfirmation?.n_r1_answers != null && (
+                <span className="pd-muted"> · R1 {phaseConfirmation.n_r1_answers} 题</span>
+              )}
+              {phaseConfirmation?.n_r2_answers != null && (
+                <span className="pd-muted"> · R2 {phaseConfirmation.n_r2_answers} 题</span>
+              )}
+            </div>
+          )}
+          {multiVote && multiVote.consensus_level && (
+            <div>
+              多派共识：<b>{multiVote.consensus_level}</b>
+              {multiVote.decision && (
+                <span className="pd-muted"> · {String(multiVote.decision)}</span>
+              )}
+            </div>
+          )}
+        </div>
+        {confirmationAction && (
+          <div className={"pd-action act-" + confirmationAction}>
+            渲染建议：<b>{confirmationAction}</b>
+            {phaseConfirmation?.message && <> · {phaseConfirmation.message}</>}
+          </div>
+        )}
+        {pdProvisional && (
+          <div className="pd-provisional">
+            ⚠ 当前判断仅基于先验（未经过 R1/R2 用户应答校验）。
+            进入正式解读前应当先跑 elicit 流程把 is_provisional 翻成 false。
+          </div>
+        )}
+        {!confirmationAction && !pdProvisional && needsRecheck && (
+          <div className="pd-action act-render_with_caveat">
+            建议复核：置信度偏低，可在重要决策前再跑一轮 R2 题集做交叉验证。
+          </div>
+        )}
+        {posteriorRunners.length > 0 && (
+          <div className="pd-runners">
+            其他被认真考虑过的读法：
+            {posteriorRunners.map(([k, v], i) => (
+              <span key={"pr-"+i}>
+                {i > 0 ? "、" : " "}<code>{k}</code> {(v * 100).toFixed(1)}%
+              </span>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* === v9 盲派 / 子平正格冲突警示卡 === */}
@@ -869,7 +1104,8 @@ function App() {
           <ul className="mca-hits">
             {(mangpaiAlert.conflicting_hits || []).map((h, i) => (
               <li key={"mca-"+i}>
-                <b>{h.name_cn || h.id}</b>（conf={Number(h.confidence).toFixed(2)}）
+                {/* v9.3.1 · conf 可能是 null/undefined/string, 用 Number.isFinite 守卫防 NaN */}
+                <b>{h.name_cn || h.id}</b>（conf={Number.isFinite(Number(h.confidence)) ? Number(h.confidence).toFixed(2) : "—"}）
                 <span className="mca-hit-school">{h.school}</span>
               </li>
             ))}
@@ -1203,6 +1439,40 @@ function App() {
                   )}
                 </div>
               </details>
+
+              {/* === v9.4 母题侧记 motif_witness（fate master 第三人称累加旁白） === */}
+              {Object.keys(motifWitness).length > 0 && (
+                <details className="virtue-section" open>
+                  <summary>
+                    <span className="vs-pos">侧记</span>
+                    <span>母题侧记 motif_witness（命理师第三人称累加旁白）</span>
+                    <span className="vs-hint">analysis.motif_witness.&lt;anchor&gt;</span>
+                  </summary>
+                  <div className="vs-body">
+                    {Object.keys(motifWitness).map((anchor) => (
+                      <div key={anchor} style={{
+                        borderLeft: "3px solid #c8b88a",
+                        paddingLeft: 10,
+                        margin: "8px 0",
+                        background: "#fbf6e9",
+                        color: "#5a4a26",
+                        fontSize: 13,
+                      }}>
+                        <div style={{fontSize: 11, color: "#8a7a55", marginBottom: 4}}>
+                          anchor: <code>{anchor}</code>
+                        </div>
+                        {motifWitness[anchor] && motifWitness[anchor].trim() ? (
+                          <Markdown source={motifWitness[anchor]} />
+                        ) : (
+                          <div className="placeholder">
+                            该 anchor 尚未写入。{IS_PARTIAL ? "⌛ 流式写作中。" : ""}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </details>
+              )}
 
               {/* === v9.3 closing：「我想和你说的话」三段
                        declaration → 「## 我想和你说」
